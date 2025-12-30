@@ -6,6 +6,8 @@ const {
   description = 'Blog minimalista para notas y proyectos.',
   hideNav = false,
 } = Astro.props;
+
+const base = import.meta.env.BASE_URL || '/';
 ---
 <!DOCTYPE html>
 <html lang="es">
@@ -39,13 +41,13 @@ const {
     <div class="page-shell">
       {!hideNav && (
         <header class="site-header">
-          <a class="brand" href="/">setupandhold</a>
+          <a class="brand" href={base}>setupandhold</a>
           <nav class="nav-links">
-            <a href="/">Inicio</a>
-            <a href="/posts">Blog</a>
-            <a href="/puzzle" rel="prefetch">Puzzle</a>
-            <a href="/about">Sobre mi</a>
-            <a href="/rss.xml">RSS</a>
+            <a href={base}>Inicio</a>
+            <a href={`${base}posts`}>Blog</a>
+            <a href={`${base}puzzle`} rel="prefetch">Puzzle</a>
+            <a href={`${base}about`}>Sobre mi</a>
+            <a href={`${base}rss.xml`}>RSS</a>
           </nav>
           <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
             <span aria-hidden="true">🌙</span>
