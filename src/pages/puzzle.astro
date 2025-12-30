@@ -10,17 +10,16 @@ const apiBaseJSON = JSON.stringify(apiBase);
   description="Genera puzzles 3D, visualiza soluciones y descarga STL listo para imprimir."
 >
   <section class="puzzle-hero">
-    <p class="pill">Proyecto en vivo</p>
     <h1>Puzzle Generator 3D</h1>
     <p>
+    <p class="note">Si es la primera vez que entras, Render puede tardar ~1 minuto en levantar el backend.</p>
       Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
-      Totalmente integrado con el estilo de Setup &amp; Hold, usando el backend Flask desplegable en Render.
+      Servido desde un backend Python en Render.
     </p>
     <div class="hero-actions">
       <a class="button" href={withBase('/posts')}>Volver al blog</a>
       <a class="button secondary" href={apiBase} target="_blank" rel="noreferrer">Abrir backend</a>
     </div>
-    <p class="note">Define PUBLIC_PUZZLEGEN_URL para apuntar al backend (Render o local).</p>
   </section>
 
   <link rel="stylesheet" href={`${apiBase}/static/style.css`} />

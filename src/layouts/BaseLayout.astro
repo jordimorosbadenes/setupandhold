@@ -15,6 +15,7 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
     <link
       rel="preconnect"
       href="https://fonts.googleapis.com"
@@ -40,7 +41,10 @@ const {
     <div class="page-shell">
       {!hideNav && (
         <header class="site-header">
-          <a class="brand" href={withBase('/')}>setupandhold</a>
+          <a class="brand" href={withBase('/')}>
+            <img class="brand-logo" src={withBase('/favicon.svg')} alt="setupandhold" width="24" height="24" />
+            <span>setupandhold</span>
+          </a>
           <nav class="nav-links">
             <a href={withBase('/')}>Inicio</a>
             <a href={withBase('/posts')}>Blog</a>
