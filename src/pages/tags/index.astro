@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+const tagMap = new Map<string, number>();
+
+posts.forEach((post) => {
+  post.data.tags?.forEach((tag) => {
+    const key = tag.toLowerCase();
+    tagMap.set(key, (tagMap.get(key) || 0) + 1);
+  });
+});
+
+const tags = Array.from(tagMap.entries()).sort((a, b) => b[1] - a[1]);
+---
+<BaseLayout title="Etiquetas" description="Nube de etiquetas del blog">
+  <div class="section-title">
+    <h2>Etiquetas</h2>
+    <span class="pill">{tags.length} etiquetas</span>
+  </div>
+  <div class="tag-row" style="gap: 10px;">
+    {tags.map(([tag, count]) => (
+      <a class="tag" href={`/tags/${tag}`}>
+        {tag} · {count}
+      </a>
+    ))}
+  </div>
+</BaseLayout>

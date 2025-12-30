@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const { slug } = Astro.params;
+const entry = (await getCollection('blog')).find((item) => item.slug === slug);
+
+if (!entry) {
+  throw new Error(`No se encontró la entrada: ${slug}`);
+}
+
+const { Content } = await entry.render();
+const { title, description, date, updated, tags, hero } = entry.data;
+const published = new Date(date).toLocaleDateString('es-ES', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+const updatedAt = updated
+  ? new Date(updated).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  : null;
+---
+<BaseLayout title={`${title} | setupandhold`} description={description}>
+  <article class="hero prose">
+    <div class="card-meta">
+      <span class="pill">Publicado {published}</span>
+      {updatedAt && <span class="pill">Actualizado {updatedAt}</span>}
+    </div>
+    <h1>{title}</h1>
+    <p>{description}</p>
+    {tags?.length ? (
+      <div class="tag-row">
+        {tags.map((tag) => (
+          <a class="tag" href={`/tags/${tag.toLowerCase()}`}>{tag}</a>
+        ))}
+      </div>
+    ) : null}
+    {hero ? (
+      <figure style="margin: 0;">
+        <img
+          src={hero.src}
+          alt={hero.alt || title}
+          style="width: 100%; border-radius: var(--radius); border: 1px solid var(--border);"
+          loading="lazy"
+        />
+      </figure>
+    ) : null}
+    <Content />
+  </article>
+</BaseLayout>

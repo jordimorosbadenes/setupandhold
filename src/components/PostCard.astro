@@ -1,0 +1,31 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+}
+
+const { post } = Astro.props;
+const { title, description, date, tags } = post.data;
+const formatted = new Date(date).toLocaleDateString('es-ES', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+<article class="post-card">
+  <a class="card-link" href={`/posts/${post.slug}`}>
+    <div class="card-meta">
+      <span class="pill">{formatted}</span>
+      {tags?.length ? (
+        <div class="tag-row">
+          {tags.map((tag) => (
+            <span class="tag" aria-label={`Etiqueta ${tag}`}>{tag}</span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </a>
+</article>
