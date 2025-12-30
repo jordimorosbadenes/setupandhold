@@ -1,0 +1,407 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const apiBase = import.meta.env.PUBLIC_PUZZLEGEN_URL ?? 'https://puzzle-generator-vkgt.onrender.com';
+const apiBaseJSON = JSON.stringify(apiBase);
+---
+<BaseLayout
+  title="Puzzle Generator"
+  description="Genera puzzles 3D, visualiza soluciones y descarga STL listo para imprimir."
+>
+  <section class="puzzle-hero">
+    <p class="pill">Proyecto en vivo</p>
+    <h1>Puzzle Generator 3D</h1>
+    <p>
+      Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
+      Totalmente integrado con el estilo de Setup &amp; Hold, usando el backend Flask desplegable en Render.
+    </p>
+    <div class="hero-actions">
+      <a class="button" href="/posts">Volver al blog</a>
+      <a class="button secondary" href={apiBase} target="_blank" rel="noreferrer">Abrir backend</a>
+    </div>
+    <p class="note">Define PUBLIC_PUZZLEGEN_URL para apuntar al backend (Render o local).</p>
+  </section>
+
+  <link rel="stylesheet" href={`${apiBase}/static/style.css`} />
+  <section class="puzzle-shell">
+    <div class="container" id="puzzle-container" aria-live="polite">
+      <h1>🧩 Puzzle Generator Web</h1>
+      <p class="subtitle">
+        Crea puzzles 3D con visualización isométrica e imprime en tu impresora 3D.
+      </p>
+
+      <div class="panel config-panel">
+        <h2>⚙️ Configuración del Puzzle</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Filas (M):</label>
+            <input type="number" id="M" value="5" min="2" max="20" />
+          </div>
+          <div class="form-group">
+            <label>Columnas (N):</label>
+            <input type="number" id="N" value="6" min="2" max="20" />
+          </div>
+          <div class="form-group">
+            <label>Tamaño mínimo (celdas):</label>
+            <input type="number" id="min_size" value="3" min="1" max="10" />
+          </div>
+          <div class="form-group">
+            <label>Tamaño máximo (celdas):</label>
+            <input type="number" id="max_size" value="4" min="1" max="10" />
+          </div>
+          <div class="form-group">
+            <label>Modo:</label>
+            <select id="mode">
+              <option value="Fast (original)">Rápido (original)</option>
+              <option value="Force minimum">Forzar mínimo</option>
+              <option value="Balanced" selected>Equilibrado</option>
+              <option value="Strategic">Estratégico</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Bordes bloqueados:</label>
+            <select id="border_prob">
+              <option value="0">0%</option>
+              <option value="25" selected>25%</option>
+              <option value="50">50%</option>
+              <option value="75">75%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Celdas aire:</label>
+            <select id="air_prob">
+              <option value="0" selected>0%</option>
+              <option value="5">5%</option>
+              <option value="10">10%</option>
+              <option value="15">15%</option>
+            </select>
+          </div>
+        </div>
+        <button id="generate-btn" class="btn btn-primary">▶ Generar Puzzle</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div class="canvas-area">
+        <div class="canvas-section">
+          <h3>🧩 Puzzle</h3>
+          <div class="view-controls">
+            <button class="view-btn active" id="btn-isometric" onclick="switchView(event, 'isometric')">Isométrico</button>
+            <button class="view-btn" id="btn-flat" onclick="switchView(event, 'flat')">Plano</button>
+          </div>
+          <canvas id="puzzle-canvas" width="600" height="600"></canvas>
+        </div>
+        <div class="canvas-section">
+          <h3>🎨 Galería de Piezas</h3>
+          <canvas id="gallery-canvas" width="500" height="600"></canvas>
+        </div>
+      </div>
+
+      <div class="panel solutions-panel">
+        <h2>🔍 Buscar Soluciones</h2>
+        <div class="solution-controls">
+          <button id="solve-10-btn" class="btn">Buscar 10 soluciones</button>
+          <button id="solve-50-btn" class="btn">Buscar 50 soluciones</button>
+          <button id="prev-btn" class="btn">◀ Anterior</button>
+          <button id="next-btn" class="btn">▶ Siguiente</button>
+          <button id="original-btn" class="btn">Original</button>
+        </div>
+        <div id="solution-info" class="solution-info">Solución: 0 (Original) | Encontradas: 0</div>
+      </div>
+
+      <div class="panel export-panel">
+        <h2>🖨️ Exportar a STL para Impresión 3D</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Tamaño cubo (mm):</label>
+            <input type="number" id="stl_cube_size" value="10" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label>Altura piezas (mm):</label>
+            <input type="number" id="stl_height" value="2" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label>Tolerancia (mm):</label>
+            <input type="number" id="stl_tolerance" value="0.3" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label>Separación (mm):</label>
+            <input type="number" id="stl_gap" value="5" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label>Tamaño borde base (mm):</label>
+            <input type="number" id="stl_border" value="5" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label>Espesor base (mm):</label>
+            <input type="number" id="stl_base_thickness" value="1" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label>Altura paredes (mm):</label>
+            <input type="number" id="stl_wall_height" value="2" step="0.5" />
+          </div>
+        </div>
+        <div class="export-buttons">
+          <button id="export-stl-btn" class="btn btn-success">Descargar STL (Base + Piezas)</button>
+        </div>
+        <div id="status-viewer" class="status"></div>
+
+        <h3 style="margin-top: 20px;">📦 Vista Previa 3D</h3>
+        <div id="viewer-3d" style="width: 100%; height: 500px; border: 1px solid var(--border); border-radius: 12px; background-color: rgba(255,255,255,0.02);"></div>
+      </div>
+    </div>
+  </section>
+  <script set:html={`
+    window.PUZZLE_API_BASE = ${apiBaseJSON};
+    (function patchFetch() {
+      const base = window.PUZZLE_API_BASE || '';
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = (input, init) => {
+        if (typeof input === 'string' && input.startsWith('/')) {
+          return originalFetch(base + input, init);
+        }
+        if (input && typeof input.url === 'string' && input.url.startsWith('/')) {
+          input = new Request(base + input.url, input);
+        }
+        return originalFetch(input, init);
+      };
+    })();
+  `} />
+
+  <script type="module">
+    import * as THREE from 'https://esm.sh/three@0.128.0';
+    import { STLLoader } from 'https://esm.sh/three@0.128.0/examples/jsm/loaders/STLLoader.js';
+    import { OrbitControls } from 'https://esm.sh/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+    const THREE_NS = Object.assign({}, THREE, { STLLoader, OrbitControls });
+    window.THREE = THREE_NS;
+    window.dispatchEvent(new Event('three-ready'));
+  </script>
+  <script>
+    window.addEventListener('three-ready', () => {
+      const base = window.PUZZLE_API_BASE || '';
+      const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
+      const s = document.createElement('script');
+      s.src = `${normalized}/static/app.js`;
+      s.defer = true;
+      document.body.appendChild(s);
+    });
+  </script>
+</BaseLayout>
+
+<style is:global>
+  html, body {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    font-family: var(--font) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  :root[data-theme='light'] html, :root[data-theme='light'] body {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+  }
+
+  .container {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .panel, .canvas-area, .canvas-section {
+    border-color: var(--border) !important;
+  }
+
+  .status { display: block; }
+
+  /* Forzar fondo neutro si el CSS remoto trae gradiente morado */
+  body.container, body .container { background: transparent !important; }
+
+  /* Evitar que estilos externos cambien links o inputs */
+  a, input, select, button { color: inherit; }
+</style>
+
+<style>
+/* Animaciones desactivadas para evitar salto visible al cambiar de página */
+.puzzle-hero {
+  display: grid;
+  gap: 16px;
+  padding: 28px 32px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.puzzle-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.02em;
+  color: var(--text) !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+  text-align: left;
+}
+
+.puzzle-hero p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.puzzle-shell {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.container {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+body, .container h1, .container h2, .container h3, .container p, .container label {
+  color: var(--text);
+}
+
+.subtitle {
+  text-align: left;
+  color: var(--muted);
+  margin: 6px 0 18px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 4px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+:root[data-theme='light'] .panel {
+  background: rgba(255, 255, 255, 0.85);
+  border-left-color: var(--border);
+}
+
+.btn {
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(120deg, rgba(124, 242, 201, 0.16), rgba(108, 177, 255, 0.08)) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+  font-weight: 600;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.btn-primary,
+.btn-success,
+.solution-controls .btn,
+.export-buttons .btn,
+.view-controls .view-btn {
+  background: linear-gradient(120deg, rgba(124, 242, 201, 0.26), rgba(108, 177, 255, 0.14)) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16) !important;
+}
+
+.btn:hover,
+.view-btn:hover,
+.solution-controls .btn:hover,
+.export-buttons .btn:hover,
+.view-controls .view-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+  filter: brightness(1.02);
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+:root[data-theme='light'] .btn {
+  background: linear-gradient(120deg, rgba(124, 242, 201, 0.12), rgba(108, 177, 255, 0.06)) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+:root[data-theme='light'] .btn-primary,
+:root[data-theme='light'] .btn-success,
+:root[data-theme='light'] .solution-controls .btn,
+:root[data-theme='light'] .export-buttons .btn,
+:root[data-theme='light'] .view-controls .view-btn {
+  background: linear-gradient(120deg, rgba(124, 242, 201, 0.2), rgba(108, 177, 255, 0.1)) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(124, 242, 201, 0.18), 0 10px 22px rgba(0, 0, 0, 0.1) !important;
+}
+
+:root[data-theme='light'] .btn:hover,
+:root[data-theme='light'] .view-btn:hover,
+:root[data-theme='light'] .solution-controls .btn:hover,
+:root[data-theme='light'] .export-buttons .btn:hover,
+:root[data-theme='light'] .view-controls .view-btn:hover {
+  border-color: rgba(15, 155, 115, 0.6) !important;
+  color: var(--accent) !important;
+}
+
+.status.info { background: rgba(37, 99, 235, 0.1); color: #9bbcf6; }
+.status.success { background: rgba(34, 197, 94, 0.12); color: #98e2b1; }
+.status.error { background: rgba(239, 68, 68, 0.14); color: #f9b0b0; }
+
+.canvas-area {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.canvas-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.view-btn {
+  border-color: var(--border);
+  color: var(--text);
+  background: transparent;
+  border-radius: 12px;
+}
+.view-btn.active {
+  background: linear-gradient(120deg, var(--accent), var(--accent-2)) !important;
+  color: #0b1020 !important;
+  border-color: rgba(124, 242, 201, 0.6) !important;
+}
+
+input, select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.solution-info {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .puzzle-shell { padding: 16px; }
+}
+</style>

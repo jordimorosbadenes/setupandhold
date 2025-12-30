@@ -27,6 +27,13 @@ const {
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <script is:inline>
+      const storageKey = 'theme';
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const saved = localStorage.getItem(storageKey);
+      const theme = saved || (prefersLight ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    </script>
   </head>
   <body>
     <div class="page-shell">
@@ -36,9 +43,14 @@ const {
           <nav class="nav-links">
             <a href="/">Inicio</a>
             <a href="/posts">Blog</a>
+            <a href="/puzzle" rel="prefetch">Puzzle</a>
             <a href="/about">Sobre mi</a>
             <a href="/rss.xml">RSS</a>
           </nav>
+          <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
+            <span aria-hidden="true">🌙</span>
+            <span aria-hidden="true">☀️</span>
+          </button>
         </header>
       )}
       <main class="page">
@@ -51,4 +63,30 @@ const {
       </footer>
     </div>
   </body>
+  <script is:inline>
+    (() => {
+      const key = 'theme';
+      const apply = (value) => {
+        document.documentElement.dataset.theme = value;
+        localStorage.setItem(key, value);
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.setAttribute('aria-pressed', value === 'light' ? 'true' : 'false');
+      };
+      const init = () => {
+        const saved = localStorage.getItem(key);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        apply(saved || (prefersLight ? 'light' : 'dark'));
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.addEventListener('click', () => {
+          const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+          apply(current === 'light' ? 'dark' : 'light');
+        });
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
 </html>

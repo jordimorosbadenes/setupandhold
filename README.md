@@ -20,6 +20,8 @@ npm run dev
 
 El servidor quedará en `http://localhost:4321`.
 
+Copia `.env.example` a `.env` (o `.env.production` para Pages) y apunta `PUBLIC_PUZZLEGEN_URL` al backend en Render. Si lo omites usará el despliegue público por defecto.
+
 ## Scripts principales
 
 - `npm run dev`: modo desarrollo con recarga en caliente.
@@ -68,6 +70,13 @@ Contenido en Markdown...
 - `src/components/PostCard.astro`: tarjetas de resumen para listados.
 - `src/content/blog`: posts en Markdown.
 - `src/styles/global.css`: estilos base (colores, tipografía, layout).
+- `src/pages/puzzle.astro`: página que carga el Puzzle Generator servido por el backend en Render usando `PUBLIC_PUZZLEGEN_URL`.
+
+## Integración Puzzle Generator
+
+- La página `/puzzle` se alimenta de la URL definida en `PUBLIC_PUZZLEGEN_URL` (Render).
+- Si no defines la variable, usará `https://puzzle-generator-vkgt.onrender.com` como valor por defecto; cámbialo tras desplegar tu servicio.
+- En Render define `ALLOWED_ORIGINS` con tu dominio de GitHub Pages para habilitar CORS.
 
 ## Personalización
 
