@@ -3,9 +3,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostCard from '../../components/PostCard.astro';
 import { getCollection } from 'astro:content';
 
-const { tag } = Astro.params;
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft && data.tags?.length);
+  const tagSet = new Set<string>();
+  posts.forEach((post) => {
+    post.data.tags?.forEach((tag) => tagSet.add(tag.toLowerCase()));
+  });
+
+  return Array.from(tagSet).map((tag) => ({ params: { tag }, props: { tag } }));
+}
+
+const { tag } = Astro.props;
 const posts = (await getCollection('blog', ({ data }) => !data.draft && data.tags?.length))
-  .filter((post) => post.data.tags.map((t) => t.toLowerCase()).includes(tag?.toLowerCase() || ''))
+  .filter((post) => post.data.tags.map((t) => t.toLowerCase()).includes(tag))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
 <BaseLayout title={`Entradas en ${tag}`} description={`Artículos etiquetados como ${tag}`}>

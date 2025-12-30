@@ -2,13 +2,15 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-const { slug } = Astro.params;
-const entry = (await getCollection('blog')).find((item) => item.slug === slug);
-
-if (!entry) {
-  throw new Error(`No se encontró la entrada: ${slug}`);
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { entry: post },
+  }));
 }
 
+const { entry } = Astro.props;
 const { Content } = await entry.render();
 const { title, description, date, updated, tags, hero } = entry.data;
 const published = new Date(date).toLocaleDateString('es-ES', {
