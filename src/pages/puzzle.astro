@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils/withBase';
 
 const apiBase = import.meta.env.PUBLIC_PUZZLEGEN_URL ?? 'https://puzzle-generator-vkgt.onrender.com';
 const apiBaseJSON = JSON.stringify(apiBase);
-const base = import.meta.env.BASE_URL || '/';
 ---
 <BaseLayout
   title="Puzzle Generator"
@@ -17,7 +17,7 @@ const base = import.meta.env.BASE_URL || '/';
       Totalmente integrado con el estilo de Setup &amp; Hold, usando el backend Flask desplegable en Render.
     </p>
     <div class="hero-actions">
-      <a class="button" href={`${base}posts`}>Volver al blog</a>
+      <a class="button" href={withBase('/posts')}>Volver al blog</a>
       <a class="button secondary" href={apiBase} target="_blank" rel="noreferrer">Abrir backend</a>
     </div>
     <p class="note">Define PUBLIC_PUZZLEGEN_URL para apuntar al backend (Render o local).</p>

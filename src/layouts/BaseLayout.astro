@@ -1,13 +1,12 @@
 ---
 import '../styles/global.css';
+import { withBase } from '../utils/withBase';
 
 const {
   title = 'Setup & Hold',
   description = 'Blog minimalista para notas y proyectos.',
   hideNav = false,
 } = Astro.props;
-
-const base = import.meta.env.BASE_URL || '/';
 ---
 <!DOCTYPE html>
 <html lang="es">
@@ -41,13 +40,13 @@ const base = import.meta.env.BASE_URL || '/';
     <div class="page-shell">
       {!hideNav && (
         <header class="site-header">
-          <a class="brand" href={base}>setupandhold</a>
+          <a class="brand" href={withBase('/')}>setupandhold</a>
           <nav class="nav-links">
-            <a href={base}>Inicio</a>
-            <a href={`${base}posts`}>Blog</a>
-            <a href={`${base}puzzle`} rel="prefetch">Puzzle</a>
-            <a href={`${base}about`}>Sobre mi</a>
-            <a href={`${base}rss.xml`}>RSS</a>
+            <a href={withBase('/')}>Inicio</a>
+            <a href={withBase('/posts')}>Blog</a>
+            <a href={withBase('/puzzle')} rel="prefetch">Puzzle</a>
+            <a href={withBase('/about')}>Sobre mi</a>
+            <a href={withBase('/rss.xml')}>RSS</a>
           </nav>
           <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
             <span aria-hidden="true">🌙</span>
