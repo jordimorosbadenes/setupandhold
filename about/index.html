@@ -1,20 +1,16 @@
-<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Sobre mi</title><meta name="description" content="Notas sobre el autor y el proyecto"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
+<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Sobre mi</title><meta name="description" content="Notas sobre el autor y el proyecto"><link rel="icon" type="image/svg+xml" href="/setupandhold/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
       const storageKey = 'theme';
       const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
       const saved = localStorage.getItem(storageKey);
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
-    </script><link rel="stylesheet" href="/setupandhold/_astro/about.xSYfJnEL.css"></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/setupandhold/">setupandhold</a> <nav class="nav-links"> <a href="/setupandhold/">Inicio</a> <a href="/setupandhold/posts">Blog</a> <a href="/setupandhold/puzzle" rel="prefetch">Puzzle</a> <a href="/setupandhold/about">Sobre mi</a> <a href="/setupandhold/rss.xml">RSS</a> </nav> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span aria-hidden="true">🌙</span> <span aria-hidden="true">☀️</span> </button> </header> <main class="page">  <section class="hero prose"> <h1>Hola</h1> <p>
-Este blog está construido con Astro y pensado para publicar contenido ligero
-      con Markdown. El objetivo es documentar ideas, experimentos y proyectos con
-      un estilo limpio y sin distracciones.
+    </script><link rel="stylesheet" href="/setupandhold/_astro/about.T2ZE3OZS.css"></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/setupandhold/"> <img class="brand-logo" src="/setupandhold/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/setupandhold/">Inicio</a> <a href="/setupandhold/posts">Blog</a> <a href="/setupandhold/puzzle" rel="prefetch">Puzzle</a> <a href="/setupandhold/about">Sobre mi</a> <a href="/setupandhold/rss.xml">RSS</a> </nav> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span aria-hidden="true">🌙</span> <span aria-hidden="true">☀️</span> </button> </header> <main class="page">  <section class="hero prose"> <h1>Hola</h1> <p>
+Este blog es mi cuaderno de software y datos. Aquí concentro notas breves,
+      experimentos y proyectos que quiero tener a mano y compartir.
 </p> <p>
-Puedes clonar el repo, crear nuevas entradas en <strong>src/content/blog</strong>
-y publicar en GitHub Pages con el workflow incluido. Más adelante podrás
-      enlazar demos alojados en otros servicios (Render, Railway, etc.).
-</p> <p>
-Ajusta colores, tipografía o distribución editando los archivos en
-<strong>src/styles/global.css</strong> y los layouts en <strong>src/layouts</strong>.
+Los temas habituales: arquitectura ligera en la nube, tooling para datos,
+      y juguetes técnicos como el Puzzle Generator 3D. Objetivo: soluciones
+      prácticas, poco ruido y ejemplos que pueda reutilizar.
 </p> </section>  </main> <footer class="site-footer"> <span>© 2025 setupandhold</span> <span class="dot">·</span> <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a> </footer> </div> <script>
     (() => {
       const key = 'theme';
