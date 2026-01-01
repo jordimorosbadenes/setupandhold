@@ -22,8 +22,16 @@ const apiBaseJSON = JSON.stringify(apiBase);
     </div>
   </section>
 
-  <link rel="stylesheet" href={`${apiBase}/static/style.css`} />
-  <section class="puzzle-shell">
+  <link rel="stylesheet" id="backend-style" href={`${apiBase}/static/style.css`} />
+  <section class="puzzle-shell blocked">
+    <div id="backend-wait" class="backend-wait" aria-live="polite">
+      <div class="loader" aria-hidden="true">🧩</div>
+      <div class="backend-msg">
+        <strong>Arrancando backend…</strong>
+        <span class="backend-note">Render se está despertando. Puede tardar ~1 minuto la primera vez.</span>
+        <span class="backend-status" aria-live="polite"></span>
+      </div>
+    </div>
     <div class="container" id="puzzle-container" aria-live="polite">
       <h1>🧩 Puzzle Generator Web</h1>
       <p class="subtitle">
@@ -174,17 +182,156 @@ const apiBaseJSON = JSON.stringify(apiBase);
     import { OrbitControls } from 'https://esm.sh/three@0.128.0/examples/jsm/controls/OrbitControls.js';
     const THREE_NS = Object.assign({}, THREE, { STLLoader, OrbitControls });
     window.THREE = THREE_NS;
+    window._threeReady = true;
     window.dispatchEvent(new Event('three-ready'));
   </script>
   <script>
-    window.addEventListener('three-ready', () => {
+    // Flujo robusto sin recargas automáticas: mantenemos overlay hasta tener CSS y app.js cargados.
+    let cssReady = false;
+    let scriptReady = false;
+    let healthReady = false;
+    let scriptFailTimer = null;
+    let cssRetries = 0;
+    let scriptRetries = 0;
+
+    const hideOverlay = () => {
+      const overlay = document.getElementById('backend-wait');
+      const shell = document.querySelector('.puzzle-shell');
+      overlay?.classList.add('hide');
+      shell?.classList.remove('blocked');
+      setTimeout(() => {
+        try { window.dispatchEvent(new Event('resize')); } catch (_) {}
+        if (typeof window.init3DViewer === 'function') {
+          try { window.init3DViewer(); } catch (e) { console.warn('init3DViewer fallo:', e); }
+        }
+      }, 50);
+    };
+
+    const showOverlay = () => {
+      const overlay = document.getElementById('backend-wait');
+      const shell = document.querySelector('.puzzle-shell');
+      overlay?.classList.remove('hide');
+      shell?.classList.add('blocked');
+    };
+
+    const tryFinish = () => {
+      // Solo liberamos cuando CSS y app.js están listos
+      if (!(cssReady && scriptReady)) return;
+      hideOverlay();
+    };
+
+    const pingBackend = async (base) => {
+      const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(`${normalized}/health`, { signal: ctrl.signal });
+        clearTimeout(timer);
+        return res.ok;
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const startMonitor = () => {};
+
+    const loadBackendScript = () => {
+      if (scriptReady) return;
       const base = window.PUZZLE_API_BASE || '';
       const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
       const s = document.createElement('script');
-      s.src = `${normalized}/static/app.js`;
+      const bust = `?v=${Date.now()}-${scriptRetries}`;
+      s.src = `${normalized}/static/app.js${bust}`;
       s.defer = true;
+      s.addEventListener('load', () => { scriptReady = true; tryFinish(); });
+      s.addEventListener('error', (e) => {
+        scriptRetries += 1;
+        console.warn('[Puzzle] No se pudo cargar app.js del backend', e);
+        const status = document.querySelector('.backend-status');
+        if (status) status.textContent = 'Reintentando app.js del backend...';
+        setTimeout(loadBackendScript, Math.min(4000 + scriptRetries * 500, 12000));
+      });
       document.body.appendChild(s);
-    });
+    };
+
+    if (window._threeReady) {
+      loadBackendScript();
+    } else {
+      window.addEventListener('three-ready', loadBackendScript, { once: true });
+    }
+
+    (() => {
+      const link = document.getElementById('backend-style');
+      if (!link) { cssReady = true; tryFinish(); return; }
+      const base = window.PUZZLE_API_BASE || '';
+      const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
+      const updateMsg = (text) => {
+        const status = document.querySelector('.backend-status');
+        if (status) status.textContent = text;
+      };
+      const reloadCss = () => {
+        cssRetries += 1;
+        const bust = `?v=${Date.now()}-${cssRetries}`;
+        link.href = `${normalized}/static/style.css${bust}`;
+        updateMsg('Reintentando estilos del backend...');
+      };
+      link.addEventListener('load', () => { cssReady = true; tryFinish(); });
+      link.addEventListener('error', (e) => {
+        console.warn('[Puzzle] No se pudo cargar style.css del backend', e);
+        setTimeout(reloadCss, Math.min(3000 + cssRetries * 500, 10000));
+      });
+      setTimeout(() => { if (!cssReady) reloadCss(); }, 5000);
+    })();
+
+    console.info('[Puzzle] Backend base:', window.PUZZLE_API_BASE || '(default)');
+
+    (function waitForBackend() {
+      const base = window.PUZZLE_API_BASE || '';
+      const loop = async () => {
+        const ok = await pingBackend(base);
+        if (ok) {
+          healthReady = true;
+          const status = document.querySelector('.backend-status');
+          if (status) status.textContent = 'Backend listo, cargando interfaz...';
+          // Si el backend ya responde pero aún no carga CSS/JS, forzamos reintentos inmediatos
+          if (!cssReady) {
+            const link = document.getElementById('backend-style');
+            if (link) link.dispatchEvent(new Event('error'));
+          }
+          if (!scriptReady) {
+            loadBackendScript();
+          }
+          tryFinish();
+          return;
+        }
+        setTimeout(loop, 3000);
+      };
+      loop();
+    })();
+
+    // Bloqueo de botones hasta que app.js esté listo para evitar que el primer clic se pierda
+    const guardIds = [
+      'generate-btn','solve-10-btn','solve-50-btn','prev-btn','next-btn','original-btn','export-stl-btn','btn-isometric','btn-flat'
+    ];
+    const attachGuards = () => {
+      guardIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', (e) => {
+          if (scriptReady) return; // ya cargado, no bloqueamos
+          e.preventDefault();
+          e.stopPropagation();
+          const status = document.getElementById('status') || document.getElementById('status-viewer');
+          if (status) status.textContent = 'Cargando interfaz...';
+        }, true);
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachGuards, { once: true });
+    } else {
+      attachGuards();
+    }
   </script>
 </BaseLayout>
 
@@ -221,7 +368,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
   a, input, select, button { color: inherit; }
 </style>
 
-<style>
+<style is:global>
 /* Animaciones desactivadas para evitar salto visible al cambiar de página */
 .puzzle-hero {
   display: grid;
@@ -265,6 +412,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
   max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
+  position: relative;
 }
 
 .container {
@@ -286,6 +434,11 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
   color: var(--muted);
   margin: 6px 0 18px;
 }
+
+.status { display: block; }
+
+
+
 
 .panel {
   background: rgba(255, 255, 255, 0.03);
@@ -390,15 +543,86 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
   border-color: rgba(124, 242, 201, 0.6) !important;
 }
 
-input, select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
 .solution-info {
   background: rgba(37, 99, 235, 0.1);
   color: var(--text);
+}
+
+.backend-wait {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #0b0f16;
+  backdrop-filter: none;
+  border-radius: inherit;
+  z-index: 20;
+  transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+:root[data-theme='light'] .backend-wait {
+  background: #f6f8fb;
+}
+
+.backend-wait.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.backend-msg {
+  display: grid;
+  gap: 4px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.backend-msg .backend-note {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.backend-msg .backend-status {
+  color: var(--muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.puzzle-shell.blocked {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.puzzle-shell.blocked .container {
+  display: none;
+}
+
+.puzzle-shell.blocked .backend-wait {
+  position: static;
+  inset: auto;
+  width: 100%;
+  min-height: 160px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.loader {
+  font-size: 32px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 900px) {
