@@ -1,17 +1,57 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils/withBase';
+
+const linkedinUrl = 'https://www.linkedin.com/in/jordimorosbadenes/';
+const githubUrl = 'https://github.com/jordimorosbadenes';
+const avatarUrl = import.meta.env.PUBLIC_PROFILE_PHOTO_URL || withBase('/img/jordi.jpg');
 ---
 <BaseLayout title="Sobre mi" description="Notas sobre el autor y el proyecto">
-  <section class="hero prose">
-    <h1>Hola</h1>
-    <p>
-      Este blog es mi cuaderno de software y datos. Aquí concentro notas breves,
-      experimentos y proyectos que quiero tener a mano y compartir.
-    </p>
-    <p>
-      Los temas habituales: arquitectura ligera en la nube, tooling para datos,
-      y juguetes técnicos como el Puzzle Generator 3D. Objetivo: soluciones
-      prácticas, poco ruido y ejemplos que pueda reutilizar.
-    </p>
+  <section class="hero about-hero">
+    <a
+      class="about-avatar"
+      href={linkedinUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Abrir perfil de LinkedIn"
+    >
+      <img
+        class="about-avatar__img"
+        src={avatarUrl}
+        alt="Foto de Jordi"
+        loading="lazy"
+        decoding="async"
+        onload="this.nextElementSibling.style.display='none';"
+        onerror="this.style.display='none';"
+      />
+      <span class="about-avatar__fallback" aria-hidden="true">JMB</span>
+    </a>
+
+    <div class="prose">
+      <h1>Sobre mí</h1>
+      <p>
+        Vivo en Valencia. Desde pequeño me ha picado la curiosidad por la
+        tecnología: ordenadores, internet y electrónica.
+      </p>
+      <p>
+        Esa curiosidad me llevó a especializarme en diseño de ASIC, y estos
+        últimos años he estado metido de lleno en desarrollo de chips.
+      </p>
+      <p>
+        Fuera del trabajo me gusta trastear con temas como finanzas y bolsa,
+        nutrición y diseño físico. Y cuando no estoy delante de una pantalla,
+        suelo estar al aire libre: senderismo, running o MTB.
+      </p>
+      <ul>
+        <li>Trabajo: diseño de ASIC y desarrollo de chips.</li>
+        <li>Intereses: finanzas, bolsa, nutrición y diseño físico.</li>
+        <li>Fuera de pantalla: senderismo, running y mountain bike.</li>
+      </ul>
+
+      <div class="about-actions">
+        <a class="button secondary" href={linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a>
+        <a class="button secondary" href={githubUrl} target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
   </section>
 </BaseLayout>

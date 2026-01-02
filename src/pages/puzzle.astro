@@ -12,7 +12,6 @@ const apiBaseJSON = JSON.stringify(apiBase);
   <section class="puzzle-hero">
     <h1>Puzzle Generator 3D</h1>
     <p>
-    <p class="note">Si es la primera vez que entras, Render puede tardar ~1 minuto en levantar el backend.</p>
       Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
       Servido desde un backend Python en Render.
     </p>
@@ -22,7 +21,31 @@ const apiBaseJSON = JSON.stringify(apiBase);
     </div>
   </section>
 
-  <link rel="stylesheet" id="backend-style" href={`${apiBase}/static/style.css`} />
+  <link
+    rel="stylesheet"
+    id="backend-style"
+    href={`${apiBase}/static/style.css`}
+    media="print"
+    onload="this.media='all'"
+  />
+  <style id="backend-fallback-style">
+    #backend-wait {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--card, #0b0f16);
+      color: var(--text, #f4f6fb);
+      border-radius: 12px;
+      border: 1px solid var(--border, #222);
+      min-height: 180px;
+    }
+    .backend-msg { color: var(--text, #f4f6fb); }
+    .backend-status { color: var(--muted, #9aa1b5); font-style: italic; }
+    .puzzle-shell { position: relative; }
+    .puzzle-shell.blocked .container { display: none; }
+  </style>
   <section class="puzzle-shell blocked">
     <div id="backend-wait" class="backend-wait" aria-live="polite">
       <div class="loader" aria-hidden="true">🧩</div>
@@ -199,6 +222,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
       const shell = document.querySelector('.puzzle-shell');
       overlay?.classList.add('hide');
       shell?.classList.remove('blocked');
+      document.getElementById('backend-fallback-style')?.remove();
       setTimeout(() => {
         try { window.dispatchEvent(new Event('resize')); } catch (_) {}
         if (typeof window.init3DViewer === 'function') {

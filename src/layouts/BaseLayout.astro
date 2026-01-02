@@ -50,12 +50,7 @@ const {
             <a href={withBase('/posts')}>Blog</a>
             <a href={withBase('/puzzle')} rel="prefetch">Puzzle</a>
             <a href={withBase('/about')}>Sobre mi</a>
-            <a href={withBase('/rss.xml')}>RSS</a>
           </nav>
-          <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
-            <span aria-hidden="true">🌙</span>
-            <span aria-hidden="true">☀️</span>
-          </button>
         </header>
       )}
       <main class="page">
@@ -65,6 +60,12 @@ const {
         <span>© {new Date().getFullYear()} setupandhold</span>
         <span class="dot">·</span>
         <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
+          <span class="toggle-slider">
+            <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i>
+            <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i>
+          </span>
+        </button>
       </footer>
     </div>
   </body>

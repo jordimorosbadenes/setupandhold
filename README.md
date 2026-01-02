@@ -1,7 +1,7 @@
 # setupandhold
 
 Blog estático construido con [Astro](https://astro.build) y listo para publicar
-en GitHub Pages. Incluye RSS, páginas de etiquetas y dos posts de
+en GitHub Pages. Incluye páginas de etiquetas y dos posts de
 muestra.
 
 ## Requisitos
@@ -65,7 +65,7 @@ Contenido en Markdown...
 
 ## Estructura rápida
 
-- `src/pages`: páginas y rutas (blog, etiquetas, about, 404, RSS).
+- `src/pages`: páginas y rutas (blog, etiquetas, about, 404).
 - `src/layouts/BaseLayout.astro`: marco general y navegación.
 - `src/components/PostCard.astro`: tarjetas de resumen para listados.
 - `src/content/blog`: posts en Markdown.

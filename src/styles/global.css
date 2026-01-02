@@ -78,29 +78,90 @@ a:hover {
   z-index: 10;
 }
 .theme-toggle {
+  position: relative;
+  width: 56px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: #4a5568;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.3s ease;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  cursor: pointer;
-  font-weight: 600;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  justify-content: flex-start;
 }
 
-.theme-toggle span:last-child {
+.theme-toggle .toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle .slider-icon {
   display: none;
+  color: #000;
+  font-size: 14px;
+  line-height: 1;
 }
 
-:root[data-theme='light'] .theme-toggle span:first-child {
-  display: none;
+/* Keep it simple: render the two Flaticon icons as black masks (no CDN font CSS). */
+.theme-toggle .slider-icon.fi {
+  width: 16px;
+  height: 16px;
+  background: #000;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
 }
 
-:root[data-theme='light'] .theme-toggle span:last-child {
-  display: inline;
+.theme-toggle .fi.fi-sc-brightness {
+  -webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/18996/18996164.png');
+  mask-image: url('https://cdn-icons-png.flaticon.com/512/18996/18996164.png');
+}
+
+.theme-toggle .fi.fi-sr-moon-stars {
+  -webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/6853/6853973.png');
+  mask-image: url('https://cdn-icons-png.flaticon.com/512/6853/6853973.png');
+}
+
+:root[data-theme='light'] .theme-toggle .slider-icon--light {
+  display: inline-block;
+}
+
+:root[data-theme='dark'] .theme-toggle .slider-icon--dark {
+  display: inline-block;
+}
+
+.theme-toggle:hover {
+  background: #5a6578;
+}
+
+:root[data-theme='light'] .theme-toggle {
+  background: #e2e8f0;
+  justify-content: flex-end;
+}
+
+:root[data-theme='light'] .theme-toggle .toggle-slider {
+  left: auto;
+  right: 2px;
+  background: #fff;
+}
+
+:root[data-theme='light'] .theme-toggle:hover {
+  background: #cbd5e0;
 }
 
 .brand {
@@ -179,6 +240,62 @@ a:hover {
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.about-hero {
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 24px;
+}
+
+.about-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.about-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.about-avatar__fallback {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.about-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+}
+
+@media (max-width: 720px) {
+  .about-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .about-avatar {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+  }
+
+  .about-actions {
+    justify-content: center;
+  }
 }
 
 .button {
@@ -282,9 +399,14 @@ a:hover {
   margin-top: 48px;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
   align-items: center;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.site-footer .theme-toggle {
+  margin-left: auto;
 }
 
 .dot {
@@ -322,10 +444,30 @@ a:hover {
 
 @media (max-width: 720px) {
   .site-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
     gap: 10px;
     position: static;
+  }
+
+  .brand {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .theme-toggle {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .page-shell {
