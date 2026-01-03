@@ -170,6 +170,7 @@ a:hover {
   align-items: center;
   gap: clamp(8px, 1.4vw, 12px);
   font-weight: 700;
+  font-size: clamp(1.05rem, 2.4vw, 1.25rem);
   letter-spacing: -0.02em;
   text-transform: lowercase;
   text-decoration: none;
@@ -177,8 +178,8 @@ a:hover {
 }
 
 .brand-logo {
-  width: clamp(22px, 3.2vw, 32px);
-  height: clamp(22px, 3.2vw, 32px);
+  width: clamp(24px, 3.4vw, 36px);
+  height: clamp(24px, 3.4vw, 36px);
   display: block;
   border-radius: 0;
   box-shadow: none;
@@ -243,14 +244,14 @@ a:hover {
 }
 
 .about-hero {
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 160px 1fr;
   align-items: center;
   gap: 24px;
 }
 
 .about-avatar {
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-soft);
@@ -281,20 +282,116 @@ a:hover {
   margin-top: 14px;
 }
 
+.contact-block {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.contact-block h2 {
+  margin: 0 0 6px;
+}
+
+.contact-block__text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.contact-block__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.mousepad-hero {
+  gap: 20px;
+}
+
+.mousepad-contact h2 {
+  margin: 18px 0 6px;
+}
+
+.mousepad-contact__text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mousepad-contact__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.mousepad-note {
+  color: var(--muted);
+  margin-top: 12px;
+}
+
+.magnifier {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.magnifier-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+}
+
+.magnifier-image {
+  width: 100%;
+  max-height: clamp(320px, 65vh, 760px);
+  height: auto;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.magnifier-lens {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background-repeat: no-repeat;
+  background-color: var(--card);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .magnifier-lens {
+    width: 150px;
+    height: 150px;
+  }
+}
+
 @media (max-width: 720px) {
   .about-hero {
     grid-template-columns: 1fr;
-    text-align: center;
+    text-align: left;
   }
 
   .about-avatar {
     width: 120px;
     height: 120px;
-    margin: 0 auto;
+    margin: 0;
   }
 
   .about-actions {
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
 
@@ -456,6 +553,12 @@ a:hover {
     order: 1;
     width: 100%;
     justify-content: center;
+    font-size: 1.25rem;
+  }
+
+  .brand-logo {
+    width: 38px;
+    height: 38px;
   }
 
   .theme-toggle {

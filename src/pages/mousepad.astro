@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils/withBase';
+
+const pngUrl = withBase('/img/asic-mousepad.png');
+const svgFallbackUrl = withBase('/img/asic-mousepad.svg');
+
+const linkedinUrl = 'https://www.linkedin.com/in/jordimorosbadenes/';
+const contactEmail = import.meta.env.PUBLIC_CONTACT_EMAIL;
+const emailHref = contactEmail ? `mailto:${contactEmail}` : null;
+---
+
+<BaseLayout
+  title="Alfombrilla ASIC"
+  description="Una alfombrilla de ratón con un cheatsheet visual de diseño ASIC."
+>
+  <section class="hero mousepad-hero">
+    <div class="prose">
+      <h1>Alfombrilla ASIC</h1>
+      <p>
+        Diseñé esta alfombrilla para tener a mano lo esencial cuando estás en modo RTL.
+        Pasa el ratón por encima para hacer zoom con una lupa.
+      </p>
+      <p>
+        Contiene sintaxis Verilog básica, operadores, conceptos técnicos como setup/hold, metastabilidad, CDC, clock gating, etc. Úsalo como referencia rápida mientras trabajas o estudias! 🙂
+      </p>
+    </div>
+
+    <div class="magnifier" data-magnifier>
+      <div class="magnifier-stage" data-stage aria-label="Lupa: mueve el ratón por la imagen">
+        <img
+          class="magnifier-image"
+          data-image
+          src={pngUrl}
+          alt="Alfombrilla ASIC"
+          loading="lazy"
+          decoding="async"
+          onerror={`this.onerror=null; this.src='${svgFallbackUrl}';`}
+        />
+        <div class="magnifier-lens" data-lens aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="mousepad-contact">
+      <h2>¿Quieres tu alfombrilla?</h2>
+      <p class="mousepad-contact__text">
+        Contáctame y te digo cómo conseguirla (disponibilidad, precio y envío).
+      </p>
+      <div class="mousepad-contact__actions">
+        <a class="button secondary" href={linkedinUrl} target="_blank" rel="noreferrer">Escríbeme por LinkedIn</a>
+        {emailHref && (
+          <a class="button secondary" href={emailHref}>{contactEmail}</a>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const root = document.querySelector('[data-magnifier]');
+      if (!root) return;
+
+      const stage = root.querySelector('[data-stage]');
+      const image = root.querySelector('[data-image]');
+      const lens = root.querySelector('[data-lens]');
+      if (!stage || !image || !lens) return;
+
+      const zoom = 3.25;
+
+      const updateLens = (clientX, clientY) => {
+        const imgRect = image.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+
+        const x = clientX - imgRect.left;
+        const y = clientY - imgRect.top;
+
+        if (x < 0 || y < 0 || x > imgRect.width || y > imgRect.height) {
+          lens.style.display = 'none';
+          return;
+        }
+
+        lens.style.display = 'block';
+        lens.style.left = `${clientX - stageRect.left}px`;
+        lens.style.top = `${clientY - stageRect.top}px`;
+
+        const src = image.currentSrc || image.src;
+        lens.style.backgroundImage = `url('${src}')`;
+        lens.style.backgroundSize = `${imgRect.width * zoom}px ${imgRect.height * zoom}px`;
+
+        const bgX = -(x * zoom - lens.offsetWidth / 2);
+        const bgY = -(y * zoom - lens.offsetHeight / 2);
+        lens.style.backgroundPosition = `${bgX}px ${bgY}px`;
+      };
+
+      stage.addEventListener('pointerenter', () => {
+        lens.style.display = 'block';
+      });
+
+      stage.addEventListener('pointerleave', () => {
+        lens.style.display = 'none';
+      });
+
+      stage.addEventListener('pointermove', (e) => {
+        updateLens(e.clientX, e.clientY);
+      });
+
+      // Refresh lens source if the image swaps to PNG fallback.
+      image.addEventListener('load', () => {
+        const src = image.currentSrc || image.src;
+        lens.style.backgroundImage = `url('${src}')`;
+      });
+    })();
+  </script>
+</BaseLayout>
