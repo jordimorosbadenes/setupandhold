@@ -3,7 +3,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
 import { getCollection } from 'astro:content';
 import { withBase } from '../utils/withBase';
-import { REPOSITORY_URL } from '../config/site';
 
 const allPosts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -13,7 +12,6 @@ const latest = allPosts.slice(0, 6);
 <BaseLayout title="setupandhold" description="Notas cortas sobre software y datos.">
   <section class="hero">
     <div>
-      <p class="pill">Blog en Astro · listo para GitHub Pages</p>
       <h1>Setup & Hold</h1>
       <p>
         Bitácora ligera para documentar ideas, experimentos y proyectos.
@@ -22,7 +20,7 @@ const latest = allPosts.slice(0, 6);
     <div class="hero-actions">
       <a class="button" href={withBase('/posts')}>Leer el blog</a>
       <a class="button" href={withBase('/puzzle')} rel="prefetch">Puzzle Generator</a>
-      <a class="button secondary" href={REPOSITORY_URL} target="_blank" rel="noreferrer">Repositorio</a>
+      <a class="button" href={withBase('/mousepad')}>Alfombrilla ASIC</a>
     </div>
   </section>
 
