@@ -5,11 +5,18 @@ export const GITHUB_PROFILE_URL = 'https://github.com/jordimorosbadenes';
 export const REPOSITORY_URL = 'https://github.com/jordimorosbadenes/setupandhold';
 
 export const DEFAULT_CONTACT_EMAIL = 'jordimorosbadenes@gmail.com';
-export const CONTACT_EMAIL = import.meta.env.PUBLIC_CONTACT_EMAIL ?? DEFAULT_CONTACT_EMAIL;
+const contactEmailFromEnv = import.meta.env.PUBLIC_CONTACT_EMAIL;
+export const CONTACT_EMAIL = contactEmailFromEnv && contactEmailFromEnv.trim()
+	? contactEmailFromEnv
+	: DEFAULT_CONTACT_EMAIL;
 export const CONTACT_EMAIL_HREF = `mailto:${CONTACT_EMAIL}`;
 
 export const DEFAULT_AVATAR_URL = withBase('/img/jordi.jpg');
-export const AVATAR_URL = import.meta.env.PUBLIC_PROFILE_PHOTO_URL || DEFAULT_AVATAR_URL;
+const avatarFromEnv = import.meta.env.PUBLIC_PROFILE_PHOTO_URL;
+export const AVATAR_URL = avatarFromEnv && avatarFromEnv.trim() ? avatarFromEnv : DEFAULT_AVATAR_URL;
 
 export const DEFAULT_PUZZLEGEN_URL = 'https://puzzle-generator-vkgt.onrender.com';
-export const PUZZLEGEN_URL = import.meta.env.PUBLIC_PUZZLEGEN_URL ?? DEFAULT_PUZZLEGEN_URL;
+const puzzlegenFromEnv = import.meta.env.PUBLIC_PUZZLEGEN_URL;
+export const PUZZLEGEN_URL = puzzlegenFromEnv && puzzlegenFromEnv.trim()
+	? puzzlegenFromEnv
+	: DEFAULT_PUZZLEGEN_URL;
