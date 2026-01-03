@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/withBase';
+import { PUZZLEGEN_URL } from '../config/site';
 
-const apiBase = import.meta.env.PUBLIC_PUZZLEGEN_URL ?? 'https://puzzle-generator-vkgt.onrender.com';
+const apiBase = PUZZLEGEN_URL;
 const apiBaseJSON = JSON.stringify(apiBase);
 ---
 <BaseLayout

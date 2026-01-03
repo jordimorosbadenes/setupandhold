@@ -1,25 +1,25 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { withBase } from '../utils/withBase';
-
-const linkedinUrl = 'https://www.linkedin.com/in/jordimorosbadenes/';
-const githubUrl = 'https://github.com/jordimorosbadenes';
-const avatarUrl = import.meta.env.PUBLIC_PROFILE_PHOTO_URL || withBase('/img/jordi.jpg');
-const contactEmail = import.meta.env.PUBLIC_CONTACT_EMAIL;
-const emailHref = contactEmail ? `mailto:${contactEmail}` : null;
+import {
+  AVATAR_URL,
+  CONTACT_EMAIL,
+  CONTACT_EMAIL_HREF,
+  GITHUB_PROFILE_URL,
+  LINKEDIN_URL,
+} from '../config/site';
 ---
 <BaseLayout title="Sobre mi" description="Notas sobre el autor y el proyecto">
   <section class="hero about-hero">
     <a
       class="about-avatar"
-      href={linkedinUrl}
+      href={LINKEDIN_URL}
       target="_blank"
       rel="noreferrer"
       aria-label="Abrir perfil de LinkedIn"
     >
       <img
         class="about-avatar__img"
-        src={avatarUrl}
+        src={AVATAR_URL}
         alt="Foto de Jordi"
         loading="lazy"
         decoding="async"
@@ -56,11 +56,9 @@ const emailHref = contactEmail ? `mailto:${contactEmail}` : null;
           Para colaboraciones, dudas o para conseguir la alfombrilla, puedes escribirme por aquí:
         </p>
         <div class="contact-block__actions">
-          <a class="button secondary" href={linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a>
-          {emailHref && (
-            <a class="button secondary" href={emailHref}>jordimorosbadenes@gmail.com</a>
-          )}
-          <a class="button secondary" href={githubUrl} target="_blank" rel="noreferrer">GitHub</a>
+          <a class="button secondary" href={LINKEDIN_URL} target="_blank" rel="noreferrer">LinkedIn</a>
+          <a class="button secondary" href={CONTACT_EMAIL_HREF}>{CONTACT_EMAIL}</a>
+          <a class="button secondary" href={GITHUB_PROFILE_URL} target="_blank" rel="noreferrer">GitHub</a>
         </div>
       </div>
     </div>

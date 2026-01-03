@@ -29,6 +29,10 @@ jobs:
       - name: Build
         env:
           SITE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          # Astro solo expone al cliente variables con prefijo PUBLIC_.
+          # En GitHub Pages el build ocurre en Actions, así que hay que inyectarlas aquí.
+          PUBLIC_CONTACT_EMAIL: ${{ vars.PUBLIC_CONTACT_EMAIL }}
+          PUBLIC_PUZZLEGEN_URL: ${{ vars.PUBLIC_PUZZLEGEN_URL }}
         run: npm run build
 
       - name: Deploy to gh-pages

@@ -1,13 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/withBase';
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF, LINKEDIN_URL } from '../config/site';
 
 const pngUrl = withBase('/img/asic-mousepad.png');
 const svgFallbackUrl = withBase('/img/asic-mousepad.svg');
-
-const linkedinUrl = 'https://www.linkedin.com/in/jordimorosbadenes/';
-const contactEmail = import.meta.env.PUBLIC_CONTACT_EMAIL;
-const emailHref = contactEmail ? `mailto:${contactEmail}` : null;
 ---
 
 <BaseLayout
@@ -47,10 +44,8 @@ const emailHref = contactEmail ? `mailto:${contactEmail}` : null;
         Contáctame y te digo cómo conseguirla (disponibilidad, precio y envío).
       </p>
       <div class="mousepad-contact__actions">
-        <a class="button secondary" href={linkedinUrl} target="_blank" rel="noreferrer">Escríbeme por LinkedIn</a>
-        {emailHref && (
-          <a class="button secondary" href={emailHref}>{contactEmail}</a>
-        )}
+        <a class="button secondary" href={LINKEDIN_URL} target="_blank" rel="noreferrer">Escríbeme por LinkedIn</a>
+        <a class="button secondary" href={CONTACT_EMAIL_HREF}>{CONTACT_EMAIL}</a>
       </div>
     </div>
   </section>
