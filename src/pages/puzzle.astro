@@ -18,7 +18,6 @@ const apiBaseJSON = JSON.stringify(apiBase);
     </p>
     <div class="hero-actions">
       <a class="button" href={withBase('/posts')}>Volver al blog</a>
-      <a class="button secondary" href={apiBase} target="_blank" rel="noreferrer">Abrir backend</a>
     </div>
   </section>
 
@@ -47,7 +46,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
     .puzzle-shell { position: relative; }
     .puzzle-shell.blocked .container { display: none; }
   </style>
-  <section class="puzzle-shell blocked">
+  <section class="puzzle-shell blocked" data-api-base={apiBase}>
     <div id="backend-wait" class="backend-wait" aria-live="polite">
       <div class="loader" aria-hidden="true">🧩</div>
       <div class="backend-msg">
@@ -117,11 +116,18 @@ const apiBaseJSON = JSON.stringify(apiBase);
       <div class="canvas-area">
         <div class="canvas-section">
           <h3>🧩 Puzzle</h3>
-          <div class="view-controls">
-            <button class="view-btn active" id="btn-isometric" onclick="switchView(event, 'isometric')">Isométrico</button>
-            <button class="view-btn" id="btn-flat" onclick="switchView(event, 'flat')">Plano</button>
+          <div class="premium-lock" data-premium-lock>
+            <div class="view-controls">
+              <button class="view-btn active" id="btn-isometric" onclick="switchView(event, 'isometric')">Isométrico</button>
+              <button class="view-btn" id="btn-flat" onclick="switchView(event, 'flat')">Plano</button>
+            </div>
+            <div class="premium-lock__canvas">
+              <canvas id="puzzle-canvas" width="600" height="600"></canvas>
+              <div class="premium-lock__overlay">
+                <button type="button" class="btn premium-unlock">Desbloquear</button>
+              </div>
+            </div>
           </div>
-          <canvas id="puzzle-canvas" width="600" height="600"></canvas>
         </div>
         <div class="canvas-section">
           <h3>🎨 Galería de Piezas</h3>
@@ -184,9 +190,8 @@ const apiBaseJSON = JSON.stringify(apiBase);
     </div>
   </section>
   <script set:html={`
-    window.PUZZLE_API_BASE = ${apiBaseJSON};
     (function patchFetch() {
-      const base = window.PUZZLE_API_BASE || '';
+      const base = ${apiBaseJSON};
       const originalFetch = window.fetch.bind(window);
       window.fetch = (input, init) => {
         if (typeof input === 'string' && input.startsWith('/')) {
@@ -211,6 +216,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
   </script>
   <script>
     // Flujo robusto sin recargas automáticas: mantenemos overlay hasta tener CSS y app.js cargados.
+    const PUZZLE_API_BASE = document.querySelector('.puzzle-shell')?.getAttribute('data-api-base') || '';
     let cssReady = false;
     let scriptReady = false;
     let healthReady = false;
@@ -262,7 +268,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
 
     const loadBackendScript = () => {
       if (scriptReady) return;
-      const base = window.PUZZLE_API_BASE || '';
+      const base = PUZZLE_API_BASE;
       const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
       const s = document.createElement('script');
       const bust = `?v=${Date.now()}-${scriptRetries}`;
@@ -288,7 +294,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
     (() => {
       const link = document.getElementById('backend-style');
       if (!link) { cssReady = true; tryFinish(); return; }
-      const base = window.PUZZLE_API_BASE || '';
+      const base = PUZZLE_API_BASE;
       const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
       const updateMsg = (text) => {
         const status = document.querySelector('.backend-status');
@@ -308,10 +314,8 @@ const apiBaseJSON = JSON.stringify(apiBase);
       setTimeout(() => { if (!cssReady) reloadCss(); }, 5000);
     })();
 
-    console.info('[Puzzle] Backend base:', window.PUZZLE_API_BASE || '(default)');
-
     (function waitForBackend() {
-      const base = window.PUZZLE_API_BASE || '';
+      const base = PUZZLE_API_BASE;
       const loop = async () => {
         const ok = await pingBackend(base);
         if (ok) {
@@ -356,6 +360,45 @@ const apiBaseJSON = JSON.stringify(apiBase);
       document.addEventListener('DOMContentLoaded', attachGuards, { once: true });
     } else {
       attachGuards();
+    }
+
+    // Marcar visualmente el modo de vista seleccionado (SetupAndHold).
+    // El backend original lo hace, pero al envolver/estilizar aquí podemos perderlo.
+    const setViewActive = (mode) => {
+      const iso = document.getElementById('btn-isometric');
+      const flat = document.getElementById('btn-flat');
+      if (!iso || !flat) return;
+      const isIso = mode === 'isometric';
+      iso.classList.toggle('active', isIso);
+      flat.classList.toggle('active', !isIso);
+      iso.setAttribute('aria-pressed', isIso ? 'true' : 'false');
+      flat.setAttribute('aria-pressed', !isIso ? 'true' : 'false');
+    };
+
+    const attachViewActive = () => {
+      const iso = document.getElementById('btn-isometric');
+      const flat = document.getElementById('btn-flat');
+      if (!iso || !flat) return;
+
+      iso.setAttribute('type', 'button');
+      flat.setAttribute('type', 'button');
+      iso.setAttribute('aria-pressed', iso.classList.contains('active') ? 'true' : 'false');
+      flat.setAttribute('aria-pressed', flat.classList.contains('active') ? 'true' : 'false');
+
+      // Captura para ejecutarse incluso si hay guard que corta propagación.
+      iso.addEventListener('click', () => { if (scriptReady) setViewActive('isometric'); }, true);
+      flat.addEventListener('click', () => { if (scriptReady) setViewActive('flat'); }, true);
+
+      // Estado inicial
+      if (!iso.classList.contains('active') && !flat.classList.contains('active')) {
+        setViewActive('isometric');
+      }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachViewActive, { once: true });
+    } else {
+      attachViewActive();
     }
   </script>
 </BaseLayout>
@@ -633,6 +676,42 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
   box-shadow: var(--shadow) !important;
 }
 
+/* Censura (modo premium): blur + botón sobre la vista del puzzle */
+.premium-lock {
+  position: relative;
+  border-radius: 12px;
+}
+
+.premium-lock__canvas {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.premium-lock__canvas canvas {
+  filter: blur(10px);
+  transform: translateZ(0);
+  user-select: none;
+  pointer-events: none;
+}
+
+.premium-lock__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme='light'] .premium-lock__overlay {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.premium-unlock {
+  min-width: 180px;
+}
+
 .canvas-section {
   background: rgba(255, 255, 255, 0.02) !important;
   border: 1px solid var(--border) !important;
@@ -644,10 +723,30 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
   background: transparent !important;
   border-radius: 12px;
 }
+
+/* Asegurar que en claro el "activo" se note: neutralizamos el fondo de los no-activos.
+   (Antes, .view-controls .view-btn heredaba el mismo gradiente que los botones y el activo no destacaba.) */
+.view-controls .view-btn:not(.active) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='light'] .view-controls .view-btn:not(.active) {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: none !important;
+}
+
 .view-btn.active {
   background: linear-gradient(120deg, var(--accent), var(--accent-2)) !important;
   color: #0b1020 !important;
   border-color: rgba(124, 242, 201, 0.6) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
+}
+
+:root[data-theme='light'] .view-btn.active {
+  border-color: rgba(15, 155, 115, 0.55) !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14) !important;
 }
 
 .solution-info {

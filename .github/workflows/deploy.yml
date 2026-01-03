@@ -28,7 +28,7 @@ jobs:
 
       - name: Build
         env:
-          SITE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          SITE: https://setupandhold.com
           # Astro solo expone al cliente variables con prefijo PUBLIC_.
           # En GitHub Pages el build ocurre en Actions, así que hay que inyectarlas aquí.
           PUBLIC_CONTACT_EMAIL: ${{ vars.PUBLIC_CONTACT_EMAIL }}
@@ -41,3 +41,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           publish_branch: gh-pages
+          cname: setupandhold.com
