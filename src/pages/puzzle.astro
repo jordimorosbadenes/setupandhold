@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/withBase';
-import { PUZZLEGEN_URL } from '../config/site';
+import { GUMROAD_PREMIUM_URL, GUMROAD_PRODUCT_ID, PUZZLEGEN_URL } from '../config/site';
 
 const apiBase = PUZZLEGEN_URL;
 const apiBaseJSON = JSON.stringify(apiBase);
@@ -21,13 +21,15 @@ const apiBaseJSON = JSON.stringify(apiBase);
     </div>
   </section>
 
-  <link
-    rel="stylesheet"
-    id="backend-style"
-    href={`${apiBase}/static/style.css`}
-    media="print"
-    onload="this.media='all'"
-  />
+  {apiBase && (
+    <link
+      rel="stylesheet"
+      id="backend-style"
+      href={`${apiBase}/static/style.css`}
+      media="print"
+      onload="this.media='all'"
+    />
+  )}
   <style id="backend-fallback-style">
     #backend-wait {
       display: flex;
@@ -46,7 +48,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
     .puzzle-shell { position: relative; }
     .puzzle-shell.blocked .container { display: none; }
   </style>
-  <section class="puzzle-shell blocked" data-api-base={apiBase}>
+  <section class="puzzle-shell blocked" data-api-base={apiBase} data-gumroad-product-id={GUMROAD_PRODUCT_ID}>
     <div id="backend-wait" class="backend-wait" aria-live="polite">
       <div class="loader" aria-hidden="true">🧩</div>
       <div class="backend-msg">
@@ -124,7 +126,28 @@ const apiBaseJSON = JSON.stringify(apiBase);
             <div class="premium-lock__canvas">
               <canvas id="puzzle-canvas" width="600" height="600"></canvas>
               <div class="premium-lock__overlay">
-                <button type="button" class="btn premium-unlock">Desbloquear</button>
+                <button type="button" class="premium-unlock premium-unlock--open" data-premium-open>🔓 Desbloquear</button>
+
+                <div class="premium-gate premium-gate--hidden" role="group" aria-label="Acceso premium" data-premium-gate>
+                  <h4 class="premium-gate__title">🔒 Modo premium</h4>
+                  <p class="premium-gate__text">Introduce tu clave para desbloquear el visor.</p>
+                  <div class="premium-gate__cta">
+                    <a class="premium-gate__link" href={GUMROAD_PREMIUM_URL} target="_blank" rel="noreferrer">Conseguir clave</a>
+                  </div>
+                  <div class="premium-gate__row">
+                    <input
+                      class="premium-gate__input"
+                      type="text"
+                      inputmode="text"
+                      autocomplete="one-time-code"
+                      placeholder="Clave"
+                      aria-label="Clave"
+                      data-premium-key
+                    />
+                    <button type="button" class="premium-unlock" data-premium-unlock>🔓 Desbloquear</button>
+                  </div>
+                  <div class="premium-gate__error" data-premium-error aria-live="polite"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -267,6 +290,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
     const startMonitor = () => {};
 
     const loadBackendScript = () => {
+      if (!PUZZLE_API_BASE) return;
       if (scriptReady) return;
       const base = PUZZLE_API_BASE;
       const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
@@ -292,6 +316,11 @@ const apiBaseJSON = JSON.stringify(apiBase);
     }
 
     (() => {
+      if (!PUZZLE_API_BASE) {
+        const status = document.querySelector('.backend-status');
+        if (status) status.textContent = 'Falta configurar PUBLIC_PUZZLEGEN_URL.';
+        return;
+      }
       const link = document.getElementById('backend-style');
       if (!link) { cssReady = true; tryFinish(); return; }
       const base = PUZZLE_API_BASE;
@@ -315,6 +344,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
     })();
 
     (function waitForBackend() {
+      if (!PUZZLE_API_BASE) return;
       const base = PUZZLE_API_BASE;
       const loop = async () => {
         const ok = await pingBackend(base);
@@ -400,6 +430,112 @@ const apiBaseJSON = JSON.stringify(apiBase);
     } else {
       attachViewActive();
     }
+
+    // MVP premium: desbloqueo local (placeholder) para probar flujo.
+    // Más adelante, se puede validar contra Gumroad vía backend/serverless.
+    (() => {
+      const gumroadProductId = document
+        .querySelector('.puzzle-shell')
+        ?.getAttribute('data-gumroad-product-id')
+        ?.trim() || '';
+      const lock = document.querySelector('[data-premium-lock]');
+      const openBtn = document.querySelector('[data-premium-open]');
+      const gate = document.querySelector('[data-premium-gate]');
+      const input = document.querySelector('[data-premium-key]');
+      const btn = document.querySelector('[data-premium-unlock]');
+      const error = document.querySelector('[data-premium-error]');
+
+      const setUnlocked = (value) => {
+        if (!lock) return;
+        lock.classList.toggle('is-unlocked', value);
+      };
+
+      const showError = (text) => {
+        if (!error) return;
+        error.textContent = text;
+        error.style.display = text ? 'block' : 'none';
+      };
+
+      const boot = () => {
+        setUnlocked(false);
+        showError('');
+
+        openBtn?.classList.remove('is-hidden');
+        gate?.classList.add('premium-gate--hidden');
+
+        openBtn?.addEventListener('click', () => {
+          openBtn.classList.add('is-hidden');
+          gate?.classList.remove('premium-gate--hidden');
+          // foco al input para que sea rápido
+          setTimeout(() => input?.focus(), 0);
+        });
+
+        if (!btn || !input) return;
+        const attempt = async () => {
+          const key = (input.value || '').trim();
+          if (!key) {
+            showError('Introduce una clave válida.');
+            return;
+          }
+
+          if (!gumroadProductId) {
+            showError('Falta configurar el product_id de Gumroad (PUBLIC_GUMROAD_PRODUCT_ID).');
+            return;
+          }
+
+          const prevText = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Verificando…';
+          showError('');
+
+          try {
+            const body = new URLSearchParams({
+              product_id: gumroadProductId,
+              license_key: key,
+              increment_uses_count: 'false',
+            });
+
+            const res = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body,
+            });
+
+            const data = await res.json().catch(() => null);
+
+            if (!res.ok || !data || data.success !== true) {
+              showError('Clave no válida. Revisa que la hayas copiado tal cual.');
+              return;
+            }
+
+            const purchase = data.purchase || {};
+            if (purchase.refunded || purchase.disputed || purchase.chargebacked) {
+              showError('Esta compra no está activa (reembolso o disputa).');
+              return;
+            }
+
+            setUnlocked(true);
+            showError('');
+          } catch (e) {
+            console.warn('[Premium] Error verificando license key', e);
+            showError('No se pudo verificar la clave ahora. Inténtalo de nuevo.');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = prevText;
+          }
+        };
+        btn.addEventListener('click', attempt);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') attempt();
+        });
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot, { once: true });
+      } else {
+        boot();
+      }
+    })();
   </script>
 </BaseLayout>
 
@@ -689,10 +825,15 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
 }
 
 .premium-lock__canvas canvas {
-  filter: blur(10px);
+  filter: blur(8px) grayscale(1) !important;
   transform: translateZ(0);
   user-select: none;
   pointer-events: none;
+}
+
+.premium-lock.is-unlocked .premium-lock__canvas canvas {
+  filter: none !important;
+  pointer-events: auto;
 }
 
 .premium-lock__overlay {
@@ -702,6 +843,11 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.22);
+  padding: 14px;
+}
+
+.premium-lock.is-unlocked .premium-lock__overlay {
+  display: none;
 }
 
 :root[data-theme='light'] .premium-lock__overlay {
@@ -709,7 +855,149 @@ body, .container h1, .container h2, .container h3, .container p, .container labe
 }
 
 .premium-unlock {
-  min-width: 180px;
+  width: fit-content !important;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: #062012 !important;
+  background: linear-gradient(120deg, #6ee7b7, #34d399) !important;
+  border: 1px solid rgba(52, 211, 153, 0.55) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18) !important;
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+  cursor: pointer;
+}
+
+.premium-unlock.is-hidden {
+  display: none;
+}
+
+.premium-unlock--open {
+  min-width: 0;
+}
+
+.premium-unlock:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22) !important;
+  color: #062012 !important;
+  border-color: rgba(52, 211, 153, 0.75) !important;
+}
+
+:root[data-theme='light'] .premium-unlock {
+  color: #062012 !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14) !important;
+}
+
+:root[data-theme='light'] .premium-unlock:hover {
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16) !important;
+}
+
+.premium-gate {
+  width: min(520px, calc(100% - 28px));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  text-align: left;
+}
+
+.premium-gate--hidden {
+  display: none;
+}
+
+.premium-gate__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.premium-gate__text {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.premium-gate__cta {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 12px;
+  width: 100%;
+}
+
+.premium-gate__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  width: 100%;
+  white-space: nowrap;
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #2a1a00 !important;
+  background: linear-gradient(120deg, #f7e08a, #d4af37) !important;
+  border: 1px solid rgba(212, 175, 55, 0.55) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18) !important;
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.premium-gate__link:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22) !important;
+}
+
+:root[data-theme='light'] .premium-gate__link {
+  color: #2a1a00 !important;
+  background: linear-gradient(120deg, #f7e08a, #d4af37) !important;
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14) !important;
+}
+
+:root[data-theme='light'] .premium-gate__link:hover {
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16) !important;
+}
+
+.premium-gate__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.premium-gate__input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-soft) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme='light'] .premium-gate__input {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.06);
+}
+
+.premium-gate__input::placeholder {
+  color: color-mix(in srgb, var(--muted) 85%, transparent);
+}
+
+.premium-gate__error {
+  display: none;
+  margin-top: 10px;
+  color: color-mix(in srgb, var(--muted) 65%, #ff6b6b);
 }
 
 .canvas-section {

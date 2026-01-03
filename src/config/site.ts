@@ -15,8 +15,18 @@ export const DEFAULT_AVATAR_URL = withBase('/img/jordi.jpg');
 const avatarFromEnv = import.meta.env.PUBLIC_PROFILE_PHOTO_URL;
 export const AVATAR_URL = avatarFromEnv && avatarFromEnv.trim() ? avatarFromEnv : DEFAULT_AVATAR_URL;
 
-export const DEFAULT_PUZZLEGEN_URL = 'https://puzzle-generator-vkgt.onrender.com';
 const puzzlegenFromEnv = import.meta.env.PUBLIC_PUZZLEGEN_URL;
 export const PUZZLEGEN_URL = puzzlegenFromEnv && puzzlegenFromEnv.trim()
 	? puzzlegenFromEnv
-	: DEFAULT_PUZZLEGEN_URL;
+	: '';
+
+// Premium (Gumroad)
+const gumroadPremiumFromEnv = import.meta.env.PUBLIC_GUMROAD_PREMIUM_URL;
+export const GUMROAD_PREMIUM_URL = gumroadPremiumFromEnv && gumroadPremiumFromEnv.trim()
+	? gumroadPremiumFromEnv
+	: 'https://jordimororock.gumroad.com/l/nbscvo';
+
+const gumroadProductIdFromEnv = import.meta.env.PUBLIC_GUMROAD_PRODUCT_ID;
+export const GUMROAD_PRODUCT_ID = gumroadProductIdFromEnv && gumroadProductIdFromEnv.trim()
+	? gumroadProductIdFromEnv
+	: '';

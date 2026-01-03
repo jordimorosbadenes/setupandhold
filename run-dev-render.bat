@@ -1,6 +1,10 @@
 @echo off
 setlocal
-set "PUBLIC_PUZZLEGEN_URL=https://puzzle-generator-vkgt.onrender.com"
-echo Using Render backend: %PUBLIC_PUZZLEGEN_URL%
+if "%PUBLIC_PUZZLEGEN_URL%"=="" (
+	echo PUBLIC_PUZZLEGEN_URL no esta configurada.
+	echo Define PUBLIC_PUZZLEGEN_URL en Web/.env o como variable de entorno y vuelve a lanzar.
+	exit /b 1
+)
+echo Using backend: %PUBLIC_PUZZLEGEN_URL%
 npm run dev
 endlocal
