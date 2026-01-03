@@ -1,0 +1,94 @@
+<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Alfombrilla ASIC</title><meta name="description" content="Una alfombrilla de ratón con un cheatsheet visual de diseño ASIC."><link rel="icon" type="image/svg+xml" href="/setupandhold/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
+      const storageKey = 'theme';
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const saved = localStorage.getItem(storageKey);
+      const theme = saved || (prefersLight ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    </script><link rel="stylesheet" href="/setupandhold/_astro/about.Dkcw3mrG.css"></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/setupandhold/"> <img class="brand-logo" src="/setupandhold/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/setupandhold/">Inicio</a> <a href="/setupandhold/posts">Blog</a> <a href="/setupandhold/puzzle" rel="prefetch">Puzzle</a> <a href="/setupandhold/mousepad">Alfombrilla</a> <a href="/setupandhold/about">Sobre mi</a> </nav> </header> <main class="page">  <section class="hero mousepad-hero"> <div class="prose"> <h1>Alfombrilla ASIC</h1> <p>
+Diseñé esta alfombrilla para tener a mano lo esencial cuando estás en modo RTL.
+        Pasa el ratón por encima para hacer zoom con una lupa.
+</p> <p>
+Contiene sintaxis Verilog básica, operadores, conceptos técnicos como setup/hold, metastabilidad, CDC, clock gating, etc. Úsalo como referencia rápida mientras trabajas o estudias! 🙂
+</p> </div> <div class="magnifier" data-magnifier> <div class="magnifier-stage" data-stage aria-label="Lupa: mueve el ratón por la imagen"> <img class="magnifier-image" data-image src="/setupandhold/img/asic-mousepad.png" alt="Alfombrilla ASIC" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='/setupandhold/img/asic-mousepad.svg';"> <div class="magnifier-lens" data-lens aria-hidden="true"></div> </div> </div> <div class="mousepad-contact"> <h2>¿Quieres tu alfombrilla?</h2> <p class="mousepad-contact__text">
+Contáctame y te digo cómo conseguirla (disponibilidad, precio y envío).
+</p> <div class="mousepad-contact__actions"> <a class="button secondary" href="https://www.linkedin.com/in/jordimorosbadenes/" target="_blank" rel="noreferrer">Escríbeme por LinkedIn</a>  </div> </div> </section> <script>
+    (() => {
+      const root = document.querySelector('[data-magnifier]');
+      if (!root) return;
+
+      const stage = root.querySelector('[data-stage]');
+      const image = root.querySelector('[data-image]');
+      const lens = root.querySelector('[data-lens]');
+      if (!stage || !image || !lens) return;
+
+      const zoom = 3.25;
+
+      const updateLens = (clientX, clientY) => {
+        const imgRect = image.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+
+        const x = clientX - imgRect.left;
+        const y = clientY - imgRect.top;
+
+        if (x < 0 || y < 0 || x > imgRect.width || y > imgRect.height) {
+          lens.style.display = 'none';
+          return;
+        }
+
+        lens.style.display = 'block';
+        lens.style.left = `${clientX - stageRect.left}px`;
+        lens.style.top = `${clientY - stageRect.top}px`;
+
+        const src = image.currentSrc || image.src;
+        lens.style.backgroundImage = `url('${src}')`;
+        lens.style.backgroundSize = `${imgRect.width * zoom}px ${imgRect.height * zoom}px`;
+
+        const bgX = -(x * zoom - lens.offsetWidth / 2);
+        const bgY = -(y * zoom - lens.offsetHeight / 2);
+        lens.style.backgroundPosition = `${bgX}px ${bgY}px`;
+      };
+
+      stage.addEventListener('pointerenter', () => {
+        lens.style.display = 'block';
+      });
+
+      stage.addEventListener('pointerleave', () => {
+        lens.style.display = 'none';
+      });
+
+      stage.addEventListener('pointermove', (e) => {
+        updateLens(e.clientX, e.clientY);
+      });
+
+      // Refresh lens source if the image swaps to PNG fallback.
+      image.addEventListener('load', () => {
+        const src = image.currentSrc || image.src;
+        lens.style.backgroundImage = `url('${src}')`;
+      });
+    })();
+  </script>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+    (() => {
+      const key = 'theme';
+      const apply = (value) => {
+        document.documentElement.dataset.theme = value;
+        localStorage.setItem(key, value);
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.setAttribute('aria-pressed', value === 'light' ? 'true' : 'false');
+      };
+      const init = () => {
+        const saved = localStorage.getItem(key);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        apply(saved || (prefersLight ? 'light' : 'dark'));
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.addEventListener('click', () => {
+          const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+          apply(current === 'light' ? 'dark' : 'light');
+        });
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script> </body></html>
