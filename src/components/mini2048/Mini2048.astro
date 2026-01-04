@@ -616,6 +616,21 @@ const {
     .m2048__score {
       text-align: left;
     }
+
+    /* Números un poco más grandes en móvil (sin tocar escritorio). */
+    .m2048__cell,
+    .m2048__board :global(.m2048__tile) {
+      font-size: clamp(1.1rem, 5vw, 1.5rem);
+    }
+
+    /* Evita que el texto “baje” ligeramente durante el transform en móvil. */
+    .m2048__board :global(.m2048__tile) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
   }
 </style>
 
@@ -975,7 +990,13 @@ const {
       };
 
       const animateMoves = async (moveResult) => {
-        const duration = 140;
+        const isMobile = typeof window !== 'undefined'
+          && typeof window.matchMedia === 'function'
+          && window.matchMedia('(max-width: 720px)').matches;
+
+        // En móvil damos un pelín más de tiempo y forzamos una secuencia de frames más fiable.
+        // En escritorio lo dejamos tal cual para no cambiar sensaciones.
+        const duration = isMobile ? 170 : 140;
         const easing = 'cubic-bezier(0.2, 0.9, 0.2, 1)';
 
         // Most reliable: use layout offsets from the real grid items.
@@ -1018,16 +1039,31 @@ const {
           tile.style.top = `${from.top}px`;
           tile.style.width = `${from.width}px`;
           tile.style.height = `${from.height}px`;
-          tile.style.transform = 'translate(0px, 0px)';
-          tile.style.transition = `transform ${duration}ms ${easing}`;
+          if (isMobile) {
+            tile.style.transform = 'translate3d(0px, 0px, 0px)';
+            tile.style.transition = 'none';
+          } else {
+            tile.style.transform = 'translate(0px, 0px)';
+            tile.style.transition = `transform ${duration}ms ${easing}`;
+          }
           overlayEl.appendChild(tile);
           overlays.push(tile);
 
           const dx = to.left - from.left;
           const dy = to.top - from.top;
-          requestAnimationFrame(() => {
-            tile.style.transform = `translate(${dx}px, ${dy}px)`;
-          });
+          if (isMobile) {
+            // Doble rAF: asegura que el browser “registre” el estado inicial antes de animar.
+            requestAnimationFrame(() => {
+              tile.style.transition = `transform ${duration}ms ${easing}`;
+              requestAnimationFrame(() => {
+                tile.style.transform = `translate3d(${dx}px, ${dy}px, 0px)`;
+              });
+            });
+          } else {
+            requestAnimationFrame(() => {
+              tile.style.transform = `translate(${dx}px, ${dy}px)`;
+            });
+          }
         }
 
         if (!overlays.length) return;
@@ -1149,6 +1185,8 @@ const {
 
       newBtn?.addEventListener('click', (e) => {
         e.preventDefault();
+        const ok = confirm('¿Empezar una nueva partida? Se perderá el progreso actual.');
+        if (!ok) return;
         reset();
       });
 
