@@ -35,6 +35,7 @@ jobs:
           PUBLIC_PUZZLEGEN_URL: ${{ vars.PUBLIC_PUZZLEGEN_URL }}
           PUBLIC_GUMROAD_PREMIUM_URL: ${{ vars.PUBLIC_GUMROAD_PREMIUM_URL }}
           PUBLIC_GUMROAD_PRODUCT_ID: ${{ vars.PUBLIC_GUMROAD_PRODUCT_ID }}
+          PUBLIC_LEADERBOARD_URL: ${{ vars.PUBLIC_LEADERBOARD_URL }}
         run: npm run build
 
       - name: Deploy to gh-pages

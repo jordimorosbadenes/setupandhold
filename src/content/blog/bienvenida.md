@@ -1,24 +1,65 @@
 ---
 title: Bienvenida a setupandhold
-description: Por qué existe este blog y cómo está montado con Astro para GitHub Pages.
-date: 2025-01-15
-tags: [astro, github-pages, setup]
+description: Un poco sobre mí, el porqué del sitio y qué proyectos puedes ver ahora mismo.
+date: 2026-01-03
+updated: 2026-01-03
+tags: [setup, hold, astro, proyectos]
 hero:
-  src: https://images.unsplash.com/photo-1522199584615-1e6c61c7ed0c?auto=format&fit=crop&w=1400&q=80
-  alt: Teclado con luz tenue
+  src: https://images.unsplash.com/photo-1455849318743-b2233052fcff
+  alt: Header
+  height: 250
+  position: "50% 65%" # o "top", "center", "bottom"
 ---
 
-¡Hola! Este proyecto es un blog estático construido con **Astro** y pensado para
-publicar directamente en **GitHub Pages**. El flujo es sencillo:
+¡Hola! Soy Jordi y este sitio es mi rincón para dejar por escrito ideas,
+experimentos y cosas que voy construyendo.
 
-1. Escribes tus posts en Markdown dentro de `src/content/blog`.
-2. Haces push a `main`.
-3. GitHub Actions construye y despliega el sitio en la rama `gh-pages`.
+Trabajo en **diseño de ASIC** (microchips), y desde pequeño me ha tirado todo lo que
+tiene que ver con tecnología: ordenadores, internet y electrónica. Fuera del trabajo
+me gusta trastear con temas como **finanzas y bolsa**, **nutrición**, y cuando no estoy
+delante de una pantalla suelo estar al aire libre (pádel, running o MTB).
 
-Astro genera HTML estático ultra ligero, lo que hace que el sitio cargue rápido y
-sea fácil de mantener. Las etiquetas (`tags`) te permiten agrupar temas y el RSS
-se genera automáticamente para lectores o newsletters.
+## ¿Por qué existe esta web?
 
-Si quieres cambiar la apariencia, empieza por `src/styles/global.css` y el
-layout base en `src/layouts/BaseLayout.astro`. Para agregar páginas nuevas basta
-con crear archivos `.astro` en `src/pages`.
+El nombre *setupandhold* viene de un concepto clásico en hardware (setup/hold), pero
+para mí también resume la idea del proyecto:
+
+- **Setup**: montar una base simple y cómoda para publicar y enseñar cosas.
+- **Hold**: que el contenido aguante el tiempo, sea fácil de mantener y de encontrar.
+
+Me apetece que esto sea una bitácora práctica, como un bloc de notas que
+realmente me sirvan a mí dentro de seis meses… y, si de paso ayudan a alguien, mejor.
+
+También colgaré proyectos personales que quiero que estén fácilmente accesibles tanto
+para mi como para aquellos que estén interesados en usarlos.
+
+## ¿Cómo está hecha la web?
+
+La web es un sitio estático con **Astro** que se despliega en **GitHub Pages**.
+Algunos de los proyectos necesitan correr en otros backends como Render.
+
+## Qué puedes ver ahora mismo
+
+Ahora mismo hay un par de “proyectos visibles” dentro de la propia web:
+
+- **[Puzzle Generator](../puzzle)**: una herramienta para generar/visualizar puzzles y exportar
+  ficheros STL para imprimirlos en una impresora 3D (lo iré mejorando y documentando con posts).
+  Puedes encontrarlo en la sección del Puzzle.
+- **[Alfombrilla ASIC](../mousepad)**: una alfombrilla con un *cheatsheet* visual de conceptos y
+  sintaxis útil cuando estás en modo RTL (setup/hold, CDC, clock gating, etc.).
+  Hay una página dedicada con zoom/lupa y una forma de contacto para conseguirla.
+
+Y, por supuesto, el propio **[Blog](.)**, que es donde iré explicando qué hago y cómo.
+
+## Lo que viene
+
+Estas son algunas ideas que me gustaría ir añadiendo:
+
+- Mejoras en la parte de **proyectos/demos** (para poder enlazar herramientas externas).
+- Entradas sobre:
+  - Impresión en 3D.
+  - Cubos de Rubik.
+  - Conceptos de ASIC.
+
+Si has llegado hasta aquí, gracias por pasarte. Y si te interesa alguno de los temas,
+échale un ojo a las entradas o escríbeme desde la página de “Sobre mí”.

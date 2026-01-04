@@ -13,6 +13,8 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { Content } = await entry.render();
 const { title, description, date, updated, tags, hero } = entry.data;
+const heroHeight = hero?.height ?? 200;
+const heroPosition = hero?.position ?? 'center';
 const published = new Date(date).toLocaleDateString('es-ES', {
   year: 'numeric',
   month: 'long',
@@ -27,7 +29,7 @@ const updatedAt = updated
   : null;
 ---
 <BaseLayout title={`${title} | setupandhold`} description={description}>
-  <article class="hero prose">
+  <article class="hero prose post-prose">
     <div class="card-meta">
       <span class="pill">Publicado {published}</span>
       {updatedAt && <span class="pill">Actualizado {updatedAt}</span>}
@@ -46,7 +48,7 @@ const updatedAt = updated
         <img
           src={hero.src}
           alt={hero.alt || title}
-          style="width: 100%; border-radius: var(--radius); border: 1px solid var(--border);"
+          style={`width: 100%; height: ${heroHeight}px; object-fit: cover; object-position: ${heroPosition}; border-radius: var(--radius); border: 1px solid var(--border);`}
           loading="lazy"
         />
       </figure>

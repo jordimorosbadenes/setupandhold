@@ -529,6 +529,18 @@ a:hover {
   margin-bottom: 1rem;
 }
 
+/* Blog posts: un poco más compacto sin afectar otras páginas con `.prose` (about, etc). */
+.post-prose {
+  line-height: 1.6;
+}
+
+.post-prose p,
+.post-prose ul,
+.post-prose ol {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
 .prose a {
   color: var(--accent);
 }

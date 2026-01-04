@@ -1,0 +1,1197 @@
+---
+const {
+  storageKey = 'mini-2048-state-v2',
+  apiBase = (import.meta as any).env?.PUBLIC_LEADERBOARD_URL ?? '',
+} = Astro.props;
+---
+
+<section
+  class="m2048"
+  aria-label="Juego 2048"
+  data-storage-key={storageKey}
+  data-api-base={apiBase}
+>
+  <header class="m2048__header">
+    <div class="m2048__head">
+      <div class="m2048__topline">
+        <h2 class="m2048__title">Mini-2048</h2>
+        <div class="m2048__score">
+          <span class="m2048__label">Puntos</span>
+          <span class="m2048__value" data-score>0</span>
+        </div>
+      </div>
+      <div class="m2048__subline">
+        <p class="m2048__hint">¡Une las fichas y llega a 2048!</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="m2048__board" data-board tabindex="0" role="application" aria-label="Tablero 2048">
+    {Array.from({ length: 16 }).map((_, i) => (
+      <div class="m2048__cell" data-cell={i} data-value="0" aria-label="Casilla vacía"></div>
+    ))}
+  </div>
+
+  <p class="m2048__note" data-status aria-live="polite"></p>
+
+  <form class="m2048__submit" data-submit hidden>
+    <div class="m2048__submit-row">
+      <label class="m2048__submit-label" for="m2048-name">Tu nombre</label>
+      <input
+        id="m2048-name"
+        class="m2048__input"
+        name="name"
+        type="text"
+        maxlength="16"
+        placeholder="John Cena"
+        autocomplete="nickname"
+        data-name
+        required
+      />
+    </div>
+    <div class="m2048__submit-row m2048__submit-row--actions">
+      <button class="m2048__btn" type="submit" data-submit-btn>Enviar puntuación y empezar nueva partida</button>
+      <span class="m2048__lb-muted" data-submit-msg></span>
+    </div>
+  </form>
+
+  <div class="m2048__actions" aria-label="Acciones" data-actions>
+    <button class="m2048__btn" type="button" data-new>Nueva partida</button>
+  </div>
+
+  <section class="m2048__leaderboard" aria-label="Leaderboard">
+    <div class="m2048__lb-header">
+      <h3 class="m2048__lb-title">Leaderboard</h3>
+      <div class="m2048__lb-actions">
+        <details class="m2048__lb-info" data-lb-info>
+          <summary class="m2048__lb-info-btn" aria-label="Info del leaderboard" title="Info">i</summary>
+          <div class="m2048__lb-info-panel" role="note">
+            <p class="m2048__lb-info-title">Cómo funciona</p>
+            <ul class="m2048__lb-info-list">
+              <li>Solo se guarda la puntuación cuando termina la partida (¡Game Over!) y envías tu nombre.</li>
+              <li>Si ya existe tu nombre, solo se actualiza si mejoras tu puntuación.</li>
+              <li>Nombre: 1–16 caracteres. Permitidos letras/números/espacios y <span class="m2048__mono">._-</span>.</li>
+            </ul>
+          </div>
+        </details>
+
+        <button
+          class="m2048__icon-btn"
+          type="button"
+          data-lb-refresh
+          aria-label="Actualizar leaderboard"
+          title="Actualizar"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M12 6a6 6 0 0 1 5.65 4H20l-3.2 3.2A.75.75 0 0 1 15.5 12.7V10h1.6A5.1 5.1 0 0 0 12 6.9c-1.62 0-3.1.76-4.05 1.94a.75.75 0 1 1-1.17-.93A6.6 6.6 0 0 1 12 5.4Zm-5.65 8H4l3.2-3.2a.75.75 0 0 1 1.3.53V14H6.9A5.1 5.1 0 0 0 12 17.1c1.62 0 3.1-.76 4.05-1.94a.75.75 0 0 1 1.17.93A6.6 6.6 0 0 1 12 18.6a6 6 0 0 1-5.65-4Z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <ol class="m2048__lb-list" data-lb-list></ol>
+    <p class="m2048__lb-muted" data-lb-muted></p>
+
+  </section>
+</section>
+
+<style>
+  .m2048 {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+
+  .m2048__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .m2048__head {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .m2048__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .m2048__title {
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+    .m2048__actions[hidden] {
+      display: none !important;
+    }
+  .m2048__hint {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .m2048__subline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .m2048__score {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-soft);
+    min-width: 104px;
+    text-align: right;
+  }
+
+  .m2048__label {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .m2048__value {
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .m2048__btn {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    font: inherit;
+  }
+
+  .m2048__btn:hover {
+    background: var(--bg-soft);
+    color: var(--text);
+  }
+
+  .m2048__btn--small {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .m2048__icon-btn {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .m2048__icon-btn:hover {
+    background: var(--bg-soft);
+    color: var(--text);
+  }
+
+  .m2048__icon-btn[disabled] {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  @keyframes m2048-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .m2048__icon-btn[data-loading='1'] svg {
+    animation: m2048-spin 650ms linear infinite;
+  }
+
+  .m2048__board {
+    position: relative;
+    user-select: none;
+    touch-action: none;
+    outline: none;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    border-radius: calc(var(--radius) - 6px);
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    overflow: hidden;
+  }
+
+  /* Overlay + tiles are created at runtime via JS.
+     Astro component CSS is scoped, so these MUST be :global to apply. */
+  .m2048__board :global(.m2048__overlay) {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .m2048__board:focus {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  }
+
+  .m2048__cell {
+    position: relative;
+    z-index: 1;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    font-size: clamp(1.0rem, 2.2vw, 1.35rem);
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  /* Color sin inventar paleta: gradiente con accent/accent-2 y opacidad por valor. */
+  .m2048__cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    opacity: var(--tile-o, 0);
+    pointer-events: none;
+  }
+
+  .m2048__cell[data-value='0'] {
+    color: transparent;
+  }
+
+  .m2048__cell[data-value='2'] { --tile-o: 0.10; }
+  .m2048__cell[data-value='4'] { --tile-o: 0.14; }
+  .m2048__cell[data-value='8'] { --tile-o: 0.18; }
+  .m2048__cell[data-value='16'] { --tile-o: 0.22; }
+  .m2048__cell[data-value='32'] { --tile-o: 0.26; }
+  .m2048__cell[data-value='64'] { --tile-o: 0.30; }
+  .m2048__cell[data-value='128'] { --tile-o: 0.34; }
+  .m2048__cell[data-value='256'] { --tile-o: 0.38; }
+  .m2048__cell[data-value='512'] { --tile-o: 0.42; }
+  .m2048__cell[data-value='1024'] { --tile-o: 0.46; }
+  .m2048__cell[data-value='2048'] { --tile-o: 0.55; }
+
+  .m2048__board :global(.m2048__tile) {
+    position: absolute;
+    z-index: 3;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    font-size: clamp(1.0rem, 2.2vw, 1.35rem);
+    color: var(--text);
+    overflow: hidden;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .m2048__board :global(.m2048__tile)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    opacity: var(--tile-o, 0);
+    pointer-events: none;
+  }
+
+  .m2048__board :global(.m2048__tile)[data-value='0'] {
+    color: transparent;
+  }
+
+  .m2048__board :global(.m2048__tile)[data-value='2'] { --tile-o: 0.10; }
+  .m2048__board :global(.m2048__tile)[data-value='4'] { --tile-o: 0.14; }
+  .m2048__board :global(.m2048__tile)[data-value='8'] { --tile-o: 0.18; }
+  .m2048__board :global(.m2048__tile)[data-value='16'] { --tile-o: 0.22; }
+  .m2048__board :global(.m2048__tile)[data-value='32'] { --tile-o: 0.26; }
+  .m2048__board :global(.m2048__tile)[data-value='64'] { --tile-o: 0.30; }
+  .m2048__board :global(.m2048__tile)[data-value='128'] { --tile-o: 0.34; }
+  .m2048__board :global(.m2048__tile)[data-value='256'] { --tile-o: 0.38; }
+  .m2048__board :global(.m2048__tile)[data-value='512'] { --tile-o: 0.42; }
+  .m2048__board :global(.m2048__tile)[data-value='1024'] { --tile-o: 0.46; }
+  .m2048__board :global(.m2048__tile)[data-value='2048'] { --tile-o: 0.55; }
+
+  @keyframes m2048-pop {
+    0% { transform: scale(1); }
+    55% { transform: scale(1.09); }
+    100% { transform: scale(1); }
+  }
+
+  .m2048__cell--pop {
+    animation: m2048-pop 180ms ease;
+  }
+
+  .m2048__note {
+    margin: 12px 0 0;
+    min-height: 1.2em;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .m2048__note:empty {
+    display: none;
+    margin: 0;
+    min-height: 0;
+  }
+
+  .m2048__actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .m2048[data-gameover='1'] .m2048__note {
+    color: color-mix(in srgb, var(--accent-2) 85%, var(--text));
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+    text-align: center;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--accent-2) 35%, var(--border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent-2) 8%, var(--bg-soft));
+    min-height: unset;
+    margin-top: 12px;
+  }
+
+  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn {
+    color: color-mix(in srgb, var(--accent) 85%, var(--text));
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-align: center;
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-soft));
+  }
+
+  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn:hover {
+    color: color-mix(in srgb, var(--accent) 90%, var(--text));
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
+  }
+
+  .m2048__leaderboard {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    gap: 10px;
+  }
+
+  .m2048__lb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .m2048__lb-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .m2048__lb-info {
+    position: relative;
+  }
+
+  .m2048__lb-info-btn {
+    list-style: none;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    user-select: none;
+    font-weight: 800;
+  }
+
+  .m2048__lb-info-btn::-webkit-details-marker {
+    display: none;
+  }
+
+  .m2048__lb-info-btn:hover {
+    background: var(--bg-soft);
+    color: var(--text);
+  }
+
+  .m2048__lb-info[open] .m2048__lb-info-btn {
+    background: var(--bg-soft);
+    color: var(--text);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  }
+
+  .m2048__lb-info-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 10;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    width: min(360px, 78vw);
+    box-shadow: var(--shadow);
+  }
+
+  @media (max-width: 720px) {
+    .m2048__lb-info-panel {
+      right: auto;
+      left: 0;
+      width: min(360px, 86vw);
+    }
+  }
+
+  .m2048__lb-info-title {
+    margin: 0 0 8px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .m2048__lb-info-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+  }
+
+  .m2048__mono {
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--text);
+  }
+
+  .m2048__lb-title {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .m2048__lb-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    color: var(--text);
+    display: grid;
+    gap: 6px;
+  }
+
+  /* Leaderboard items are created at runtime via JS.
+     Astro component CSS is scoped, so these MUST be :global to apply. */
+  .m2048__lb-list :global(.m2048__lb-item) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-rank) {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+    min-width: 2ch;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-name) {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-score) {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-date) {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  .m2048__lb-muted {
+    margin: 0;
+    min-height: 1.2em;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .m2048__submit {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-soft);
+  }
+
+  .m2048__submit[hidden] {
+    display: none !important;
+  }
+
+  .m2048__submit-row {
+    display: grid;
+    gap: 6px;
+  }
+
+  .m2048__submit-row--actions {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .m2048__submit-row--actions [data-submit-msg] {
+    text-align: center;
+    min-height: 0;
+  }
+
+  .m2048__submit-row--actions [data-submit-msg]:empty {
+    display: none;
+  }
+
+  .m2048__submit-label {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .m2048__input {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+    outline: none;
+  }
+
+  .m2048__input:focus {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  }
+
+  @media (max-width: 720px) {
+    .m2048 {
+      padding: 14px;
+    }
+    .m2048__score {
+      text-align: left;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const init = (root) => {
+      if (root.dataset.m2048Init === '1') return;
+      root.dataset.m2048Init = '1';
+
+      const boardEl = root.querySelector('[data-board]');
+      const scoreEl = root.querySelector('[data-score]');
+      const statusEl = root.querySelector('[data-status]');
+      const newBtn = root.querySelector('[data-new]');
+      const actionsEl = root.querySelector('[data-actions]');
+      const cells = Array.from(root.querySelectorAll('[data-cell]'));
+      const lbListEl = root.querySelector('[data-lb-list]');
+      const lbMutedEl = root.querySelector('[data-lb-muted]');
+      const lbRefreshBtn = root.querySelector('[data-lb-refresh]');
+      const submitForm = root.querySelector('[data-submit]');
+      const nameInput = root.querySelector('[data-name]');
+      const submitBtn = root.querySelector('[data-submit-btn]');
+      const submitMsgEl = root.querySelector('[data-submit-msg]');
+
+      if (!boardEl || cells.length !== 16) return;
+
+      // Layer for animated tiles (prevents offset bugs).
+      let overlayEl = boardEl.querySelector('.m2048__overlay');
+      if (!overlayEl) {
+        overlayEl = document.createElement('div');
+        overlayEl.className = 'm2048__overlay';
+        boardEl.appendChild(overlayEl);
+      }
+
+      const size = 4;
+      const total = size * size;
+      const storageKey = root.getAttribute('data-storage-key') || 'mini-2048-state-v2';
+      const apiBase = (root.getAttribute('data-api-base') || '').trim();
+      const normalizedApi = apiBase.replace(/\/+$/, '');
+      const leaderboardEndpoint = (() => {
+        if (!normalizedApi) return '';
+        // Allow passing either the base URL or the full endpoint URL.
+        if (/\/api\/leaderboard$/i.test(normalizedApi) || /\/leaderboard$/i.test(normalizedApi)) return normalizedApi;
+        return `${normalizedApi}/api/leaderboard`;
+      })();
+
+      const state = {
+        board: new Array(total).fill(0),
+        score: 0,
+      };
+
+      let isAnimating = false;
+      let isGameOver = false;
+      let submittedThisGame = false;
+
+      const setGameOver = (value) => {
+        isGameOver = value;
+        if (value) root.setAttribute('data-gameover', '1');
+        else root.removeAttribute('data-gameover');
+
+        if (!value && submitForm) submitForm.hidden = true;
+        if (!value && actionsEl) actionsEl.hidden = false;
+      };
+
+      const lastNameKey = `${storageKey}::last-name`;
+      const getLastName = () => {
+        try { return localStorage.getItem(lastNameKey) || ''; } catch { return ''; }
+      };
+      const setLastName = (name) => {
+        try { localStorage.setItem(lastNameKey, name); } catch {}
+      };
+
+      const showSubmit = (show) => {
+        if (!submitForm) return;
+
+        const shouldShow = Boolean(show && isGameOver && !submittedThisGame);
+        submitForm.hidden = !shouldShow;
+
+        // When submitting score, temporarily hide New Game to avoid replays/duplicate submits.
+        if (actionsEl) actionsEl.hidden = shouldShow;
+
+        if (shouldShow && nameInput) {
+          const val = (nameInput.value || '').trim();
+          if (!val) nameInput.value = getLastName();
+          try { nameInput.focus(); } catch {}
+        }
+      };
+
+      const setSubmitMsg = (text) => {
+        if (!submitMsgEl) return;
+        submitMsgEl.textContent = text || '';
+      };
+
+      const renderLeaderboard = (entries) => {
+        if (!lbListEl) return;
+        lbListEl.innerHTML = '';
+        const safe = Array.isArray(entries) ? entries.slice(0, 10) : [];
+        if (!safe.length) return;
+
+        const fmtDate = new Intl.DateTimeFormat('es-ES', {
+          year: '2-digit',
+          month: '2-digit',
+          day: '2-digit',
+        });
+
+        for (let i = 0; i < safe.length; i += 1) {
+          const e = safe[i];
+          const li = document.createElement('li');
+          li.className = 'm2048__lb-item';
+
+          const rankSpan = document.createElement('span');
+          rankSpan.className = 'm2048__lb-rank';
+          rankSpan.textContent = String(i + 1);
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'm2048__lb-name';
+          nameSpan.textContent = String(e?.name ?? '');
+          const scoreSpan = document.createElement('span');
+          scoreSpan.className = 'm2048__lb-score';
+          scoreSpan.textContent = String(e?.score ?? '');
+
+          const createdAt = typeof e?.createdAt === 'number' ? e.createdAt : Number(e?.createdAt);
+          const dateSpan = document.createElement('span');
+          dateSpan.className = 'm2048__lb-date';
+          dateSpan.textContent = Number.isFinite(createdAt)
+            ? fmtDate.format(new Date(createdAt * 1000))
+            : '';
+
+          li.appendChild(rankSpan);
+          li.appendChild(nameSpan);
+          li.appendChild(scoreSpan);
+          li.appendChild(dateSpan);
+          lbListEl.appendChild(li);
+        }
+      };
+
+      const setLbMuted = (text) => {
+        if (!lbMutedEl) return;
+        lbMutedEl.textContent = text || '';
+      };
+
+      const fetchLeaderboard = async () => {
+        if (!leaderboardEndpoint) {
+          setLbMuted('Leaderboard no configurado.');
+          return;
+        }
+        try {
+          if (lbRefreshBtn) {
+            lbRefreshBtn.setAttribute('data-loading', '1');
+            lbRefreshBtn.disabled = true;
+          }
+          setLbMuted('Cargando…');
+          const res = await fetch(leaderboardEndpoint, { method: 'GET' });
+          const data = await res.json();
+          if (!res.ok || !data?.ok) throw new Error(data?.error || 'Error');
+          renderLeaderboard(data.entries);
+          if (!Array.isArray(data.entries) || data.entries.length === 0) setLbMuted('Aún no hay puntuaciones.');
+          else setLbMuted('');
+        } catch (e) {
+          console.error('[Mini-2048] Leaderboard load failed:', e);
+          setLbMuted('No se pudo cargar.');
+        } finally {
+          if (lbRefreshBtn) {
+            lbRefreshBtn.removeAttribute('data-loading');
+            lbRefreshBtn.disabled = false;
+          }
+        }
+      };
+
+      const submitScore = async (name) => {
+        if (!leaderboardEndpoint) {
+          setSubmitMsg('Leaderboard no configurado.');
+          return;
+        }
+        try {
+          setSubmitMsg('Enviando…');
+          submitBtn && (submitBtn.disabled = true);
+
+          const res = await fetch(leaderboardEndpoint, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name, score: state.score }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data?.ok) throw new Error(data?.error || 'Error');
+
+          renderLeaderboard(data.entries);
+          setLbMuted('');
+          submittedThisGame = true;
+          showSubmit(false);
+
+          // Prevent re-submitting the same finished game later.
+          // After a successful submission, start a fresh game (and persist it).
+          reset();
+        } catch (e) {
+          console.error('[Mini-2048] Leaderboard submit failed:', e);
+          const msg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : 'No se pudo enviar.';
+          setSubmitMsg(msg || 'No se pudo enviar.');
+        } finally {
+          submitBtn && (submitBtn.disabled = false);
+        }
+      };
+
+      const rand = (n) => Math.floor(Math.random() * n);
+      const emptyIndexes = () => state.board
+        .map((v, i) => (v === 0 ? i : -1))
+        .filter((i) => i !== -1);
+
+      const spawn = () => {
+        const empties = emptyIndexes();
+        if (!empties.length) return;
+        const idx = empties[rand(empties.length)];
+        state.board[idx] = Math.random() < 0.9 ? 2 : 4;
+      };
+
+      const save = () => {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score }));
+        } catch (_) {}
+      };
+
+      const render = () => {
+        if (scoreEl) scoreEl.textContent = String(state.score);
+
+        for (let i = 0; i < total; i += 1) {
+          const v = state.board[i] || 0;
+          const el = cells[i];
+          if (!el) continue;
+          el.textContent = v ? String(v) : '';
+          el.setAttribute('data-value', String(v));
+          el.setAttribute('aria-label', v ? `Casilla ${v}` : 'Casilla vacía');
+        }
+
+        save();
+      };
+
+      const setStatus = (text) => {
+        if (!statusEl) return;
+        statusEl.textContent = text;
+      };
+
+      const reset = () => {
+        state.board = new Array(total).fill(0);
+        state.score = 0;
+        spawn();
+        spawn();
+        setGameOver(false);
+        submittedThisGame = false;
+        setStatus('');
+        setSubmitMsg('');
+        showSubmit(false);
+        render();
+      };
+
+      const load = () => {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (!raw) return false;
+          const parsed = JSON.parse(raw);
+          if (!parsed || !Array.isArray(parsed.board) || parsed.board.length !== total) return false;
+          state.board = parsed.board.map((n) => (typeof n === 'number' ? n : 0));
+          state.score = typeof parsed.score === 'number' ? parsed.score : 0;
+          return true;
+        } catch (_) {
+          return false;
+        }
+      };
+
+      const get = (r, c) => state.board[r * size + c];
+      const set = (r, c, v) => { state.board[r * size + c] = v; };
+
+      const slideAndMergeLine = (line) => {
+        const values = line.filter((n) => n !== 0);
+        const out = [];
+        let gained = 0;
+
+        for (let i = 0; i < values.length; i += 1) {
+          const current = values[i];
+          const next = values[i + 1];
+          if (next != null && current === next) {
+            const merged = current + next;
+            out.push(merged);
+            gained += merged;
+            i += 1;
+          } else {
+            out.push(current);
+          }
+        }
+
+        while (out.length < size) out.push(0);
+        return { out, gained };
+      };
+
+      const buildLines = (dir) => {
+        const lines = [];
+        for (let r = 0; r < size; r += 1) {
+          const row = [r * size + 0, r * size + 1, r * size + 2, r * size + 3];
+          if (dir === 'left') lines.push(row);
+          else if (dir === 'right') lines.push(row.slice().reverse());
+        }
+        for (let c = 0; c < size; c += 1) {
+          const col = [0 * size + c, 1 * size + c, 2 * size + c, 3 * size + c];
+          if (dir === 'up') lines.push(col);
+          else if (dir === 'down') lines.push(col.slice().reverse());
+        }
+        return lines;
+      };
+
+      const computeMove = (dir) => {
+        const before = state.board.slice();
+        const next = before.slice();
+        const moves = [];
+        const mergeDestinations = [];
+        let gained = 0;
+
+        const lines = buildLines(dir);
+        for (const lineIdxs of lines) {
+          const tiles = lineIdxs
+            .filter((idx) => before[idx] !== 0)
+            .map((idx) => ({ value: before[idx], from: idx }));
+
+          const out = new Array(size).fill(0);
+          let write = 0;
+          for (let i = 0; i < tiles.length; i += 1) {
+            const a = tiles[i];
+            const b = tiles[i + 1];
+            if (b && a.value === b.value) {
+              const dest = lineIdxs[write];
+              const mergedValue = a.value + b.value;
+              out[write] = mergedValue;
+              gained += mergedValue;
+              moves.push({ from: a.from, to: dest, value: a.value, merged: true });
+              moves.push({ from: b.from, to: dest, value: b.value, merged: true });
+              mergeDestinations.push(dest);
+              i += 1;
+            } else {
+              const dest = lineIdxs[write];
+              out[write] = a.value;
+              moves.push({ from: a.from, to: dest, value: a.value, merged: false });
+            }
+            write += 1;
+          }
+
+          for (let j = 0; j < size; j += 1) {
+            next[lineIdxs[j]] = out[j];
+          }
+        }
+
+        const changed = before.some((v, i) => v !== next[i]);
+        return {
+          before,
+          next,
+          moves,
+          gained,
+          mergeDestinations: Array.from(new Set(mergeDestinations)),
+          changed,
+        };
+      };
+
+      const animateMoves = async (moveResult) => {
+        const duration = 140;
+        const easing = 'cubic-bezier(0.2, 0.9, 0.2, 1)';
+
+        // Most reliable: use layout offsets from the real grid items.
+        const posForIndex = (idx) => {
+          const el = cells[idx];
+          return {
+            left: el.offsetLeft,
+            top: el.offsetTop,
+            width: el.offsetWidth,
+            height: el.offsetHeight,
+          };
+        };
+
+        // Hide the text/values where tiles are leaving, to avoid double-vision.
+        const leaving = new Set(
+          moveResult.moves
+            .filter((m) => m.from !== m.to)
+            .map((m) => m.from)
+        );
+        leaving.forEach((idx) => {
+          const el = cells[idx];
+          if (!el) return;
+          el.textContent = '';
+          el.setAttribute('data-value', '0');
+          el.setAttribute('aria-label', 'Casilla vacía');
+        });
+
+        const overlays = [];
+        for (const m of moveResult.moves) {
+          if (m.from === m.to) continue;
+
+          const from = posForIndex(m.from);
+          const to = posForIndex(m.to);
+
+          const tile = document.createElement('div');
+          tile.className = 'm2048__tile';
+          tile.textContent = String(m.value);
+          tile.setAttribute('data-value', String(m.value));
+          tile.style.left = `${from.left}px`;
+          tile.style.top = `${from.top}px`;
+          tile.style.width = `${from.width}px`;
+          tile.style.height = `${from.height}px`;
+          tile.style.transform = 'translate(0px, 0px)';
+          tile.style.transition = `transform ${duration}ms ${easing}`;
+          overlayEl.appendChild(tile);
+          overlays.push(tile);
+
+          const dx = to.left - from.left;
+          const dy = to.top - from.top;
+          requestAnimationFrame(() => {
+            tile.style.transform = `translate(${dx}px, ${dy}px)`;
+          });
+        }
+
+        if (!overlays.length) return;
+
+        await new Promise((resolve) => {
+          let resolved = false;
+          let remaining = overlays.length;
+
+          const finish = () => {
+            if (resolved) return;
+            resolved = true;
+            overlays.forEach((el) => el.remove());
+            resolve();
+          };
+
+          overlays.forEach((el) => {
+            const onEnd = (e) => {
+              if (e.propertyName !== 'transform') return;
+              el.removeEventListener('transitionend', onEnd);
+              remaining -= 1;
+              if (remaining <= 0) finish();
+            };
+            el.addEventListener('transitionend', onEnd);
+          });
+
+          setTimeout(finish, duration + 120);
+        });
+      };
+
+      const canMove = () => {
+        if (emptyIndexes().length) return true;
+        for (let r = 0; r < size; r += 1) {
+          for (let c = 0; c < size; c += 1) {
+            const v = get(r, c);
+            if (c + 1 < size && v === get(r, c + 1)) return true;
+            if (r + 1 < size && v === get(r + 1, c)) return true;
+          }
+        }
+        return false;
+      };
+
+      const has2048 = () => state.board.some((v) => v === 2048);
+
+      const move = (dir) => {
+        if (isAnimating) return;
+        if (isGameOver) return;
+
+        const result = computeMove(dir);
+        if (!result.changed) return;
+
+        isAnimating = true;
+        animateMoves(result)
+          .then(() => {
+            state.board = result.next;
+            state.score += result.gained;
+            spawn();
+            render();
+
+            if (has2048()) {
+              setStatus('¡2048!');
+            } else if (!canMove()) {
+              setGameOver(true);
+              setStatus('¡Game Over!');
+              if (!submittedThisGame) showSubmit(true);
+            } else {
+              setStatus('');
+            }
+
+            // Pop merged destinations after the board updates.
+            if (result.mergeDestinations.length) {
+              result.mergeDestinations.forEach((idx) => {
+                const el = cells[idx];
+                if (!el) return;
+                el.classList.remove('m2048__cell--pop');
+                // Force reflow so repeated merges still animate.
+                void el.offsetWidth;
+                el.classList.add('m2048__cell--pop');
+                setTimeout(() => el.classList.remove('m2048__cell--pop'), 220);
+              });
+            }
+          })
+          .finally(() => {
+            isAnimating = false;
+          });
+      };
+
+      const onKeyDown = (e) => {
+        const key = e.key;
+        if (key === 'ArrowLeft') { e.preventDefault(); move('left'); }
+        else if (key === 'ArrowRight') { e.preventDefault(); move('right'); }
+        else if (key === 'ArrowUp') { e.preventDefault(); move('up'); }
+        else if (key === 'ArrowDown') { e.preventDefault(); move('down'); }
+      };
+
+      let startX = 0;
+      let startY = 0;
+      const onPointerDown = (e) => {
+        startX = e.clientX;
+        startY = e.clientY;
+      };
+      const onPointerUp = (e) => {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const ax = Math.abs(dx);
+        const ay = Math.abs(dy);
+        if (Math.max(ax, ay) < 18) return;
+        if (ax > ay) move(dx > 0 ? 'right' : 'left');
+        else move(dy > 0 ? 'down' : 'up');
+      };
+
+      boardEl.addEventListener('keydown', onKeyDown);
+      boardEl.addEventListener('pointerdown', onPointerDown);
+      boardEl.addEventListener('pointerup', onPointerUp);
+
+      // Click/focus to enable keyboard control.
+      boardEl.addEventListener('pointerdown', () => {
+        try { boardEl.focus(); } catch (_) {}
+      });
+
+      newBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        reset();
+      });
+
+      lbRefreshBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetchLeaderboard();
+      });
+
+      submitForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!isGameOver || submittedThisGame) return;
+        const name = String(nameInput?.value || '').trim();
+        if (!name) {
+          setSubmitMsg('Pon un nombre.');
+          return;
+        }
+        setLastName(name);
+        submitScore(name);
+      });
+
+      if (!load()) reset();
+      else render();
+
+      // If a saved game is already blocked, reflect it immediately.
+      if (!canMove()) {
+        setGameOver(true);
+        setStatus('¡Game Over!');
+        if (!submittedThisGame) showSubmit(true);
+      }
+
+      // Load leaderboard once on init.
+      fetchLeaderboard();
+    };
+
+    const boot = () => {
+      const roots = Array.from(document.querySelectorAll('.m2048'));
+      roots.forEach(init);
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot, { once: true });
+    } else {
+      boot();
+    }
+  })();
+</script>
