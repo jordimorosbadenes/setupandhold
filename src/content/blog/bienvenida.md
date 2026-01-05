@@ -2,7 +2,7 @@
 title: Bienvenida a setupandhold
 description: Un poco sobre mí, el porqué del sitio y qué proyectos puedes ver ahora mismo.
 date: 2026-01-03
-updated: 2026-01-03
+# updated: 2026-01-03
 tags: [setup, hold, astro, proyectos]
 hero:
   src: https://images.unsplash.com/photo-1455849318743-b2233052fcff

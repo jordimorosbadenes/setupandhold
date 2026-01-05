@@ -50,7 +50,7 @@ const {
       />
     </div>
     <div class="m2048__submit-row m2048__submit-row--actions">
-      <button class="m2048__btn" type="submit" data-submit-btn>Enviar puntuación y empezar nueva partida</button>
+      <button class="m2048__btn" type="submit" data-submit-btn>Enviar puntuación</button>
       <span class="m2048__lb-muted" data-submit-msg></span>
     </div>
   </form>
@@ -68,7 +68,8 @@ const {
           <div class="m2048__lb-info-panel" role="note">
             <p class="m2048__lb-info-title">Cómo funciona</p>
             <ul class="m2048__lb-info-list">
-              <li>Solo se guarda la puntuación cuando termina la partida (¡Game Over!) y envías tu nombre.</li>
+              <li>La partida se guarda en este dispositivo, aunque recargues la página.</li>
+              <li>Puedes enviar tu puntuación al Leaderboard al llegar a 2048+ (y siguientes hitos) o cuando termina la partida (¡Game Over!).</li>
               <li>Si ya existe tu nombre, solo se actualiza si mejoras tu puntuación.</li>
               <li>Nombre: 1–16 caracteres. Permitidos letras/números/espacios y <span class="m2048__mono">._-</span>.</li>
             </ul>
@@ -90,6 +91,16 @@ const {
           </svg>
         </button>
       </div>
+    </div>
+
+    <div class="m2048__lb-cols" aria-hidden="true">
+      <span class="m2048__lb-col-rank m2048__lb-rank">#</span>
+      <span class="m2048__lb-col-name m2048__lb-name">Player</span>
+      <span class="m2048__lb-col-tail">
+        <span class="m2048__lb-col-label m2048__lb-score">Score</span>
+        <span class="m2048__lb-col-label m2048__lb-max">Max</span>
+        <span class="m2048__lb-col-label m2048__lb-date">Date</span>
+      </span>
     </div>
 
     <ol class="m2048__lb-list" data-lb-list></ol>
@@ -229,6 +240,9 @@ const {
   }
 
   .m2048__board {
+    --base-clamp: clamp(1.0rem, 2.2vw, 1.35rem);
+    --mobile-clamp: clamp(1.5rem, 5vw, 2.0rem);
+    --tile-font-size: var(--base-clamp);
     position: relative;
     user-select: none;
     touch-action: none;
@@ -267,9 +281,13 @@ const {
     place-items: center;
     font-weight: 900;
     letter-spacing: -0.03em;
-    font-size: clamp(1.0rem, 2.2vw, 1.35rem);
+    font-size: var(--tile-font-size);
     color: var(--text);
     overflow: hidden;
+  }
+
+  .m2048__cell--small-text {
+    font-size: calc(0.8 * var(--tile-font-size));
   }
 
   /* Color sin inventar paleta: gradiente con accent/accent-2 y opacidad por valor. */
@@ -298,6 +316,8 @@ const {
   .m2048__cell[data-value='1024'] { --tile-o: 0.46; }
   .m2048__cell[data-value='2048'] { --tile-o: 0.55; }
 
+  .m2048__cell:not([data-value='0']):not([data-value='2']):not([data-value='4']):not([data-value='8']):not([data-value='16']):not([data-value='32']):not([data-value='64']):not([data-value='128']):not([data-value='256']):not([data-value='512']):not([data-value='1024']):not([data-value='2048']) { --tile-o: 0.65; }
+
   .m2048__board :global(.m2048__tile) {
     position: absolute;
     z-index: 3;
@@ -308,11 +328,15 @@ const {
     place-items: center;
     font-weight: 900;
     letter-spacing: -0.03em;
-    font-size: clamp(1.0rem, 2.2vw, 1.35rem);
+    font-size: var(--tile-font-size);
     color: var(--text);
     overflow: hidden;
     pointer-events: none;
     will-change: transform;
+  }
+
+  .m2048__board :global(.m2048__tile--small-text) {
+    font-size: calc(0.8 * var(--tile-font-size));
   }
 
   .m2048__board :global(.m2048__tile)::before {
@@ -339,6 +363,8 @@ const {
   .m2048__board :global(.m2048__tile)[data-value='512'] { --tile-o: 0.42; }
   .m2048__board :global(.m2048__tile)[data-value='1024'] { --tile-o: 0.46; }
   .m2048__board :global(.m2048__tile)[data-value='2048'] { --tile-o: 0.55; }
+
+  .m2048__board :global(.m2048__tile):not([data-value='0']):not([data-value='2']):not([data-value='4']):not([data-value='8']):not([data-value='16']):not([data-value='32']):not([data-value='64']):not([data-value='128']):not([data-value='256']):not([data-value='512']):not([data-value='1024']):not([data-value='2048']) { --tile-o: 0.65; }
 
   @keyframes m2048-pop {
     0% { transform: scale(1); }
@@ -369,7 +395,7 @@ const {
     justify-content: flex-end;
   }
 
-  .m2048[data-gameover='1'] .m2048__note {
+  .m2048__note--accent {
     color: color-mix(in srgb, var(--accent-2) 85%, var(--text));
     font-weight: 800;
     font-size: 1.1rem;
@@ -383,16 +409,19 @@ const {
     margin-top: 12px;
   }
 
-  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn {
+  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn,
+  [data-submit-btn].m2048__btn.m2048__btn--milestone {
     color: color-mix(in srgb, var(--accent) 85%, var(--text));
     font-weight: 800;
     letter-spacing: -0.01em;
     text-align: center;
     border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
     background: color-mix(in srgb, var(--accent) 8%, var(--bg-soft));
+    width: 100%;
   }
 
-  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn:hover {
+  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn:hover,
+  [data-submit-btn].m2048__btn.m2048__btn--milestone:hover {
     color: color-mix(in srgb, var(--accent) 90%, var(--text));
     background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
   }
@@ -465,13 +494,27 @@ const {
     color: var(--text);
     width: min(360px, 78vw);
     box-shadow: var(--shadow);
+    word-break: break-word;
+    hyphens: auto;
   }
 
   @media (max-width: 720px) {
     .m2048__lb-info-panel {
+      /* Make the info panel fixed and centered on small screens so it
+         doesn't overflow its container and remains scrollable. */
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 8%;
       right: auto;
-      left: 0;
-      width: min(360px, 86vw);
+      width: min(360px, 94vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 9999;
+      box-shadow: var(--shadow);
+      word-break: break-word;
+      hyphens: auto;
+      -webkit-overflow-scrolling: touch;
     }
   }
 
@@ -501,6 +544,105 @@ const {
     color: var(--text);
   }
 
+  .m2048__lb-cols {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin: 2px 0 6px;
+  }
+
+  .m2048__lb-col-rank {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: left;
+    min-width: 2ch;
+    font-size: 1rem;
+    line-height: 1;
+    width: 2ch;
+    display: inline-block;
+  }
+
+  .m2048__lb-col-name {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  /* Make header labels share the same visual style as the row cells */
+  .m2048__lb-cols .m2048__lb-col-rank {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: left;
+    min-width: 2ch;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .m2048__lb-cols .m2048__lb-col-name {
+    /* Match row name styles for identical appearance and height */
+    color: var(--text);
+    white-space: nowrap;
+    min-width: max-content;
+    font-size: 1rem;
+    line-height: 1;
+    font-family: inherit;
+    font-weight: 400;
+    overflow: visible;
+  }
+
+  .m2048__lb-cols .m2048__lb-col-tail .m2048__lb-col-label {
+    /* Match row tail label styles */
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: left;
+    font-size: inherit;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    line-height: 1;
+  }
+
+  /* Ensure header tail aligns to the right and uses the same spacing as rows */
+  .m2048__lb-cols .m2048__lb-col-tail {
+    display: flex;
+    /* Match row tails: left-align header tail so labels line up and don't clip */
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    /* Make header tail horizontally scrollable so labels can align with rows */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .m2048__lb-cols .m2048__lb-col-tail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .m2048__lb-col-tail {
+    display: flex;
+    justify-content: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .m2048__lb-col-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    text-transform: none;
+    line-height: 1;
+    white-space: nowrap;
+    min-width: max-content;
+    text-align: right;
+  }
+
   .m2048__lb-list {
     margin: 0;
     padding-left: 0;
@@ -514,8 +656,9 @@ const {
      Astro component CSS is scoped, so these MUST be :global to apply. */
   .m2048__lb-list :global(.m2048__lb-item) {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    align-items: baseline;
+    /* Más espacio para el nombre; la cola tiene ancho acotado. */
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
     gap: 12px;
   }
 
@@ -523,29 +666,87 @@ const {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    text-align: right;
+    text-align: left;
     min-width: 2ch;
+    width: 2ch;
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
   }
 
   .m2048__lb-list :global(.m2048__lb-name) {
     color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: max-content;
+    font-size: 1rem;
+    line-height: 1;
+    font-family: inherit;
+    font-weight: 400;
   }
 
   .m2048__lb-list :global(.m2048__lb-score) {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    text-align: right;
+    text-align: left;
   }
 
   .m2048__lb-list :global(.m2048__lb-date) {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    text-align: right;
+    text-align: left;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-max) {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-tail) {
+    display: flex;
+    justify-content: flex-start;
+    gap: 12px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    align-items: center;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-tail)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .m2048__lb-list :global(.m2048__lb-tail) :global(.m2048__lb-score),
+  .m2048__lb-list :global(.m2048__lb-tail) :global(.m2048__lb-max),
+  .m2048__lb-list :global(.m2048__lb-tail) :global(.m2048__lb-date) {
+    flex: 0 0 auto;
+  }
+
+  /* Asegura que el score no se “corte” al inicio. */
+  .m2048__lb-list :global(.m2048__lb-tail) :global(.m2048__lb-score) {
+    min-width: 4ch;
+    text-align: left;
+  }
+
+  @media (max-width: 720px) {
+    .m2048__lb-cols {
+      grid-template-columns: auto auto 1fr;
+      gap: 10px;
+    }
+
+    .m2048__lb-list :global(.m2048__lb-item) {
+      gap: 10px;
+      grid-template-columns: auto auto 1fr;
+    }
   }
 
   .m2048__lb-muted {
@@ -618,9 +819,8 @@ const {
     }
 
     /* Números un poco más grandes en móvil (sin tocar escritorio). */
-    .m2048__cell,
-    .m2048__board :global(.m2048__tile) {
-      font-size: clamp(1.1rem, 5vw, 1.5rem);
+    .m2048__board {
+      --tile-font-size: var(--mobile-clamp);
     }
 
     /* Evita que el texto “baje” ligeramente durante el transform en móvil. */
@@ -636,6 +836,9 @@ const {
 
 <script is:inline>
   (() => {
+    // Debug flag: set to 1 to enable developer cheat (Ctrl/Cmd+click new game),
+    // set to 0 to disable.
+    const DEBUG_CHEAT = 1;
     const init = (root) => {
       if (root.dataset.m2048Init === '1') return;
       root.dataset.m2048Init = '1';
@@ -647,8 +850,10 @@ const {
       const actionsEl = root.querySelector('[data-actions]');
       const cells = Array.from(root.querySelectorAll('[data-cell]'));
       const lbListEl = root.querySelector('[data-lb-list]');
+      const lbColsEl = root.querySelector('.m2048__lb-cols');
       const lbMutedEl = root.querySelector('[data-lb-muted]');
       const lbRefreshBtn = root.querySelector('[data-lb-refresh]');
+      const lbInfoEl = root.querySelector('[data-lb-info]');
       const submitForm = root.querySelector('[data-submit]');
       const nameInput = root.querySelector('[data-name]');
       const submitBtn = root.querySelector('[data-submit-btn]');
@@ -679,11 +884,37 @@ const {
       const state = {
         board: new Array(total).fill(0),
         score: 0,
+        milestone: 2048,
+        lastMilestone: 0,
+        submittedMilestone: false,
       };
 
       let isAnimating = false;
       let isGameOver = false;
       let submittedThisGame = false;
+
+      // Hitos para permitir guardar sin terminar la partida.
+      // 2048, 4096, 8192... con un límite lógico.
+      const milestoneMin = 2048;
+      // Tope de hitos (nota: los hitos son potencias de 2; el último hito será
+      // la mayor potencia de 2 <= milestoneMax).
+      const milestoneMax = 131972;
+
+      const maxTile = () => {
+        let m = 0;
+        for (let i = 0; i < state.board.length; i += 1) {
+          const v = state.board[i] || 0;
+          if (v > m) m = v;
+        }
+        return m;
+      };
+
+      const milestoneForMax = (m) => {
+        if (m < milestoneMin) return 0;
+        let v = milestoneMin;
+        while (v <= milestoneMax / 2 && v * 2 <= m) v *= 2;
+        return v;
+      };
 
       const setGameOver = (value) => {
         isGameOver = value;
@@ -691,7 +922,7 @@ const {
         else root.removeAttribute('data-gameover');
 
         if (!value && submitForm) submitForm.hidden = true;
-        if (!value && actionsEl) actionsEl.hidden = false;
+        if (actionsEl) actionsEl.hidden = false;
       };
 
       const lastNameKey = `${storageKey}::last-name`;
@@ -702,19 +933,39 @@ const {
         try { localStorage.setItem(lastNameKey, name); } catch {}
       };
 
-      const showSubmit = (show) => {
+      const showSubmit = (show, opts = {}) => {
         if (!submitForm) return;
 
-        const shouldShow = Boolean(show && isGameOver && !submittedThisGame);
+        const reason = String(opts.reason || '').toLowerCase();
+        const isMilestone = reason === 'milestone';
+        const shouldShow = Boolean(show && !submittedThisGame && (isGameOver || isMilestone));
         submitForm.hidden = !shouldShow;
 
-        // When submitting score, temporarily hide New Game to avoid replays/duplicate submits.
-        if (actionsEl) actionsEl.hidden = shouldShow;
+        // El botón de nueva partida siempre está visible.
+        if (actionsEl) actionsEl.hidden = false;
+
+        if (submitBtn) {
+          // Reset classes
+          submitBtn.classList.remove('m2048__btn--milestone');
+          // Set text and style
+          if (isMilestone && shouldShow) {
+            submitBtn.textContent = 'Enviar puntuación y continuar partida';
+            submitBtn.classList.add('m2048__btn--milestone');
+          } else if (isGameOver && shouldShow) {
+            submitBtn.textContent = 'Enviar puntuación';
+          } else {
+            submitBtn.textContent = 'Enviar puntuación';
+          }
+        }
 
         if (shouldShow && nameInput) {
           const val = (nameInput.value || '').trim();
           if (!val) nameInput.value = getLastName();
-          try { nameInput.focus(); } catch {}
+
+          const shouldFocus = opts.focus !== false && !isMilestone;
+          if (shouldFocus) {
+            try { nameInput.focus(); } catch {}
+          }
         }
       };
 
@@ -725,6 +976,22 @@ const {
 
       const renderLeaderboard = (entries) => {
         if (!lbListEl) return;
+
+        // Clean up any previous auto-scroll timers (re-render can happen on refresh/submit).
+        if (Array.isArray(renderLeaderboard._timers)) {
+          renderLeaderboard._timers.forEach((id) => {
+            clearTimeout(id);
+            clearInterval(id);
+          });
+        }
+        renderLeaderboard._timers = [];
+        if (Array.isArray(renderLeaderboard._rafIds)) {
+          renderLeaderboard._rafIds.forEach((id) => {
+            try { cancelAnimationFrame(id); } catch {}
+          });
+        }
+        renderLeaderboard._rafIds = [];
+
         lbListEl.innerHTML = '';
         const safe = Array.isArray(entries) ? entries.slice(0, 10) : [];
         if (!safe.length) return;
@@ -734,6 +1001,102 @@ const {
           month: '2-digit',
           day: '2-digit',
         });
+
+        const startAutoScroll = (el) => {
+          if (!el) return;
+          const prefersReduced = typeof window !== 'undefined'
+            && typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (prefersReduced) return;
+
+          const scrollToLeft = (left, smooth) => {
+            // Robust across browsers: options object may not be supported everywhere.
+            try {
+              if (typeof el.scrollTo === 'function') {
+                try {
+                  el.scrollTo({ left, top: 0, behavior: smooth ? 'smooth' : 'auto' });
+                  return;
+                } catch {
+                  el.scrollTo(left, 0);
+                  return;
+                }
+              }
+            } catch {}
+            try { el.scrollLeft = left; } catch {}
+          };
+
+          // NOTE: native smooth scrolling has an implementation-defined duration.
+          // We animate manually so `travelMs` actually controls the speed.
+          const animateTo = (targetLeft, durationMs) => {
+            const from = Number(el.scrollLeft) || 0;
+            const to = Number(targetLeft) || 0;
+            const d = Math.max(0, Number(durationMs) || 0);
+            if (d <= 0 || from === to) {
+              scrollToLeft(to, false);
+              return;
+            }
+
+            const start = (typeof performance !== 'undefined' && performance.now)
+              ? performance.now()
+              : Date.now();
+
+            const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+            const step = (now) => {
+              const current = (typeof now === 'number') ? now : ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now());
+              const t = Math.min(1, (current - start) / d);
+              const eased = easeInOutQuad(t);
+              el.scrollLeft = from + (to - from) * eased;
+              if (t < 1) {
+                const id = requestAnimationFrame(step);
+                renderLeaderboard._rafIds.push(id);
+              }
+            };
+
+            const id = requestAnimationFrame(step);
+            renderLeaderboard._rafIds.push(id);
+          };
+
+          // Wait one frame so layout/scrollWidth are correct.
+          requestAnimationFrame(() => {
+            const max = el.scrollWidth - el.clientWidth;
+            if (!(max > 4)) return;
+
+            // Start from the left so the score is always the first thing visible.
+            scrollToLeft(0, false);
+
+            const dwellLeftMs = 3000; // 6 segundos a la izquierda
+            const dwellRightMs = 3000; // 3 segundos a la derecha
+            const travelMs = Math.max(1500, Math.min(4500, 1200 + max * 6))
+
+            const cycle = () => {
+              const m = el.scrollWidth - el.clientWidth;
+              if (!(m > 4)) return;
+
+              // Hold at left.
+              scrollToLeft(0, false);
+              const t1 = setTimeout(() => {
+                // Smooth scroll to right.
+                animateTo(m, travelMs);
+                const t2 = setTimeout(() => {
+                  // Hold at right.
+                  scrollToLeft(m, false);
+                  const t3 = setTimeout(() => {
+                    // Smooth scroll back to left.
+                    animateTo(0, travelMs);
+                    const t4 = setTimeout(cycle, travelMs + 50);
+                    renderLeaderboard._timers.push(t4);
+                  }, dwellRightMs);
+                  renderLeaderboard._timers.push(t3);
+                }, travelMs + 50);
+                renderLeaderboard._timers.push(t2);
+              }, dwellLeftMs);
+              renderLeaderboard._timers.push(t1);
+            };
+
+            cycle();
+          });
+        };
 
         for (let i = 0; i < safe.length; i += 1) {
           const e = safe[i];
@@ -758,13 +1121,140 @@ const {
             ? fmtDate.format(new Date(createdAt * 1000))
             : '';
 
+          const maxSpan = document.createElement('span');
+          maxSpan.className = 'm2048__lb-max';
+          maxSpan.textContent = String(e?.maxTile ?? '');
+
           li.appendChild(rankSpan);
           li.appendChild(nameSpan);
-          li.appendChild(scoreSpan);
-          li.appendChild(dateSpan);
+
+          const tail = document.createElement('span');
+          tail.className = 'm2048__lb-tail';
+
+          tail.appendChild(scoreSpan);
+          tail.appendChild(maxSpan);
+          tail.appendChild(dateSpan);
+          li.appendChild(tail);
           lbListEl.appendChild(li);
         }
+
+        // After rendering all rows, compute the widest name and fix the name column
+        // width so all name cells share the same width (the widest one).
+        requestAnimationFrame(() => {
+          try {
+            const nameEls = Array.from(lbListEl.querySelectorAll('.m2048__lb-name'));
+            if (!nameEls.length) return;
+            const widths = nameEls.map((el) => {
+              const r = el.getBoundingClientRect();
+              return Math.ceil(r.width);
+            });
+            const max = Math.max.apply(null, widths.concat([0]));
+            if (max > 0) {
+              const cols = `auto ${max}px 1fr`;
+              if (lbColsEl && lbColsEl.style) lbColsEl.style.gridTemplateColumns = cols;
+              const items = Array.from(lbListEl.querySelectorAll('.m2048__lb-item'));
+              items.forEach((it) => { it.style.gridTemplateColumns = cols; });
+              nameEls.forEach((el) => { el.style.width = `${max}px`; el.style.display = 'inline-block'; });
+              // Also apply same fixed width to the header `Player` label so the
+              // whole name column shares identical pixel width.
+              try {
+                const headerName = lbColsEl ? lbColsEl.querySelector('.m2048__lb-col-name') : null;
+                if (headerName) { headerName.style.width = `${max}px`; headerName.style.display = 'inline-block'; }
+              } catch (_) {}
+            }
+          } catch (_) {}
+        });
+        // Also measure tail columns (score, max, date) and fix their widths so each column
+        // uses the maximum width found across rows; align header labels too.
+        requestAnimationFrame(() => {
+          try {
+            const scoreEls = Array.from(lbListEl.querySelectorAll('.m2048__lb-score'));
+            const maxEls = Array.from(lbListEl.querySelectorAll('.m2048__lb-max'));
+            const dateEls = Array.from(lbListEl.querySelectorAll('.m2048__lb-date'));
+
+            const measureMax = (els, minPx = 0) => {
+              if (!els || !els.length) return 0;
+              const w = els.map((el) => Math.ceil(el.getBoundingClientRect().width));
+              return Math.max.apply(null, w.concat([minPx, 0]));
+            };
+
+            const scoreW = measureMax(scoreEls, 24);
+            const maxW = measureMax(maxEls, 24);
+            const dateW = measureMax(dateEls, 40);
+
+            const headerTail = lbColsEl ? Array.from(lbColsEl.querySelectorAll('.m2048__lb-col-tail .m2048__lb-col-label')) : [];
+
+            if (scoreW > 0) {
+              scoreEls.forEach((el) => { el.style.width = `${scoreW}px`; el.style.display = 'inline-block'; });
+              if (headerTail[0]) { headerTail[0].style.width = `${scoreW}px`; headerTail[0].style.display = 'inline-block'; }
+            }
+            if (maxW > 0) {
+              maxEls.forEach((el) => { el.style.width = `${maxW}px`; el.style.display = 'inline-block'; });
+              if (headerTail[1]) { headerTail[1].style.width = `${maxW}px`; headerTail[1].style.display = 'inline-block'; }
+            }
+            if (dateW > 0) {
+              dateEls.forEach((el) => { el.style.width = `${dateW}px`; el.style.display = 'inline-block'; });
+              if (headerTail[2]) { headerTail[2].style.width = `${dateW}px`; headerTail[2].style.display = 'inline-block'; }
+            }
+
+            // Start auto-scroll now that widths are stable.
+            const tailEls = Array.from(lbListEl.querySelectorAll('.m2048__lb-tail'));
+            tailEls.forEach((t) => startAutoScroll(t));
+            // Make header tail align exactly with row tail columns and mirror
+            // the scrollLeft so labels sit over their corresponding columns.
+            try {
+              const headerTailEl = lbColsEl ? lbColsEl.querySelector('.m2048__lb-col-tail') : null;
+              if (headerTailEl) {
+                const firstTail = tailEls[0];
+                if (firstTail && firstTail.clientWidth) {
+                  try { headerTailEl.style.width = `${firstTail.clientWidth}px`; } catch (_) {}
+                }
+
+                if (firstTail && firstTail.scrollWidth > firstTail.clientWidth) {
+                  try {
+                    // Create an inner wrapper inside the header tail to move with
+                    // CSS transforms (GPU-accelerated), avoiding scrollLeft updates
+                    // on the header which can cause jank.
+                    headerTailEl.style.overflow = 'hidden';
+                    // Apply the same fixed column widths to the inner wrapper.
+                    let inner = headerTailEl.querySelector('.m2048__lb-col-tail-inner');
+                    if (!inner) {
+                      inner = document.createElement('div');
+                      inner.className = 'm2048__lb-col-tail-inner';
+                      // Move existing children into the inner wrapper.
+                      while (headerTailEl.firstChild) inner.appendChild(headerTailEl.firstChild);
+                      headerTailEl.appendChild(inner);
+                      inner.style.display = 'inline-flex';
+                      inner.style.gap = '12px';
+                      inner.style.willChange = 'transform';
+                      inner.style.whiteSpace = 'nowrap';
+                    }
+                    try {
+                      inner.style.width = `${scoreW + maxW + dateW + 24}px`;
+                      inner.style.boxSizing = 'content-box';
+                    } catch (_) {}
+                  } catch (_) {}
+
+                  const firstTailForSync = firstTail;
+                  const inner = headerTailEl.querySelector('.m2048__lb-col-tail-inner');
+                  const sync = () => {
+                    try {
+                      const x = Math.max(0, firstTailForSync.scrollLeft || 0);
+                      if (inner) inner.style.transform = `translateX(${-x}px)`;
+                    } catch (_) {}
+                    const id = requestAnimationFrame(sync);
+                    renderLeaderboard._rafIds.push(id);
+                  };
+                  sync();
+                }
+              }
+            } catch (_) {}
+          } catch (_) {}
+        });
       };
+
+      // Store interval ids for cleanup.
+      renderLeaderboard._timers = [];
 
       const setLbMuted = (text) => {
         if (!lbMutedEl) return;
@@ -799,7 +1289,8 @@ const {
         }
       };
 
-      const submitScore = async (name) => {
+      const submitScore = async (name, opts = {}) => {
+        const after = String(opts.after || 'reset'); // 'reset' | 'continue'
         if (!leaderboardEndpoint) {
           setSubmitMsg('Leaderboard no configurado.');
           return;
@@ -808,22 +1299,35 @@ const {
           setSubmitMsg('Enviando…');
           submitBtn && (submitBtn.disabled = true);
 
+          const maxTileValue = maxTile();
+
           const res = await fetch(leaderboardEndpoint, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ name, score: state.score }),
+            body: JSON.stringify({ name, score: state.score, maxTile: maxTileValue }),
           });
           const data = await res.json();
           if (!res.ok || !data?.ok) throw new Error(data?.error || 'Error');
 
           renderLeaderboard(data.entries);
           setLbMuted('');
-          submittedThisGame = true;
-          showSubmit(false);
 
-          // Prevent re-submitting the same finished game later.
-          // After a successful submission, start a fresh game (and persist it).
-          reset();
+          if (after === 'reset') {
+            submittedThisGame = true;
+            localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame }));
+            // Keep the board and game over message, hide submit, show new game button
+            showSubmit(false);
+            setStatus('¡Game Over!');
+            setGameOver(true);
+            if (actionsEl) actionsEl.hidden = false;
+          } else {
+            // En hito, solo ocultamos el formulario y seguimos jugando.
+            setSubmitMsg('');
+            showSubmit(false);
+            setStatus('');
+            state.submittedMilestone = true;
+            localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone }));
+          }
         } catch (e) {
           console.error('[Mini-2048] Leaderboard submit failed:', e);
           const msg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : 'No se pudo enviar.';
@@ -847,7 +1351,7 @@ const {
 
       const save = () => {
         try {
-          localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score }));
+          localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame }));
         } catch (_) {}
       };
 
@@ -861,6 +1365,11 @@ const {
           el.textContent = v ? String(v) : '';
           el.setAttribute('data-value', String(v));
           el.setAttribute('aria-label', v ? `Casilla ${v}` : 'Casilla vacía');
+          if (v >= 1000) {
+            el.classList.add('m2048__cell--small-text');
+          } else {
+            el.classList.remove('m2048__cell--small-text');
+          }
         }
 
         save();
@@ -869,15 +1378,21 @@ const {
       const setStatus = (text) => {
         if (!statusEl) return;
         statusEl.textContent = text;
+        if (text) statusEl.classList.add('m2048__note--accent');
+        else statusEl.classList.remove('m2048__note--accent');
       };
 
       const reset = () => {
         state.board = new Array(total).fill(0);
         state.score = 0;
+        state.milestone = 2048;
+        state.lastMilestone = 0;
+        state.submittedMilestone = false;
         spawn();
         spawn();
         setGameOver(false);
         submittedThisGame = false;
+        localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame }));
         setStatus('');
         setSubmitMsg('');
         showSubmit(false);
@@ -892,6 +1407,10 @@ const {
           if (!parsed || !Array.isArray(parsed.board) || parsed.board.length !== total) return false;
           state.board = parsed.board.map((n) => (typeof n === 'number' ? n : 0));
           state.score = typeof parsed.score === 'number' ? parsed.score : 0;
+          state.milestone = typeof parsed.milestone === 'number' ? parsed.milestone : 2048;
+          state.lastMilestone = typeof parsed.lastMilestone === 'number' ? parsed.lastMilestone : 0;
+          state.submittedMilestone = typeof parsed.submittedMilestone === 'boolean' ? parsed.submittedMilestone : false;
+          submittedThisGame = typeof parsed.submittedThisGame === 'boolean' ? parsed.submittedThisGame : false;
           return true;
         } catch (_) {
           return false;
@@ -1035,6 +1554,9 @@ const {
           tile.className = 'm2048__tile';
           tile.textContent = String(m.value);
           tile.setAttribute('data-value', String(m.value));
+          if (m.value >= 1000) {
+            tile.classList.add('m2048__tile--small-text');
+          }
           tile.style.left = `${from.left}px`;
           tile.style.top = `${from.top}px`;
           tile.style.width = `${from.width}px`;
@@ -1110,6 +1632,7 @@ const {
       const move = (dir) => {
         if (isAnimating) return;
         if (isGameOver) return;
+        if (submitForm && !submitForm.hidden) return;
 
         const result = computeMove(dir);
         if (!result.changed) return;
@@ -1120,16 +1643,33 @@ const {
             state.board = result.next;
             state.score += result.gained;
             spawn();
+
+            let m = milestoneForMax(maxTile());
+            let justHitMilestone = Boolean(m && m > (state.lastMilestone || 0));
+            if (justHitMilestone) {
+              state.lastMilestone = m;
+              state.submittedMilestone = false;
+            }
+
             render();
 
-            if (has2048()) {
-              setStatus('¡2048!');
-            } else if (!canMove()) {
+            if (!canMove()) {
               setGameOver(true);
-              setStatus('¡Game Over!');
-              if (!submittedThisGame) showSubmit(true);
-            } else {
+              const reachedMilestone = maxTile() >= milestoneMin;
+              if (reachedMilestone) {
+                setStatus('¡Game Over!');
+                if (!submittedThisGame) showSubmit(true, { reason: 'gameover' });
+              } else {
+                setStatus('¡Game Over! Debes llegar a 2048 o más para poder subir una puntuación.');
+                showSubmit(false);
+              }
+            } else if (!justHitMilestone) {
               setStatus('');
+            }
+
+            if (justHitMilestone) {
+              setStatus(`¡Has llegado a ${m}! Puedes enviar tu puntuación y seguir jugando.`);
+              showSubmit(true, { reason: 'milestone', focus: false });
             }
 
             // Pop merged destinations after the board updates.
@@ -1185,6 +1725,39 @@ const {
 
       newBtn?.addEventListener('click', (e) => {
         e.preventDefault();
+        // Dev cheat: Ctrl/Cmd + click opens prompts to set score/max tile for testing.
+        if ((e.ctrlKey || e.metaKey) && DEBUG_CHEAT) {
+          try {
+            const scoreInput = prompt('Cheat: Puntuación deseada (dejar vacío para no cambiar)');
+            const maxInput = prompt('Cheat: Valor de la pieza máxima (p.ej. 2048). Dejar vacío para no cambiar');
+            if (scoreInput != null && String(scoreInput).trim() !== '') {
+              const n = Number(scoreInput);
+              if (Number.isFinite(n)) state.score = Math.max(0, Math.floor(n));
+            }
+            if (maxInput != null && String(maxInput).trim() !== '') {
+              const v = Number(maxInput);
+              if (Number.isFinite(v) && v > 0) {
+                // Place the requested tile in the first empty slot or replace index 0.
+                const empties = emptyIndexes();
+                const idx = (empties && empties.length) ? empties[0] : 0;
+                state.board[idx] = Math.floor(v);
+              }
+            }
+            // Recompute milestone and render.
+            const m = milestoneForMax(maxTile());
+            if (m && m > (state.lastMilestone || 0)) {
+              state.lastMilestone = m;
+              state.submittedMilestone = false;
+              setStatus(`¡Has llegado a ${m}! Puedes enviar tu puntuación y seguir jugando.`);
+              showSubmit(true, { reason: 'milestone', focus: false });
+            }
+            render();
+          } catch (err) {
+            console.error('[Mini-2048] Cheat failed:', err);
+          }
+          return;
+        }
+
         const ok = confirm('¿Empezar una nueva partida? Se perderá el progreso actual.');
         if (!ok) return;
         reset();
@@ -1195,16 +1768,43 @@ const {
         fetchLeaderboard();
       });
 
+      // Close the leaderboard info <details> when clicking/tapping outside it.
+      try {
+        if (lbInfoEl) {
+          const onDocPointer = (ev) => {
+            try {
+              if (!lbInfoEl.open) return;
+              if (lbInfoEl.contains(ev.target)) return;
+              lbInfoEl.open = false;
+            } catch (_) {}
+          };
+
+          const onToggle = () => {
+            try {
+              if (lbInfoEl.open) {
+                document.addEventListener('pointerdown', onDocPointer, { capture: true });
+                document.addEventListener('touchstart', onDocPointer, { passive: true, capture: true });
+              } else {
+                document.removeEventListener('pointerdown', onDocPointer, { capture: true });
+                document.removeEventListener('touchstart', onDocPointer, { capture: true });
+              }
+            } catch (_) {}
+          };
+
+          lbInfoEl.addEventListener('toggle', onToggle);
+        }
+      } catch (_) {}
+
       submitForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (!isGameOver || submittedThisGame) return;
+        if (submittedThisGame) return;
         const name = String(nameInput?.value || '').trim();
         if (!name) {
           setSubmitMsg('Pon un nombre.');
           return;
         }
         setLastName(name);
-        submitScore(name);
+        submitScore(name, { after: isGameOver ? 'reset' : 'continue' });
       });
 
       if (!load()) reset();
@@ -1213,8 +1813,20 @@ const {
       // If a saved game is already blocked, reflect it immediately.
       if (!canMove()) {
         setGameOver(true);
-        setStatus('¡Game Over!');
-        if (!submittedThisGame) showSubmit(true);
+        const reachedMilestone = maxTile() >= milestoneMin;
+        if (reachedMilestone) {
+          setStatus('¡Game Over!');
+          if (!submittedThisGame) showSubmit(true, { reason: 'gameover' });
+        } else {
+          setStatus('¡Game Over! Debes llegar a 2048 o más para poder subir una puntuación.');
+          showSubmit(false);
+        }
+      } else {
+        // Si el guardado ya había llegado a un hito, mostrar mensaje.
+        if (state.lastMilestone > 0 && !state.submittedMilestone) {
+          setStatus(`¡Has llegado a ${state.lastMilestone}! Puedes enviar tu puntuación y seguir jugando.`);
+          showSubmit(true, { reason: 'milestone', focus: false });
+        }
       }
 
       // Load leaderboard once on init.

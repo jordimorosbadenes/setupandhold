@@ -475,12 +475,14 @@ a:hover {
   border: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .tag-row {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .tag {
@@ -532,6 +534,7 @@ a:hover {
 /* Blog posts: un poco más compacto sin afectar otras páginas con `.prose` (about, etc). */
 .post-prose {
   line-height: 1.6;
+  text-align: justify;
 }
 
 .post-prose p,
@@ -539,6 +542,8 @@ a:hover {
 .post-prose ol {
   margin-top: 0;
   margin-bottom: 0.75rem;
+  text-align: justify;
+  text-align-last: left;
 }
 
 .prose a {
