@@ -10,7 +10,7 @@ const allPosts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 );
 const latest = allPosts.slice(0, 6);
 ---
-<BaseLayout title="setupandhold" description="Notas cortas sobre software y datos.">
+<BaseLayout title="setupandhold" description="Bitácora sobre tecnología.">
   <section class="home-layout">
     <div class="home-main">
       <section class="hero">
