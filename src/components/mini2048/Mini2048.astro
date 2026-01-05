@@ -334,7 +334,6 @@ const {
     overflow: hidden;
     pointer-events: none;
     font-variant-numeric: tabular-nums;
-    will-change: transform;
   }
 
   .m2048__board :global(.m2048__tile--small-text) {
@@ -370,12 +369,21 @@ const {
 
   @keyframes m2048-pop {
     0% { transform: scale(1); }
-    55% { transform: scale(1.09); }
+    55% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes m2048-appear {
+    0% { transform: scale(0); }
     100% { transform: scale(1); }
   }
 
   .m2048__cell--pop {
-    animation: m2048-pop 180ms ease;
+    animation: m2048-pop 200ms ease;
+  }
+
+  .m2048__cell--appear {
+    animation: m2048-appear 200ms ease;
   }
 
   .m2048__note {
@@ -1517,8 +1525,13 @@ const {
 
         // En móvil damos un pelín más de tiempo y forzamos una secuencia de frames más fiable.
         // En escritorio lo dejamos tal cual para no cambiar sensaciones.
-        const duration = isMobile ? 170 : 140;
-        const easing = 'cubic-bezier(0.2, 0.9, 0.2, 1)';
+        const duration = isMobile ? 140 : 140;
+
+        // Empieza lentamente (0.2) - la animación acelera gradualmente al inicio
+        // Acelera mucho (0.9) - alcanza velocidad máxima rápidamente
+        // Decelera suavemente (0.2) - reduce velocidad hacia el final
+        // Termina normalmente (1) - llega al destino sin rebote
+        const easing = 'cubic-bezier(0.2, 0.9, 0.2, 0.9)';
 
         // Most reliable: use layout offsets from the real grid items.
         const posForIndex = (idx) => {
@@ -1644,7 +1657,12 @@ const {
           .then(() => {
             state.board = result.next;
             state.score += result.gained;
+            
+            // Remember which cells had values before spawning
+            const hadValue = state.board.map(v => v !== 0);
             spawn();
+            // Find which cell got a new value
+            const newTileIndex = state.board.findIndex((v, i) => v !== 0 && !hadValue[i]);
 
             let m = milestoneForMax(maxTile());
             let justHitMilestone = Boolean(m && m > (state.lastMilestone || 0));
@@ -1654,6 +1672,18 @@ const {
             }
 
             render();
+
+            // Pop the new tile after render
+            if (newTileIndex !== -1) {
+              const el = cells[newTileIndex];
+              if (el) {
+                el.classList.remove('m2048__cell--appear');
+                // Force reflow so animation works
+                void el.offsetWidth;
+                el.classList.add('m2048__cell--appear');
+                setTimeout(() => el.classList.remove('m2048__cell--appear'), 250);
+              }
+            }
 
             if (!canMove()) {
               setGameOver(true);
