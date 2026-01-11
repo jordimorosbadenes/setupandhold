@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Entradas en hobbies</title><meta name="description" content="Artículos etiquetados como hobbies"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
+      const storageKey = 'theme';
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const saved = localStorage.getItem(storageKey);
+      const theme = saved || (prefersLight ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    </script><link rel="stylesheet" href="/_astro/about.CKaqEIRE.css"></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <div class="section-title"> <h2>#hobbies</h2> <span class="pill">1 entradas</span> </div> <div class="post-grid"> <article class="post-card"> <a class="card-link" href="/posts/bienvenida"> <div class="card-meta"> <span class="pill">3 ene 2026</span> <div class="tag-row"> <span class="tag" aria-label="Etiqueta hobbies">hobbies</span><span class="tag" aria-label="Etiqueta proyectos">proyectos</span> </div> </div> <h3>Bienvenida a setupandhold</h3> <p>Un poco sobre mí, el porqué del sitio y qué proyectos puedes ver ahora mismo.</p> </a> </article> </div> </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="https://github.com/jordimorosbadenes/setupandhold" target="_blank" rel="noreferrer">GitHub</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+    (() => {
+      const key = 'theme';
+      const apply = (value) => {
+        document.documentElement.dataset.theme = value;
+        localStorage.setItem(key, value);
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.setAttribute('aria-pressed', value === 'light' ? 'true' : 'false');
+      };
+      const init = () => {
+        const saved = localStorage.getItem(key);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        apply(saved || (prefersLight ? 'light' : 'dark'));
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.addEventListener('click', () => {
+          const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+          apply(current === 'light' ? 'dark' : 'light');
+        });
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script> </body></html>
