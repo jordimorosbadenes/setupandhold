@@ -11,11 +11,22 @@ muestra.
 
 winget install -e --id OpenJS.NodeJS.LTS
 
+## Después de instalar, cierra y abre PowerShell y comprueba:
+node -v
+npm -v
+
 ## Puesta en marcha
 
 ```bash
 npm install
 npm run dev
+```
+
+## O mejor, puedes hacer una de estas dos
+
+```bash
+./run-dev-render.bat
+./run-dev-local.bat
 ```
 
 El servidor quedará en `http://localhost:4321`.

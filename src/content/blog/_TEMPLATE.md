@@ -6,6 +6,7 @@ description: "Resumen corto para listados (1-2 líneas)."
 date: 2026-01-03
 
 # Opcionales
+# slug: nombre-en-la-url
 # updated: 2026-01-03
 # tags: [tag1, tag2]
 # draft: true

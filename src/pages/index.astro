@@ -8,7 +8,12 @@ import { withBase } from '../utils/withBase';
 const allPosts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
 );
-const latest = allPosts.slice(0, 6);
+// Elementos con el slug "pinned"
+const pinned = allPosts
+  .filter((p) => p.data?.pinned)
+  .sort((a, b) => (a.data.pinned_order ?? 0) - (b.data.pinned_order ?? 0));
+// Coger los 3 posts más recientes
+const latest = allPosts.filter((p) => !p.data?.pinned).slice(0, 3);
 ---
 <BaseLayout title="setupandhold" description="Bitácora sobre tecnología.">
   <section class="home-layout">
@@ -26,6 +31,18 @@ const latest = allPosts.slice(0, 6);
           </div>
         </div>
       </section>
+
+      {pinned.length ? (
+        <>
+          <div class="section-title">
+            <h2>Entradas destacadas</h2>
+            <a class="button secondary" href={withBase('/posts')}>Ver todas</a>
+          </div>
+          <div class="post-grid">
+            {pinned.map((post) => <PostCard post={post} />)}
+          </div>
+        </>
+      ) : null}
 
       <div class="section-title">
         <h2>Entradas recientes</h2>

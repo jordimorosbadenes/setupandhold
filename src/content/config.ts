@@ -8,6 +8,8 @@ const blog = defineCollection({
     date: z.date(),
     updated: z.date().optional(),
     tags: z.array(z.string()).default([]),
+    pinned: z.boolean().default(false),
+    pinned_order: z.number().int().optional(),
     draft: z.boolean().default(false),
     hero: z
       .object({
