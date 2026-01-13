@@ -11,8 +11,8 @@ const svgFallbackUrl = withBase('/img/asic-mousepad.svg');
   title="Alfombrilla ASIC"
   description="Una alfombrilla de ratón con un cheatsheet visual de diseño ASIC."
 >
-  <section class="hero mousepad-hero">
-    <div class="post-prose">
+  <section class="hero">
+    <div class="hero-copy prose">
       <h1>Alfombrilla ASIC</h1>
       <p>
         Diseñé esta alfombrilla para tener a mano lo esencial cuando estás en modo RTL.
@@ -23,8 +23,13 @@ const svgFallbackUrl = withBase('/img/asic-mousepad.svg');
       </p>
 
       <div class="hero-actions">
-        <a class="button" href={withBase('/posts/2-alfombrilla-asic')}>Ver la entrada en el blog</a>
+        <a class="button" href={withBase('/posts/mousepad-asic')}>Ver la entrada en el blog</a>
       </div>
+
+      <h2>Visor con zoom 🔍</h2>
+      <p>
+        Mueve el ratón sobre la imagen para ver los detalles ampliados. En móvil, toca la imagen para abrirla en un modo ampliado.
+      </p>
     </div>
 
     <div class="magnifier" data-magnifier>
@@ -57,12 +62,12 @@ const svgFallbackUrl = withBase('/img/asic-mousepad.svg');
       </div>
     </div>
 
-    <div class="mousepad-contact">
+    <div class="hero-copy prose">
       <h2>¿Quieres tu alfombrilla?</h2>
-      <p class="mousepad-contact__text">
+      <p>
         Contáctame y te digo cómo conseguirla (disponibilidad, precio y envío).
       </p>
-      <div class="mousepad-contact__actions">
+      <div class="hero-actions">
         <a class="button secondary" href={LINKEDIN_URL} target="_blank" rel="noreferrer">Escríbeme por LinkedIn</a>
         <a class="button secondary" href={CONTACT_EMAIL_HREF}>{CONTACT_EMAIL}</a>
       </div>
@@ -70,6 +75,11 @@ const svgFallbackUrl = withBase('/img/asic-mousepad.svg');
   </section>
 
   <style>
+    /* Añadir un pequeño margen por arriba */
+    .hero-actions {
+      /*margin-top: 1rem;*/
+    }
+
     .mousepad-modal {
       position: fixed;
       top: 0;

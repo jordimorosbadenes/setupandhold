@@ -19,15 +19,15 @@ const latest = allPosts.filter((p) => !p.data?.pinned).slice(0, 3);
   <section class="home-layout">
     <div class="home-main">
       <section class="hero">
-        <div class="hero-copy">
+        <div class="hero-copy prose">
           <h1>Setup & Hold</h1>
           <p>
             Bitácora ligera para documentar ideas, experimentos y proyectos.
           </p>
           <div class="hero-actions">
             <a class="button" href={withBase('/posts')}>Leer el blog</a>
-            <a class="button" href={withBase('/puzzle')} rel="prefetch">Puzzle Generator</a>
-            <a class="button" href={withBase('/mousepad')}>Alfombrilla ASIC</a>
+            <a class="button secondary" href={withBase('/puzzle')} rel="prefetch">Puzzle Generator</a>
+            <a class="button secondary" href={withBase('/mousepad')}>Alfombrilla ASIC</a>
           </div>
         </div>
       </section>

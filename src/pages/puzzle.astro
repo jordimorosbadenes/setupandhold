@@ -6,17 +6,20 @@ import { GUMROAD_PREMIUM_URL, GUMROAD_PRODUCT_ID, PUZZLEGEN_URL } from '../confi
 const apiBase = PUZZLEGEN_URL;
 const apiBaseJSON = JSON.stringify(apiBase);
 ---
+
 <BaseLayout
   title="Puzzle Generator"
   description="Genera puzzles 3D, visualiza soluciones y descarga STL listo para imprimir."
 >
-  <section class="puzzle-hero">
-    <h1>Puzzle Generator 3D</h1>
-    <p>
-      Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
-    </p>
-    <div class="hero-actions">
-      <a class="button" href={withBase('/posts')}>Volver al blog</a>
+  <section class="hero">
+    <div class="hero-copy prose">
+      <h1>Generador de Puzzles 3D</h1>
+      <p>
+        Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
+      </p>
+      <div class="hero-actions">
+        <a class="button" href={withBase('/posts')}>Volver al blog</a>
+      </div>
     </div>
   </section>
 
@@ -655,32 +658,6 @@ const apiBaseJSON = JSON.stringify(apiBase);
 
 <style is:global>
 /* Animaciones desactivadas para evitar salto visible al cambiar de página */
-.puzzle-hero {
-  display: grid;
-  gap: 16px;
-  padding: 28px 32px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow);
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.puzzle-hero h1 {
-  margin: 0;
-  font-size: clamp(2rem, 5vw, 3rem);
-  letter-spacing: -0.02em;
-  color: var(--text) !important;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
-  text-align: left;
-}
-
-.puzzle-hero p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
-}
 
 .note {
   color: var(--muted);
@@ -711,6 +688,11 @@ const apiBaseJSON = JSON.stringify(apiBase);
 }
 
 body, .container h1, .container h2, .container h3, .container p, .container label {
+  color: var(--text) !important;
+}
+
+/* Para que el título de la página no cambie de color */
+.hero h1 {
   color: var(--text) !important;
 }
 

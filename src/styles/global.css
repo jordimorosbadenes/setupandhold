@@ -214,6 +214,10 @@ a:hover {
   margin-top: 32px;
 }
 
+/*******************************/
+/* HERO - CONTENEDOR PRINCIPAL */
+/*******************************/
+
 .hero {
   display: grid;
   gap: 16px;
@@ -222,18 +226,20 @@ a:hover {
   border: 1px solid var(--border);
   background: var(--card);
   box-shadow: var(--shadow);
+  align-items: start;
 }
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-size: clamp(2rem, 5vw, 3rem) !important;
   letter-spacing: -0.03em;
+  text-align: left !important;
 }
 
-.hero p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
+/* Shared inner copy/prose for hero blocks across pages */
+.hero-copy {
+  display: grid;
+  gap: 16px;
 }
 
 .hero-actions {
@@ -243,9 +249,63 @@ a:hover {
   align-items: center;
 }
 
+/*******************************/
+/*******************************/
+
+/******************/
+/* TEXTO EN PROSA */
+/******************/
+
+.prose {
+  line-height: 1.6;
+  text-align: justify;
+  color: var(--muted);
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+/* Quitar márgenes a títulos h1 y h2 en prosa porque tienen demasiado márgen por defecto */
+.prose h1,
+.prose h2 {
+  margin-bottom: 0rem;
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  margin-top: 0;
+  margin-bottom: 0;
+  text-align: justify;
+  text-align-last: left;
+}
+
+.prose img {
+  margin: 1rem 0;
+  display: block;
+}
+
+.prose a {
+  color: var(--accent);
+}
+
+.prose code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/******************/
+/******************/
+
 .about-hero {
   grid-template-columns: 160px 1fr;
-  align-items: center;
+  align-items: start;
   gap: 24px;
 }
 
@@ -282,53 +342,9 @@ a:hover {
   margin-top: 14px;
 }
 
-.contact-block {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-}
-
-.contact-block h2 {
-  margin: 0 0 6px;
-}
-
-.contact-block__text {
-  margin: 0;
-  color: var(--muted);
-}
-
-.contact-block__actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 12px;
-}
-
-.mousepad-hero {
-  gap: 20px;
-}
-
-.mousepad-contact h2 {
-  margin: 18px 0 6px;
-}
-
-.mousepad-contact__text {
-  margin: 0;
-  color: var(--muted);
-}
-
-.mousepad-contact__actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 12px;
-}
-
-.mousepad-note {
-  color: var(--muted);
-  margin-top: 12px;
+/* Keep avatar visually centered in its grid cell while the hero content aligns to top */
+.about-avatar {
+  align-self: center;
 }
 
 .magnifier {
@@ -446,18 +462,18 @@ a:hover {
 
 .card-link {
   display: grid;
-  gap: 10px;
 }
 
 .card-link h3 {
-  margin: 4px 0;
-  letter-spacing: -0.01em;
+  margin: 14px 0 14px 0;
 }
 
 .card-link p {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
+  text-align: justify;
+  text-align-last: left;
 }
 
 .card-meta {
@@ -512,49 +528,7 @@ a:hover {
   opacity: 0.5;
 }
 
-.prose {
-  line-height: 1.7;
-  color: var(--muted);
-}
 
-.prose h1,
-.prose h2,
-.prose h3,
-.prose h4 {
-  color: var(--text);
-  letter-spacing: -0.02em;
-}
-
-.prose p,
-.prose ul,
-.prose ol {
-  margin-bottom: 1rem;
-}
-
-/* Blog posts: un poco más compacto sin afectar otras páginas con `.prose` (about, etc). */
-.post-prose {
-  line-height: 1.6;
-  text-align: justify;
-}
-
-.post-prose p,
-.post-prose ul,
-.post-prose ol {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-  text-align: justify;
-  text-align-last: left;
-}
-
-.prose a {
-  color: var(--accent);
-}
-
-.prose code {
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 6px;
-  border-radius: 6px;
-}
 
 @media (max-width: 720px) {
   .site-header {
