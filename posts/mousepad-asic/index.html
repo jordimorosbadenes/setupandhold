@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Alfombrilla ASIC | setupandhold</title><meta name="description" content="Un repaso detallado de la alfombrilla de escritorio ASIC con explicaciones por secciones: Verilog, timing, CDC, clock gating, PRBS, punto fijo y representación de signo."><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
+      const storageKey = 'theme';
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const saved = localStorage.getItem(storageKey);
+      const theme = saved || (prefersLight ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    </script><link rel="stylesheet" href="/_astro/about.5R7DmVZ1.css"></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <article class="hero prose"> <div class="card-meta"> <span class="pill">Publicado 11 de enero de 2026</span>  </div> <h1>Alfombrilla ASIC</h1> <p>Un repaso detallado de la alfombrilla de escritorio ASIC con explicaciones por secciones: Verilog, timing, CDC, clock gating, PRBS, punto fijo y representación de signo.</p> <div class="tag-row"> <a class="tag" href="/tags/asic">asic</a><a class="tag" href="/tags/verilog">verilog</a><a class="tag" href="/tags/proyectos">proyectos</a> </div>  <img src="/img/asic-mousepad.png" alt="Alfombrilla ASIC" style="max-width:100%;height:auto;">
+<p>Esta alfombrilla nació de una necesidad sencilla: tener a mano, sobre la mesa, una referencia clara y visual con los conceptos que más consulto cuando trabajo en diseño digital. Quería algo inmediato que funcionara como una chuleta práctica durante las sesiones de trabajo, y que además quedara bien en el escritorio 😎.</p>
+<p>Trabajo en diseño de ASIC (microchips), centrado en la parte RTL y en el análisis de timing para la síntesis lógica; por eso gran parte del contenido está orientado a problemas reales que aparecen en el desarrollo de RTL, la síntesis, la simulación y la integración en silicio.</p>
+<p>La imagen que ves arriba reúne en un solo plano los bloques más útiles para el día a día: desde sintaxis básica y operadores en Verilog hasta conceptos de metastabilidad, sincronización y estrategias de ahorro de energía. No pretende servir de documentación ni nada por el estilo: su valor está en que contiene las cosas básicas y la información está ordenada para consultarla en segundos.</p>
+<p>Si quieres ver los detalles, puedes visitar la página dedicada a la alfombrilla, <strong><a href="/mousepad">Alfombrilla ASIC</a></strong>. Allí hay un visor con zoom para poder ver los detalles en alta resolución 🔍.</p>
+<h2 id="herramientas-usadas">Herramientas usadas</h2>
+<p>Usé <strong><a href="https://www.drawio.com/" target="_blank" rel="noreferrer noopener">Draw.io</a></strong> para todo el diseño. Draw.io es la copia open source de Microsoft Visio, aunque en mi opinión es mejor en casi todos los aspectos.</p>
+<h2 id="contenidos">Contenidos</h2>
+<p>Quería que la alfombrilla fuera una chuleta visual con lo esencial de ASIC, con ejemplos mínimos y diagramas limpios, siendo a la vez útil y agradable a la vista.</p>
+<ul>
+<li><strong>Sintaxis básica de Verilog:</strong> recordatorios somo cómo declarar <em>unpacked arrays</em> o cómo usar los <code>genvar</code> correctamente para instanciar módulos.</li>
+<li><strong>Setup y Hold:</strong> diagrama temporal para recordar qué representan los tiempos de setup y hold y las ecuaciones básicas que deben cumplirse para respetar el timing.</li>
+<li><strong>PRBS (Pseudorandom Binary Sequence):</strong> esquema e idea básica de implementación de un PRBS. Me apetecía tener la arquitectura y código Verilog de algún bloque chulo, y un PRBS me pareció buena opción.</li>
+<li><strong>Clock gating cell:</strong> una celda de clock gating con diagrama para ver cómo se evitan los glitches en el reloj.</li>
+<li><strong>Tabla de operadores en Verilog:</strong> referencia compacta de operadores aritméticos, lógicos, bitwise, shifts y concatenación.</li>
+<li><strong>Metastabilidad:</strong> contiene un diagrama temporal de lo que puede ocurrir si se violan los tiempos de setup y hold.</li>
+<li><strong>Sincronizador CDC de dos flip-flops:</strong> patrón estándar para cruzar señales entre dominios de reloj.</li>
+<li><strong>Notación de punto fijo:</strong> interpretación de formatos con signo y sin signo, resolución y rango.</li>
+<li><strong>Representación de signo:</strong> comparación rápida entre <em>sign-magnitude</em>, <em>1’s complement</em> y <em>2’s complement</em>.</li>
+</ul>
+<p>Como ves, tiene un poco de todo, pero tampoco tiene material super técnico. Lo que más me interesaba era que fuera limpia y bonita.</p>
+<h2 id="cómo-conseguirla">Cómo conseguirla</h2>
+<p>Si te interesa una copia física, visita la página dedicada: <strong><a href="/mousepad">Alfombrilla ASIC</a></strong>. Allí encontrarás una forma de contacto para pedirla 🙂.</p> </article>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="https://github.com/jordimorosbadenes/setupandhold" target="_blank" rel="noreferrer">GitHub</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+    (() => {
+      const key = 'theme';
+      const apply = (value) => {
+        document.documentElement.dataset.theme = value;
+        localStorage.setItem(key, value);
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.setAttribute('aria-pressed', value === 'light' ? 'true' : 'false');
+      };
+      const init = () => {
+        const saved = localStorage.getItem(key);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        apply(saved || (prefersLight ? 'light' : 'dark'));
+        const btn = document.querySelector('[data-theme-toggle]');
+        btn?.addEventListener('click', () => {
+          const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+          apply(current === 'light' ? 'dark' : 'light');
+        });
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script> </body></html>
