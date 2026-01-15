@@ -1,7 +1,7 @@
 ---
 slug: mousepad-asic
 title: "Alfombrilla ASIC"
-description: "Un repaso detallado de la alfombrilla de escritorio ASIC con explicaciones por secciones: Verilog, timing, CDC, clock gating, PRBS, punto fijo y representación de signo."
+description: "¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips ASIC 😎."
 date: 2026-01-11
 tags: [asic, verilog, proyectos]
 draft: false

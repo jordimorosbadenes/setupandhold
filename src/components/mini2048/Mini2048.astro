@@ -30,51 +30,22 @@ const {
     {Array.from({ length: 16 }).map((_, i) => (
       <div class="m2048__cell" data-cell={i} data-value="0" aria-label="Casilla vacía"></div>
     ))}
+    <p class="m2048__note" data-status aria-live="polite"></p>
   </div>
 
-  <p class="m2048__note" data-status aria-live="polite"></p>
-
-  <form class="m2048__submit" data-submit hidden>
-    <div class="m2048__submit-row">
-      <label class="m2048__submit-label" for="m2048-name">Tu nombre</label>
-      <input
-        id="m2048-name"
-        class="m2048__input"
-        name="name"
-        type="text"
-        maxlength="16"
-        placeholder="John Cena"
-        autocomplete="nickname"
-        data-name
-        required
-      />
+  <div class="m2048__player" data-player>
+    <p class="m2048__player-status" data-player-name>No has introducido ningún nombre. ¡No se guardará tu puntuación!</p>
+    <div class="m2048__player-actions">
+      <button class="button" type="button" data-change-name>Introducir nombre</button>
+      <button class="button secondary" type="button" data-new>Nueva partida</button>
     </div>
-    <div class="m2048__submit-row m2048__submit-row--actions">
-      <button class="m2048__btn" type="submit" data-submit-btn>Enviar puntuación</button>
-      <span class="m2048__lb-muted" data-submit-msg></span>
-    </div>
-  </form>
-
-  <div class="m2048__actions" aria-label="Acciones" data-actions>
-    <button class="m2048__btn" type="button" data-new>Nueva partida</button>
   </div>
 
   <section class="m2048__leaderboard" aria-label="Leaderboard">
     <div class="m2048__lb-header">
       <h3 class="m2048__lb-title">Leaderboard</h3>
       <div class="m2048__lb-actions">
-        <details class="m2048__lb-info" data-lb-info>
-          <summary class="m2048__lb-info-btn" aria-label="Info del leaderboard" title="Info">i</summary>
-          <div class="m2048__lb-info-panel" role="note">
-            <p class="m2048__lb-info-title">Cómo funciona</p>
-            <ul class="m2048__lb-info-list">
-              <li>La partida se guarda en este dispositivo, aunque recargues la página.</li>
-              <li>Puedes enviar tu puntuación al Leaderboard al llegar a 2048+ (y siguientes hitos) o cuando termina la partida (¡Game Over!).</li>
-              <li>Si ya existe tu nombre, solo se actualiza si mejoras tu puntuación.</li>
-              <li>Nombre: 1–16 caracteres. Permitidos letras/números/espacios y <span class="m2048__mono">._-</span>.</li>
-            </ul>
-          </div>
-        </details>
+        <button class="m2048__lb-info-btn" type="button" data-lb-info aria-label="Info del leaderboard" title="Info">i</button>
 
         <button
           class="m2048__icon-btn"
@@ -195,11 +166,20 @@ const {
     cursor: pointer;
     transition: background 0.2s ease, color 0.2s ease;
     font: inherit;
+    font-size: 0.95rem;
+    width: 140px;
   }
 
   .m2048__btn:hover {
     background: var(--bg-soft);
     color: var(--text);
+  }
+
+  .button {
+    cursor: pointer;
+    font: inherit;
+    font-weight: bold;
+    font-size: 0.95rem;
   }
 
   .m2048__btn--small {
@@ -268,6 +248,21 @@ const {
 
   .m2048__board:focus {
     border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  }
+
+  .m2048[data-gameover] .m2048__board::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 5;
+  }
+
+  :global([data-theme="dark"]) .m2048[data-gameover] .m2048__board::before {
+    background: rgba(255, 255, 255, 0.3);
   }
 
   .m2048__cell {
@@ -387,16 +382,44 @@ const {
   }
 
   .m2048__note {
-    margin: 12px 0 0;
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     min-height: 1.2em;
     color: var(--muted);
     font-size: 0.95rem;
+    transition: opacity 1s ease-out;
+    z-index: 10;
+    text-align: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
   }
 
   .m2048__note:empty {
     display: none;
     margin: 0;
     min-height: 0;
+  }
+
+  .m2048__player {
+    margin: 12px 0 0;
+    display: grid;
+    gap: 12px;
+  }
+
+  .m2048__player-status {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .m2048__player-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
   }
 
   .m2048__actions {
@@ -412,15 +435,13 @@ const {
     letter-spacing: -0.01em;
     text-align: center;
     padding: 10px 12px;
-    border: 1px solid color-mix(in srgb, var(--accent-2) 35%, var(--border));
+    border: 2px solid color-mix(in srgb, var(--accent-2) 80%, var(--border));
     border-radius: 12px;
-    background: color-mix(in srgb, var(--accent-2) 8%, var(--bg-soft));
     min-height: unset;
     margin-top: 12px;
   }
 
-  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn,
-  [data-submit-btn].m2048__btn.m2048__btn--milestone {
+  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn {
     color: color-mix(in srgb, var(--accent) 85%, var(--text));
     font-weight: 800;
     letter-spacing: -0.01em;
@@ -430,8 +451,7 @@ const {
     width: 100%;
   }
 
-  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn:hover,
-  [data-submit-btn].m2048__btn.m2048__btn--milestone:hover {
+  .m2048[data-gameover='1'] [data-submit-btn].m2048__btn:hover {
     color: color-mix(in srgb, var(--accent) 90%, var(--text));
     background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
   }
@@ -457,12 +477,7 @@ const {
     gap: 8px;
   }
 
-  .m2048__lb-info {
-    position: relative;
-  }
-
   .m2048__lb-info-btn {
-    list-style: none;
     border: 1px solid var(--border);
     border-radius: 10px;
     width: 34px;
@@ -477,76 +492,12 @@ const {
     font-weight: 800;
   }
 
-  .m2048__lb-info-btn::-webkit-details-marker {
-    display: none;
-  }
-
   .m2048__lb-info-btn:hover {
     background: var(--bg-soft);
     color: var(--text);
   }
 
-  .m2048__lb-info[open] .m2048__lb-info-btn {
-    background: var(--bg-soft);
-    color: var(--text);
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-  }
 
-  .m2048__lb-info-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 10;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--card);
-    color: var(--text);
-    width: min(360px, 78vw);
-    box-shadow: var(--shadow);
-    word-break: break-word;
-    hyphens: auto;
-  }
-
-  @media (max-width: 720px) {
-    .m2048__lb-info-panel {
-      /* Make the info panel fixed and centered on small screens so it
-         doesn't overflow its container and remains scrollable. */
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      top: 8%;
-      right: auto;
-      width: min(360px, 94vw);
-      max-height: 80vh;
-      overflow-y: auto;
-      z-index: 9999;
-      box-shadow: var(--shadow);
-      word-break: break-word;
-      hyphens: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-  }
-
-  .m2048__lb-info-title {
-    margin: 0 0 8px;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-  }
-
-  .m2048__lb-info-list {
-    margin: 0;
-    padding-left: 18px;
-    display: grid;
-    gap: 6px;
-    color: var(--muted);
-  }
-
-  .m2048__mono {
-    font-variant-numeric: tabular-nums;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    color: var(--text);
-  }
 
   .m2048__lb-title {
     margin: 0;
@@ -848,7 +799,7 @@ const {
   (() => {
     // Debug flag: set to 1 to enable developer cheat (Ctrl/Cmd+click new game),
     // set to 0 to disable.
-    const DEBUG_CHEAT = 0;
+    const DEBUG_CHEAT = 1;
     const init = (root) => {
       if (root.dataset.m2048Init === '1') return;
       root.dataset.m2048Init = '1';
@@ -857,17 +808,15 @@ const {
       const scoreEl = root.querySelector('[data-score]');
       const statusEl = root.querySelector('[data-status]');
       const newBtn = root.querySelector('[data-new]');
-      const actionsEl = root.querySelector('[data-actions]');
       const cells = Array.from(root.querySelectorAll('[data-cell]'));
       const lbListEl = root.querySelector('[data-lb-list]');
       const lbColsEl = root.querySelector('.m2048__lb-cols');
       const lbMutedEl = root.querySelector('[data-lb-muted]');
       const lbRefreshBtn = root.querySelector('[data-lb-refresh]');
       const lbInfoEl = root.querySelector('[data-lb-info]');
-      const submitForm = root.querySelector('[data-submit]');
-      const nameInput = root.querySelector('[data-name]');
-      const submitBtn = root.querySelector('[data-submit-btn]');
-      const submitMsgEl = root.querySelector('[data-submit-msg]');
+      const playerEl = root.querySelector('[data-player]');
+      const playerNameEl = root.querySelector('[data-player-name]');
+      const changeNameBtn = root.querySelector('[data-change-name]');
 
       if (!boardEl || cells.length !== 16) return;
 
@@ -897,15 +846,20 @@ const {
         milestone: 2048,
         lastMilestone: 0,
         submittedMilestone: false,
+        currentPlayerName: '',
+        lastSubmittedThousand: 0,
       };
 
       let isAnimating = false;
       let isGameOver = false;
       let submittedThisGame = false;
+      let milestoneMessageActive = false;
+      let milestoneTimeoutId = null;
+      let milestoneStartTime = 0;
 
       // Hitos para permitir guardar sin terminar la partida.
-      // 2048, 4096, 8192... con un límite lógico.
-      const milestoneMin = 2048;
+      // 256, 512, 1024, 2048... con un límite lógico.
+      const milestoneMin = 256;
       // Tope de hitos (nota: los hitos son potencias de 2; el último hito será
       // la mayor potencia de 2 <= milestoneMax).
       const milestoneMax = 131972;
@@ -930,58 +884,26 @@ const {
         isGameOver = value;
         if (value) root.setAttribute('data-gameover', '1');
         else root.removeAttribute('data-gameover');
-
-        if (!value && submitForm) submitForm.hidden = true;
-        if (actionsEl) actionsEl.hidden = false;
       };
 
-      const lastNameKey = `${storageKey}::last-name`;
-      const getLastName = () => {
-        try { return localStorage.getItem(lastNameKey) || ''; } catch { return ''; }
-      };
-      const setLastName = (name) => {
-        try { localStorage.setItem(lastNameKey, name); } catch {}
-      };
-
-      const showSubmit = (show, opts = {}) => {
-        if (!submitForm) return;
-
-        const reason = String(opts.reason || '').toLowerCase();
-        const isMilestone = reason === 'milestone';
-        const shouldShow = Boolean(show && !submittedThisGame && (isGameOver || isMilestone));
-        submitForm.hidden = !shouldShow;
-
-        // El botón de nueva partida siempre está visible.
-        if (actionsEl) actionsEl.hidden = false;
-
-        if (submitBtn) {
-          // Reset classes
-          submitBtn.classList.remove('m2048__btn--milestone');
-          // Set text and style
-          if (isMilestone && shouldShow) {
-            submitBtn.textContent = 'Enviar puntuación y continuar partida';
-            submitBtn.classList.add('m2048__btn--milestone');
-          } else if (isGameOver && shouldShow) {
-            submitBtn.textContent = 'Enviar puntuación';
-          } else {
-            submitBtn.textContent = 'Enviar puntuación';
+      const setCurrentPlayerName = (name) => {
+        state.currentPlayerName = name || '';
+        if (name) {
+          if (playerEl && playerNameEl && changeNameBtn) {
+            playerNameEl.innerHTML = `Estás jugando como <strong style="color: var(--accent);">${name}</strong>. Tu puntuación se guardará.`;
+            changeNameBtn.textContent = 'Cambiar nombre';
+            changeNameBtn.classList.add('secondary');
+            playerEl.style.display = 'grid';
+          }
+        } else {
+          if (playerEl && playerNameEl && changeNameBtn) {
+            playerNameEl.textContent = 'No has introducido ningún nombre. ¡No se guardará tu puntuación!';
+            changeNameBtn.textContent = 'Introducir nombre';
+            changeNameBtn.classList.remove('secondary');
+            playerEl.style.display = 'grid';
           }
         }
-
-        if (shouldShow && nameInput) {
-          const val = (nameInput.value || '').trim();
-          if (!val) nameInput.value = getLastName();
-
-          const shouldFocus = opts.focus !== false && !isMilestone;
-          if (shouldFocus) {
-            try { nameInput.focus(); } catch {}
-          }
-        }
-      };
-
-      const setSubmitMsg = (text) => {
-        if (!submitMsgEl) return;
-        submitMsgEl.textContent = text || '';
+        save();
       };
 
       const renderLeaderboard = (entries) => {
@@ -1302,12 +1224,9 @@ const {
       const submitScore = async (name, opts = {}) => {
         const after = String(opts.after || 'reset'); // 'reset' | 'continue'
         if (!leaderboardEndpoint) {
-          setSubmitMsg('Leaderboard no configurado.');
           return;
         }
         try {
-          setSubmitMsg('Enviando…');
-          submitBtn && (submitBtn.disabled = true);
 
           const maxTileValue = maxTile();
 
@@ -1324,27 +1243,21 @@ const {
 
           if (after === 'reset') {
             submittedThisGame = true;
-            localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame }));
+            localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame, currentPlayerName: state.currentPlayerName, lastSubmittedThousand: state.lastSubmittedThousand }));
             // Keep the board and game over message, hide submit, show new game button
-            showSubmit(false);
             setStatus('¡Game Over!');
             setGameOver(true);
-            if (actionsEl) actionsEl.hidden = false;
           } else {
             // En hito, solo ocultamos el formulario y seguimos jugando.
-            setSubmitMsg('');
-            showSubmit(false);
-            setStatus('');
+            // setStatus(''); // No limpiar el mensaje de milestone aquí
             state.submittedMilestone = true;
-            localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone }));
+            localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame, currentPlayerName: state.currentPlayerName, lastSubmittedThousand: state.lastSubmittedThousand }));
           }
         } catch (e) {
           console.error('[Mini-2048] Leaderboard submit failed:', e);
-          const msg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : 'No se pudo enviar.';
-          setSubmitMsg(msg || 'No se pudo enviar.');
         } finally {
-          submitBtn && (submitBtn.disabled = false);
         }
+        setCurrentPlayerName(name);
       };
 
       const rand = (n) => Math.floor(Math.random() * n);
@@ -1361,7 +1274,7 @@ const {
 
       const save = () => {
         try {
-          localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame }));
+          localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame, currentPlayerName: state.currentPlayerName, lastSubmittedThousand: state.lastSubmittedThousand }));
         } catch (_) {}
       };
 
@@ -1388,8 +1301,12 @@ const {
       const setStatus = (text) => {
         if (!statusEl) return;
         statusEl.textContent = text;
-        if (text) statusEl.classList.add('m2048__note--accent');
-        else statusEl.classList.remove('m2048__note--accent');
+        if (text) {
+          statusEl.style.opacity = '1';
+          statusEl.classList.add('m2048__note--accent');
+        } else {
+          statusEl.classList.remove('m2048__note--accent');
+        }
       };
 
       const reset = () => {
@@ -1398,14 +1315,18 @@ const {
         state.milestone = 2048;
         state.lastMilestone = 0;
         state.submittedMilestone = false;
+        state.lastSubmittedThousand = 0;
         spawn();
         spawn();
         setGameOver(false);
         submittedThisGame = false;
-        localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame }));
+        if (milestoneTimeoutId) {
+          clearTimeout(milestoneTimeoutId);
+          milestoneTimeoutId = null;
+        }
+        milestoneMessageActive = false;
+        localStorage.setItem(storageKey, JSON.stringify({ board: state.board, score: state.score, milestone: state.milestone, lastMilestone: state.lastMilestone, submittedMilestone: state.submittedMilestone, submittedThisGame: submittedThisGame, currentPlayerName: state.currentPlayerName, lastSubmittedThousand: state.lastSubmittedThousand }));
         setStatus('');
-        setSubmitMsg('');
-        showSubmit(false);
         render();
       };
 
@@ -1421,6 +1342,9 @@ const {
           state.lastMilestone = typeof parsed.lastMilestone === 'number' ? parsed.lastMilestone : 0;
           state.submittedMilestone = typeof parsed.submittedMilestone === 'boolean' ? parsed.submittedMilestone : false;
           submittedThisGame = typeof parsed.submittedThisGame === 'boolean' ? parsed.submittedThisGame : false;
+          state.currentPlayerName = typeof parsed.currentPlayerName === 'string' ? parsed.currentPlayerName : '';
+          state.lastSubmittedThousand = typeof parsed.lastSubmittedThousand === 'number' ? parsed.lastSubmittedThousand : 0;
+          setCurrentPlayerName(state.currentPlayerName);
           return true;
         } catch (_) {
           return false;
@@ -1647,7 +1571,6 @@ const {
       const move = (dir) => {
         if (isAnimating) return;
         if (isGameOver) return;
-        if (submitForm && !submitForm.hidden) return;
 
         const result = computeMove(dir);
         if (!result.changed) return;
@@ -1670,7 +1593,23 @@ const {
               state.lastMilestone = m;
               state.submittedMilestone = false;
             }
-
+            
+            // Envío automático si hay nombre
+            if (state.currentPlayerName && !submittedThisGame) {
+              let shouldSubmit = false;
+              let isThousandSubmit = false;
+              const currentThousand = Math.floor(state.score / 1000);
+              if (currentThousand > state.lastSubmittedThousand) {
+                shouldSubmit = true;
+                isThousandSubmit = true;
+              }
+              if (justHitMilestone) shouldSubmit = true;
+              if (shouldSubmit) {
+                if (isThousandSubmit) state.lastSubmittedThousand = currentThousand;
+                submitScore(state.currentPlayerName, { after: 'continue' });
+              }
+            }
+            
             render();
 
             // Pop the new tile after render
@@ -1687,21 +1626,25 @@ const {
 
             if (!canMove()) {
               setGameOver(true);
-              const reachedMilestone = maxTile() >= milestoneMin;
-              if (reachedMilestone) {
-                setStatus('¡Game Over!');
-                if (!submittedThisGame) showSubmit(true, { reason: 'gameover' });
-              } else {
-                setStatus('¡Game Over! Debes llegar a 2048 o más para poder subir una puntuación.');
-                showSubmit(false);
+              setStatus('¡Game Over!');
+              if (state.currentPlayerName && !submittedThisGame) {
+                submitScore(state.currentPlayerName, { after: 'reset' });
               }
-            } else if (!justHitMilestone) {
-              setStatus('');
             }
 
             if (justHitMilestone) {
-              setStatus(`¡Has llegado a ${m}! Puedes enviar tu puntuación y seguir jugando.`);
-              showSubmit(true, { reason: 'milestone', focus: false });
+              if (milestoneTimeoutId) clearTimeout(milestoneTimeoutId);
+              setStatus(`¡Has llegado a ${m}!`);
+              milestoneMessageActive = true;
+              milestoneStartTime = Date.now(); // Limpiar después de 5 segundos
+              milestoneTimeoutId = setTimeout(() => {
+                statusEl.style.opacity = '0';
+                setTimeout(() => setStatus(''), 1000);
+              }, 5000);
+              // No mostrar form, enviar automáticamente si hay nombre
+              if (state.currentPlayerName && !submittedThisGame) {
+                submitScore(state.currentPlayerName, { after: 'continue' });
+              }
             }
 
             // Pop merged destinations after the board updates.
@@ -1780,8 +1723,7 @@ const {
             if (m && m > (state.lastMilestone || 0)) {
               state.lastMilestone = m;
               state.submittedMilestone = false;
-              setStatus(`¡Has llegado a ${m}! Puedes enviar tu puntuación y seguir jugando.`);
-              showSubmit(true, { reason: 'milestone', focus: false });
+              setStatus(`¡Has llegado a ${m}!`);
             }
             render();
           } catch (err) {
@@ -1795,49 +1737,35 @@ const {
         reset();
       });
 
+      changeNameBtn?.addEventListener('click', () => {
+        if (state.currentPlayerName) {
+          const newName = prompt('Nuevo nombre:');
+          if (newName && newName.trim()) {
+            const ok = confirm('Cambiar nombre reiniciará la partida. ¿Continuar?');
+            if (ok) {
+              setCurrentPlayerName(newName.trim());
+              reset();
+            }
+          }
+        } else {
+          const newName = prompt('Introducir nombre:');
+          if (newName && newName.trim()) {
+            setCurrentPlayerName(newName.trim());
+          }
+        }
+      });
+
       lbRefreshBtn?.addEventListener('click', (e) => {
         e.preventDefault();
         fetchLeaderboard();
       });
 
-      // Close the leaderboard info <details> when clicking/tapping outside it.
-      try {
-        if (lbInfoEl) {
-          const onDocPointer = (ev) => {
-            try {
-              if (!lbInfoEl.open) return;
-              if (lbInfoEl.contains(ev.target)) return;
-              lbInfoEl.open = false;
-            } catch (_) {}
-          };
-
-          const onToggle = () => {
-            try {
-              if (lbInfoEl.open) {
-                document.addEventListener('pointerdown', onDocPointer, { capture: true });
-                document.addEventListener('touchstart', onDocPointer, { passive: true, capture: true });
-              } else {
-                document.removeEventListener('pointerdown', onDocPointer, { capture: true });
-                document.removeEventListener('touchstart', onDocPointer, { capture: true });
-              }
-            } catch (_) {}
-          };
-
-          lbInfoEl.addEventListener('toggle', onToggle);
-        }
-      } catch (_) {}
-
-      submitForm?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (submittedThisGame) return;
-        const name = String(nameInput?.value || '').trim();
-        if (!name) {
-          setSubmitMsg('Pon un nombre.');
-          return;
-        }
-        setLastName(name);
-        submitScore(name, { after: isGameOver ? 'reset' : 'continue' });
-      });
+      // Show leaderboard info as browser alert.
+      if (lbInfoEl) {
+        lbInfoEl.addEventListener('click', () => {
+          alert('Cómo funciona el juego y el Leaderboard\n\n- La partida se guarda en este dispositivo, aunque recargues la página.\n- Tu puntuación se subirá al Leaderboard automáticamente al conseguir las fichas 256, 512, 1024, 2048... (y todas las siguientes), cada 1000 puntos extra, o cuando termina la partida.\n- Si ya existe tu nombre, solo se actualiza si mejoras tu puntuación.\n- Nombre: 1–16 caracteres. Permitidos letras/números/espacios y ._-.');
+        });
+      }
 
       if (!load()) reset();
       else render();
@@ -1845,20 +1773,12 @@ const {
       // If a saved game is already blocked, reflect it immediately.
       if (!canMove()) {
         setGameOver(true);
-        const reachedMilestone = maxTile() >= milestoneMin;
-        if (reachedMilestone) {
-          setStatus('¡Game Over!');
-          if (!submittedThisGame) showSubmit(true, { reason: 'gameover' });
-        } else {
-          setStatus('¡Game Over! Debes llegar a 2048 o más para poder subir una puntuación.');
-          showSubmit(false);
+        setStatus('¡Game Over!');
+        if (state.currentPlayerName && !submittedThisGame) {
+          submitScore(state.currentPlayerName, { after: 'reset' });
         }
       } else {
-        // Si el guardado ya había llegado a un hito, mostrar mensaje.
-        if (state.lastMilestone > 0 && !state.submittedMilestone) {
-          setStatus(`¡Has llegado a ${state.lastMilestone}! Puedes enviar tu puntuación y seguir jugando.`);
-          showSubmit(true, { reason: 'milestone', focus: false });
-        }
+        // No mostrar mensaje de milestone al cargar, es información pasada
       }
 
       // Load leaderboard once on init.
