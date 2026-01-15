@@ -15,7 +15,7 @@ Trabajo en diseño de ASIC (microchips), centrado en la parte RTL y en el análi
 
 La imagen que ves arriba reúne en un solo plano los bloques más útiles para el día a día: desde sintaxis básica y operadores en Verilog hasta conceptos de metastabilidad, sincronización y estrategias de ahorro de energía. No pretende servir de documentación ni nada por el estilo: su valor está en que contiene las cosas básicas y la información está ordenada para consultarla en segundos.
 
-Si quieres ver los detalles, puedes visitar la página dedicada a la alfombrilla, **[Alfombrilla ASIC](/mousepad)**. Allí hay un visor con zoom para poder ver los detalles en alta resolución 🔍.
+Si quieres ver los detalles, puedes visitar la página dedicada a la alfombrilla, **[Alfombrilla ASIC](/mousepad)**. Allí hay un visor con zoom para poder ver los detalles en alta resolución. 🔍
 
 ## Herramientas usadas
 
