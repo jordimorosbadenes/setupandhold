@@ -1,7 +1,7 @@
 ---
 slug: mousepad-asic
 title: "Alfombrilla ASIC"
-description: "¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips ASIC 😎."
+description: "¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips ASIC. 😎"
 date: 2026-01-11
 tags: [asic, verilog, proyectos]
 draft: false
@@ -9,7 +9,7 @@ draft: false
 
 <img src="/img/asic-mousepad.png" alt="Alfombrilla ASIC" style="max-width:100%;height:auto;" />
 
-Esta alfombrilla nació de una necesidad sencilla: tener a mano, sobre la mesa, una referencia clara y visual con los conceptos que más consulto cuando trabajo en diseño digital. Quería algo inmediato que funcionara como una chuleta práctica durante las sesiones de trabajo, y que además quedara bien en el escritorio 😎.
+Esta alfombrilla nació de una necesidad sencilla: tener a mano, sobre la mesa, una referencia clara y visual con los conceptos que más consulto cuando trabajo en diseño digital. Quería algo inmediato que funcionara como una chuleta práctica durante las sesiones de trabajo, y que además quedara bien en el escritorio. 😎
 
 Trabajo en diseño de ASIC (microchips), centrado en la parte RTL y en el análisis de timing para la síntesis lógica; por eso gran parte del contenido está orientado a problemas reales que aparecen en el desarrollo de RTL, la síntesis, la simulación y la integración en silicio.
 
@@ -39,4 +39,4 @@ Como ves, tiene un poco de todo, pero tampoco tiene material super técnico. Lo 
 
 ## Cómo conseguirla
 
-Si te interesa una copia física, visita la página dedicada: **[Alfombrilla ASIC](/mousepad)**. Allí encontrarás una forma de contacto para pedirla 🙂.
+Si te interesa una copia física, visita la página dedicada: **[Alfombrilla ASIC](/mousepad)**. Allí encontrarás una forma de contacto para pedirla. 🙂
