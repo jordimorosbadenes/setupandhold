@@ -5,10 +5,10 @@ description: Un poco sobre mí, el porqué del sitio y qué proyectos puedes ver
 date: 2026-01-03
 tags: [hobbies, proyectos]
 hero:
-  src: https://images.unsplash.com/photo-1455849318743-b2233052fcff
+  src: https://images.unsplash.com/photo-1587845323226-bad89242c735
   alt: Header
-  height: 250
-  position: "50% 65%" # o "top", "center", "bottom"
+  height: 200
+  position: "center"
 pinned: true
 ---
 
