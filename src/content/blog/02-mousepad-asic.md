@@ -19,7 +19,7 @@ Si quieres ver los detalles, puedes visitar la página dedicada a la alfombrilla
 
 ## Herramientas usadas
 
-Usé **<a href="https://www.drawio.com/" target="_blank" rel="noreferrer noopener">Draw.io</a>** para todo el diseño. Draw.io es la copia open source de Microsoft Visio, aunque en mi opinión es mejor en casi todos los aspectos.
+Usé **<a href="https://www.drawio.com/" target="_blank" rel="noreferrer noopener">Draw.io</a>** para todo el diseño. Draw.io es un sustituto open source de Microsoft Visio. Lo uso desde hace unos años y en mi opinión, es mejor que Visio en casi todos los aspectos!
 
 ## Contenidos
 

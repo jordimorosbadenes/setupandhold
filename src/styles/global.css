@@ -300,6 +300,10 @@ a:hover {
   border-radius: 6px;
 }
 
+:root[data-theme='light'] .prose code {
+  background: rgba(0, 0, 0, 0.08);
+}
+
 /******************/
 /******************/
 
