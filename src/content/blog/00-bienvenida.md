@@ -7,7 +7,8 @@ tags: [hobbies, proyectos]
 hero:
   src: https://images.unsplash.com/photo-1587845323226-bad89242c735
   alt: Header
-  height: 200
+  height: 250
+  mobileHeight: 150
   position: "center"
 pinned: true
 ---

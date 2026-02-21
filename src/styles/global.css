@@ -249,6 +249,22 @@ a:hover {
   align-items: center;
 }
 
+/* Post hero image: responsive heights */
+.post-hero-img {
+  width: 100%;
+  height: var(--hero-mobile, 180px);
+  object-fit: cover;
+  object-position: var(--hero-pos, center);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+@media (min-width: 768px) {
+  .post-hero-img {
+    height: var(--hero-desktop, 200px);
+  }
+}
+
 /*******************************/
 /*******************************/
 

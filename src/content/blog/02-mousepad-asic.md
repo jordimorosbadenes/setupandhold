@@ -1,7 +1,7 @@
 ---
 slug: mousepad-asic
 title: "Alfombrilla ASIC"
-description: "¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips. 😎"
+description: "¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips."
 date: 2026-01-11
 tags: [asic, verilog, proyectos]
 draft: false
@@ -9,9 +9,9 @@ draft: false
 
 <img src="/img/asic-mousepad.png" alt="Alfombrilla ASIC" style="max-width:100%;height:auto;" />
 
-Esta alfombrilla nació de una **necesidad sencilla**: tener a mano, sobre la mesa, una referencia clara y visual con los conceptos que más consulto cuando trabajo en diseño digital. Quería algo inmediato que funcionara como una **chuleta práctica** durante las sesiones de trabajo, y que además quedara bien en el escritorio. 😎
+Este proyecto nació de una **necesidad**: tener a mano, sobre la mesa, una referencia clara y visual con los conceptos que más consulto cuando trabajo en diseño digital. Quería algo inmediato que funcionara como una **chuleta práctica** durante las sesiones de trabajo, y que además quedara "cool" en el escritorio. 😎
 
-Trabajo en **diseño de ASIC** (microchips), centrado en la parte RTL y en el análisis de timing para la síntesis lógica; por eso gran parte del contenido está orientado a problemas reales que aparecen en el desarrollo de RTL, la síntesis, la simulación y la integración en silicio.
+Trabajo en **diseño de ASIC** (microchips), centrado en la parte RTL y en el análisis de timing para la síntesis lógica; por eso gran parte del contenido está orientado a problemas reales que aparecen durante una jornada normal.
 
 La imagen que ves arriba reúne en un solo plano los bloques más útiles para el día a día: desde sintaxis básica y operadores en Verilog hasta conceptos de metastabilidad, sincronización y estrategias de ahorro de energía. No pretende servir de documentación ni nada por el estilo: su valor está en que contiene las cosas básicas y la información está ordenada para consultarla en segundos.
 
@@ -19,7 +19,7 @@ Si quieres ver los detalles, puedes visitar la página dedicada a la alfombrilla
 
 ## Herramientas usadas
 
-Usé **<a href="https://www.drawio.com/" target="_blank" rel="noreferrer noopener">Draw.io</a>** para todo el diseño. Draw.io es un sustituto open source de Microsoft Visio. Lo uso desde hace unos años y en mi opinión, es mejor que Visio en casi todos los aspectos!
+Usé **<a href="https://www.drawio.com/" target="_blank" rel="noreferrer noopener">Draw.io</a>** para todo el diseño. Draw.io es un sustituto open source de Microsoft Visio. Lo uso desde hace unos años y en mi opinión, supera a Visio en casi todos los aspectos!
 
 ## Contenidos
 

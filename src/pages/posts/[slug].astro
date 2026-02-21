@@ -14,6 +14,7 @@ const { entry } = Astro.props;
 const { Content } = await entry.render();
 const { title, description, date, updated, tags, hero } = entry.data;
 const heroHeight = hero?.height ?? 200;
+const heroMobileHeight = hero?.mobileHeight ?? 180;
 const heroPosition = hero?.position ?? 'center';
 const published = new Date(date).toLocaleDateString('es-ES', {
   year: 'numeric',
@@ -48,7 +49,8 @@ const updatedAt = updated
         <img
           src={hero.src}
           alt={hero.alt || title}
-          style={`width: 100%; height: ${heroHeight}px; object-fit: cover; object-position: ${heroPosition}; border-radius: var(--radius); border: 1px solid var(--border);`}
+          class="post-hero-img"
+          style={`--hero-mobile: ${heroMobileHeight}px; --hero-desktop: ${heroHeight}px; --hero-pos: ${heroPosition};`}
           loading="lazy"
         />
       </figure>
