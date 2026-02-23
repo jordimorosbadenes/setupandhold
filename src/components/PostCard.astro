@@ -34,75 +34,105 @@ const giscusTerm = withBase(`/posts/${post.slug}`);
 </article>
 
 <script>
-  // Token is injected at build time (PUBLIC_ prefix → safe for client bundles)
-  const TOKEN: string = import.meta.env.PUBLIC_GISCUS_TOKEN ?? '';
+  const REPO        = 'jordimorosbadenes/setupandhold';
+  const REPO_ID     = 'R_kgDOQxFETg';
+  const CATEGORY    = 'Announcements';
   const CATEGORY_ID = 'DIC_kwDOQxFETs4C3D9B';
 
-  // Shared cache so all cards on the same page share a single API call
-  let discussionsCache: Array<{
-    bodyText: string;
-    reactionGroups: Array<{ content: string; reactors: { totalCount: number } }>;
-    comments: { totalCount: number };
-  }> | null = null;
-
-  async function fetchAllDiscussions() {
-    if (discussionsCache) return discussionsCache;
-    if (!TOKEN) return [];
-    const query = `{
-      repository(owner:"jordimorosbadenes", name:"setupandhold") {
-        discussions(first:100, categoryId:"${CATEGORY_ID}", orderBy:{field:CREATED_AT,direction:DESC}) {
-          nodes {
-            bodyText
-            reactionGroups { content reactors { totalCount } }
-            comments { totalCount }
-          }
-        }
-      }
-    }`;
-    try {
-      const res = await fetch('https://api.github.com/graphql', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query }),
-      });
-      if (!res.ok) return [];
-      const json = await res.json();
-      discussionsCache = json?.data?.repository?.discussions?.nodes ?? [];
-    } catch {
-      discussionsCache = [];
-    }
-    return discussionsCache!;
+  function renderEl(el: HTMLElement, reactions: number, comments: number) {
+    if (reactions === 0 && comments === 0) return;
+    const parts: string[] = [];
+    if (reactions > 0) parts.push(`❤️ ${reactions}`);
+    if (comments > 0) parts.push(`💬 ${comments}`);
+    el.textContent = parts.join('\u00a0\u00a0');
   }
 
-  async function loadReactions() {
-    const els = document.querySelectorAll<HTMLElement>('[data-giscus-term]');
-    if (!els.length) return;
-    const discussions = await fetchAllDiscussions();
-
-    els.forEach((el) => {
-      const term = el.dataset.giscusTerm ?? '';
-      // Giscus stores the full page URL in the discussion body; match by path segment
-      const match = discussions.find((d) => d.bodyText.includes(term));
-      if (!match) return;
-
-      let reactions = 0;
-      for (const g of match.reactionGroups) {
-        reactions += g.reactors.totalCount;
-      }
-      const comments = match.comments.totalCount;
-      if (reactions === 0 && comments === 0) return;
-
-      const parts: string[] = [];
-      if (reactions > 0) parts.push(`❤️ ${reactions}`);
-      if (comments > 0) parts.push(`💬 ${comments}`);
-      el.textContent = parts.join('\u00a0\u00a0');
+  // 1. Render immediately from cache
+  function loadFromStorage() {
+    document.querySelectorAll<HTMLElement>('[data-giscus-term]').forEach((el) => {
+      const term = el.dataset.giscusTerm;
+      if (!term) return;
+      try {
+        const raw = localStorage.getItem(`giscus-meta:${term}`);
+        if (!raw) return;
+        const { reactions, comments } = JSON.parse(raw) as { reactions: number; comments: number };
+        renderEl(el, reactions, comments);
+      } catch {}
     });
   }
 
-  loadReactions();
+  // 2. Prefetch all terms in parallel — identify each iframe by event.source
+  function prefetchMissing() {
+    const items: Array<{ el: HTMLElement; term: string }> = [];
+    document.querySelectorAll<HTMLElement>('[data-giscus-term]').forEach((el) => {
+      const term = el.dataset.giscusTerm;
+      if (term) items.push({ el, term });
+    });
+    if (items.length === 0) return;
+
+    const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;top:-9999px;left:-9999px;';
+    document.body.appendChild(wrap);
+
+    // Map from iframe.contentWindow → {el, term}
+    const sourceMap = new Map<MessageEventSource, { el: HTMLElement; term: string }>();
+    let pending = items.length;
+
+    function cleanup() {
+      window.removeEventListener('message', onMessage);
+      wrap.remove();
+    }
+
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== 'https://giscus.app') return;
+      if (typeof event.data !== 'object' || !event.data.giscus) return;
+      if (!event.source) return;
+      const entry = sourceMap.get(event.source);
+      if (!entry) return;
+      const { discussion } = event.data.giscus;
+      if (!discussion) return;
+
+      // Remove so we only process the first metadata message per iframe
+      sourceMap.delete(event.source);
+
+      let reactions: number = discussion.reactionCount ?? 0;
+      if (!reactions && discussion.reactions) {
+        reactions = (Object.values(discussion.reactions) as number[]).reduce((a, b) => a + b, 0);
+      }
+      const comments: number = discussion.totalCommentCount ?? 0;
+      localStorage.setItem(`giscus-meta:${entry.term}`, JSON.stringify({ reactions, comments }));
+      renderEl(entry.el, reactions, comments);
+
+      if (--pending <= 0) cleanup();
+    }
+
+    window.addEventListener('message', onMessage);
+
+    // Create all iframes at once
+    items.forEach(({ el, term }) => {
+      const params = new URLSearchParams({
+        origin: window.location.origin,
+        repo: REPO, repoId: REPO_ID,
+        category: CATEGORY, categoryId: CATEGORY_ID,
+        mapping: 'pathname', term,
+        strict: '0', reactionsEnabled: '1',
+        emitMetadata: '1', inputPosition: 'top',
+        theme, lang: 'es', session: '',
+      });
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://giscus.app/widget?${params}`;
+      iframe.style.cssText = 'width:1px;height:1px;border:none;';
+      wrap.appendChild(iframe);
+      if (iframe.contentWindow) sourceMap.set(iframe.contentWindow, { el, term });
+    });
+
+    // Safety cleanup after 8s
+    setTimeout(cleanup, 8000);
+  }
+
+  loadFromStorage();
+  prefetchMissing();
 </script>
 
 <style>
