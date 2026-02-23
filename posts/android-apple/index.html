@@ -194,7 +194,7 @@
         s.setAttribute('data-mapping', 'pathname');
         s.setAttribute('data-strict', '0');
         s.setAttribute('data-reactions-enabled', '1');
-        s.setAttribute('data-emit-metadata', '0');
+        s.setAttribute('data-emit-metadata', '1');
         s.setAttribute('data-input-position', 'top');
         s.setAttribute('data-theme', theme);
         s.setAttribute('data-lang', 'es');
@@ -218,6 +218,21 @@
         postThemeToGiscus(htmlTheme === 'dark' ? 'dark' : 'light');
       });
       observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      // Save Giscus discussion metadata to localStorage for PostCard previews
+      window.addEventListener('message', (event) => {
+        if (event.origin !== 'https://giscus.app') return;
+        if (typeof event.data !== 'object' || !event.data.giscus) return;
+        const { discussion } = event.data.giscus;
+        if (!discussion) return;
+        let reactions = discussion.reactionCount ?? 0;
+        if (!reactions && discussion.reactions) {
+          reactions = Object.values(discussion.reactions).reduce((a, b) => a + b, 0);
+        }
+        const comments = discussion.totalCommentCount ?? 0;
+        const key = `giscus-meta:${window.location.pathname}`;
+        localStorage.setItem(key, JSON.stringify({ reactions, comments }));
+      });
 
       // Also react to OS-level preference changes
       if (window.matchMedia) {
