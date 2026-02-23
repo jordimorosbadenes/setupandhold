@@ -34,53 +34,72 @@ const giscusTerm = withBase(`/posts/${post.slug}`);
 </article>
 
 <script>
-  const REPO       = 'jordimorosbadenes/setupandhold';
-  const REPO_ID    = 'R_kgDOQxFETg';
-  const CATEGORY   = 'Announcements';
+  // Token is injected at build time (PUBLIC_ prefix → safe for client bundles)
+  const TOKEN: string = import.meta.env.PUBLIC_GISCUS_TOKEN ?? '';
   const CATEGORY_ID = 'DIC_kwDOQxFETs4C3D9B';
+
+  // Shared cache so all cards on the same page share a single API call
+  let discussionsCache: Array<{
+    bodyText: string;
+    reactionGroups: Array<{ content: string; reactors: { totalCount: number } }>;
+    comments: { totalCount: number };
+  }> | null = null;
+
+  async function fetchAllDiscussions() {
+    if (discussionsCache) return discussionsCache;
+    if (!TOKEN) return [];
+    const query = `{
+      repository(owner:"jordimorosbadenes", name:"setupandhold") {
+        discussions(first:100, categoryId:"${CATEGORY_ID}", orderBy:{field:CREATED_AT,direction:DESC}) {
+          nodes {
+            bodyText
+            reactionGroups { content reactors { totalCount } }
+            comments { totalCount }
+          }
+        }
+      }
+    }`;
+    try {
+      const res = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      discussionsCache = json?.data?.repository?.discussions?.nodes ?? [];
+    } catch {
+      discussionsCache = [];
+    }
+    return discussionsCache!;
+  }
 
   async function loadReactions() {
     const els = document.querySelectorAll<HTMLElement>('[data-giscus-term]');
-    await Promise.all(Array.from(els).map(async (el) => {
-      const term = el.dataset.giscusTerm;
-      if (!term) return;
-      try {
-        const params = new URLSearchParams({
-          repo: REPO,
-          repoId: REPO_ID,
-          category: CATEGORY,
-          categoryId: CATEGORY_ID,
-          mapping: 'pathname',
-          term,
-          strict: '0',
-          reactionsEnabled: '1',
-          emitMetadata: '1',
-          inputPosition: 'top',
-        });
-        const res = await fetch(`https://giscus.app/api/discussions?${params}`, {
-          headers: { Accept: 'application/json' },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const discussion = data?.discussion;
-        if (!discussion) return;
+    if (!els.length) return;
+    const discussions = await fetchAllDiscussions();
 
-        // Sum individual reactions if reactionCount is not present
-        let reactions: number = discussion.reactionCount ?? 0;
-        if (!reactions && discussion.reactions) {
-          reactions = Object.values<number>(discussion.reactions).reduce((a, b) => a + b, 0);
-        }
-        const comments: number = discussion.totalCommentCount ?? 0;
-        if (reactions === 0 && comments === 0) return;
+    els.forEach((el) => {
+      const term = el.dataset.giscusTerm ?? '';
+      // Giscus stores the full page URL in the discussion body; match by path segment
+      const match = discussions.find((d) => d.bodyText.includes(term));
+      if (!match) return;
 
-        const parts: string[] = [];
-        if (reactions > 0) parts.push(`❤️ ${reactions}`);
-        if (comments > 0) parts.push(`💬 ${comments}`);
-        el.textContent = parts.join('\u00a0\u00a0'); // Two spaces between
-      } catch {
-        // silently fail — no discussion yet for this post
+      let reactions = 0;
+      for (const g of match.reactionGroups) {
+        reactions += g.reactors.totalCount;
       }
-    }));
+      const comments = match.comments.totalCount;
+      if (reactions === 0 && comments === 0) return;
+
+      const parts: string[] = [];
+      if (reactions > 0) parts.push(`❤️ ${reactions}`);
+      if (comments > 0) parts.push(`💬 ${comments}`);
+      el.textContent = parts.join('\u00a0\u00a0');
+    });
   }
 
   loadReactions();
