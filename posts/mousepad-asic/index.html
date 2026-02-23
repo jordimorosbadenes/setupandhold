@@ -4,7 +4,9 @@
       const saved = localStorage.getItem(storageKey);
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
-    </script><link rel="stylesheet" href="/_astro/about.DRdFSPmh.css"></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <article class="hero prose"> <div class="card-meta"> <span class="pill">Publicado 11 de enero de 2026</span>  </div> <h1>Alfombrilla ASIC</h1> <p>¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips.</p> <div class="tag-row"> <a class="tag" href="/tags/asic">asic</a><a class="tag" href="/tags/verilog">verilog</a><a class="tag" href="/tags/proyectos">proyectos</a> </div>  <img src="/img/asic-mousepad.png" alt="Alfombrilla ASIC" style="max-width:100%;height:auto;">
+    </script><link rel="stylesheet" href="/_astro/about.DRdFSPmh.css">
+<style>.comments-section[data-astro-cid-gysqo7gh]{margin-top:24px}.comments-title[data-astro-cid-gysqo7gh]{margin:0 0 16px;font-size:1rem;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.08em}
+</style></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <article class="hero prose" data-astro-cid-gysqo7gh> <div class="card-meta" data-astro-cid-gysqo7gh> <span class="pill" data-astro-cid-gysqo7gh>Publicado 11 de enero de 2026</span>  </div> <h1 data-astro-cid-gysqo7gh>Alfombrilla ASIC</h1> <p data-astro-cid-gysqo7gh>¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips.</p> <div class="tag-row" data-astro-cid-gysqo7gh> <a class="tag" href="/tags/asic" data-astro-cid-gysqo7gh>asic</a><a class="tag" href="/tags/verilog" data-astro-cid-gysqo7gh>verilog</a><a class="tag" href="/tags/proyectos" data-astro-cid-gysqo7gh>proyectos</a> </div>  <img src="/img/asic-mousepad.png" alt="Alfombrilla ASIC" style="max-width:100%;height:auto;">
 <p>Este proyecto nació de una <strong>necesidad</strong>: tener a mano, sobre la mesa, una referencia clara y visual con los conceptos que más consulto cuando trabajo en diseño digital. Quería algo inmediato que funcionara como una <strong>chuleta práctica</strong> durante las sesiones de trabajo, y que además quedara “cool” en el escritorio. 😎</p>
 <p>Trabajo en <strong>diseño de ASIC</strong> (microchips), centrado en la parte RTL y en el análisis de timing para la síntesis lógica; por eso gran parte del contenido está orientado a problemas reales que aparecen durante una jornada normal.</p>
 <p>La imagen que ves arriba reúne en un solo plano los bloques más útiles para el día a día: desde sintaxis básica y operadores en Verilog hasta conceptos de metastabilidad, sincronización y estrategias de ahorro de energía. No pretende servir de documentación ni nada por el estilo: su valor está en que contiene las cosas básicas y la información está ordenada para consultarla en segundos.</p>
@@ -26,7 +28,74 @@
 </ul>
 <p>Como ves, tiene un poco de todo, pero tampoco tiene material super técnico. Lo que más me interesaba era que fuera limpia y bonita.</p>
 <h2 id="cómo-conseguirla">Cómo conseguirla</h2>
-<p>Si te interesa una copia física, visita la página dedicada: <strong><a href="/mousepad">Alfombrilla ASIC</a></strong>. Allí encontrarás una forma de contacto para pedirla. 🙂</p> </article>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+<p>Si te interesa una copia física, visita la página dedicada: <strong><a href="/mousepad">Alfombrilla ASIC</a></strong>. Allí encontrarás una forma de contacto para pedirla. 🙂</p> </article> <section class="hero comments-section" data-astro-cid-gysqo7gh> <h2 class="comments-title" data-astro-cid-gysqo7gh>Comentarios</h2> <div id="comments" data-astro-cid-gysqo7gh></div> </section> <script type="module">
+    (function () {
+      const COMMENTS_ID = 'comments';
+      const repo = 'jordimorosbadenes/setupandhold';
+      const repoId = 'R_kgDOQxFETg';
+      const category = 'Announcements';
+      const categoryId = 'DIC_kwDOQxFETs4C3D9B';
+
+      function getInitialTheme() {
+        // Prefer explicit site data-theme on <html>, then user preference
+        const htmlTheme = document.documentElement.dataset.theme;
+        if (htmlTheme === 'dark') return 'dark';
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+        return 'light';
+      }
+
+      function injectGiscus(theme) {
+        const container = document.getElementById(COMMENTS_ID);
+        if (!container) return;
+        // Avoid injecting twice
+        if (container.querySelector('script[data-repo]')) return;
+
+        const s = document.createElement('script');
+        s.src = 'https://giscus.app/client.js';
+        s.async = true;
+        s.setAttribute('data-repo', repo);
+        s.setAttribute('data-repo-id', repoId);
+        s.setAttribute('data-category', category);
+        s.setAttribute('data-category-id', categoryId);
+        s.setAttribute('data-mapping', 'pathname');
+        s.setAttribute('data-strict', '0');
+        s.setAttribute('data-reactions-enabled', '1');
+        s.setAttribute('data-emit-metadata', '0');
+        s.setAttribute('data-input-position', 'top');
+        s.setAttribute('data-theme', theme);
+        s.setAttribute('data-lang', 'es');
+        s.crossOrigin = 'anonymous';
+        container.appendChild(s);
+      }
+
+      function postThemeToGiscus(theme) {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: { setConfig: { theme } } }, 'https://giscus.app');
+      }
+
+      // Inject with initial theme
+      const initial = getInitialTheme();
+      injectGiscus(initial);
+
+      // Observe <html> data-theme changes (site theme toggle)
+      const observer = new MutationObserver(() => {
+        const htmlTheme = document.documentElement.dataset.theme;
+        postThemeToGiscus(htmlTheme === 'dark' ? 'dark' : 'light');
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      // Also react to OS-level preference changes
+      if (window.matchMedia) {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const handler = (e) => {
+          postThemeToGiscus(e.matches ? 'dark' : 'light');
+        };
+        if (mq.addEventListener) mq.addEventListener('change', handler);
+        else mq.addListener(handler);
+      }
+    })();
+  </script>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
     (() => {
       const key = 'theme';
       const apply = (value) => {
@@ -51,4 +120,4 @@
         init();
       }
     })();
-  </script> </body></html>
+  </script> </body></html> 
