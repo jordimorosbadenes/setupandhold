@@ -1,16 +1,20 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
-  return posts.map((post) => ({
+  const posts = await getCollection('blog', ({ data }: any) => !data.draft);
+  return posts.map((post: CollectionEntry<'blog'>) => ({
     params: { slug: post.slug },
     props: { entry: post },
   }));
 }
 
-const { entry } = Astro.props;
+interface Props {
+  entry: CollectionEntry<'blog'>;
+}
+
+const { entry } = Astro.props as Props;
 const { Content } = await entry.render();
 const { title, description, date, updated, tags, hero } = entry.data;
 const heroHeight = hero?.height ?? 200;
@@ -39,7 +43,7 @@ const updatedAt = updated
     <p>{description}</p>
     {tags?.length ? (
       <div class="tag-row">
-        {tags.map((tag) => (
+        {tags.map((tag: string) => (
           <a class="tag" href={`/tags/${tag.toLowerCase()}`}>{tag}</a>
         ))}
       </div>

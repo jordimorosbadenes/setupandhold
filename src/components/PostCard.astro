@@ -21,7 +21,7 @@ const giscusTerm = withBase(`/posts/${post.slug}`);
       <span class="pill">{formatted}</span>
       {tags?.length ? (
         <div class="tag-row">
-          {tags.map((tag) => (
+          {tags.map((tag: string) => (
             <span class="tag" aria-label={`Etiqueta ${tag}`}>{tag}</span>
           ))}
         </div>
@@ -57,7 +57,9 @@ const giscusTerm = withBase(`/posts/${post.slug}`);
           emitMetadata: '1',
           inputPosition: 'top',
         });
-        const res = await fetch(`https://giscus.app/api/discussions?${params}`);
+        const res = await fetch(`https://giscus.app/api/discussions?${params}`, {
+          headers: { Accept: 'application/json' },
+        });
         if (!res.ok) return;
         const data = await res.json();
         const discussion = data?.discussion;
