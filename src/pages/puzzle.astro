@@ -243,6 +243,7 @@ const apiBaseJSON = JSON.stringify(apiBase);
     import { OrbitControls } from 'https://esm.sh/three@0.128.0/examples/jsm/controls/OrbitControls.js';
     const THREE_NS = Object.assign({}, THREE, { STLLoader, OrbitControls });
     window.THREE = THREE_NS;
+    window.init3DViewer = function() {};
     window._threeReady = true;
     window.dispatchEvent(new Event('three-ready'));
   </script>

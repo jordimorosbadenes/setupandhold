@@ -5,15 +5,15 @@ import Mini2048 from '../components/mini2048/Mini2048.astro';
 import { getCollection } from 'astro:content';
 import { withBase } from '../utils/withBase';
 
-const allPosts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+const allPosts = (await getCollection('blog', ({ data }: { data: any }) => !data.draft)).sort(
+  (a: any, b: any) => b.data.date.valueOf() - a.data.date.valueOf()
 );
 // Elementos con el slug "pinned"
 const pinned = allPosts
-  .filter((p) => p.data?.pinned)
-  .sort((a, b) => (a.data.pinned_order ?? 0) - (b.data.pinned_order ?? 0));
+  .filter((p: any) => p.data?.pinned)
+  .sort((a: any, b: any) => (a.data.pinned_order ?? 0) - (b.data.pinned_order ?? 0));
 // Coger los 3 posts más recientes
-const latest = allPosts.filter((p) => !p.data?.pinned).slice(0, 3);
+const latest = allPosts.filter((p: any) => !p.data?.pinned).slice(0, 3);
 ---
 <BaseLayout title="setupandhold" description="Bitácora sobre tecnología y aficiones.">
   <section class="home-layout">
@@ -39,7 +39,7 @@ const latest = allPosts.filter((p) => !p.data?.pinned).slice(0, 3);
             <a class="button secondary" href={withBase('/posts')}>Ver todas</a>
           </div>
           <div class="post-grid">
-            {pinned.map((post) => <PostCard post={post} />)}
+            {pinned.map((post: any) => <PostCard post={post} />)}
           </div>
         </>
       ) : null}
@@ -49,7 +49,7 @@ const latest = allPosts.filter((p) => !p.data?.pinned).slice(0, 3);
         <a class="button secondary" href={withBase('/posts')}>Ver todas</a>
       </div>
       <div class="post-grid">
-        {latest.map((post) => <PostCard post={post} />)}
+        {latest.map((post: any) => <PostCard post={post} />)}
       </div>
     </div>
 
