@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import { withBase } from '../utils/withBase';
 
 interface Props {
   post: CollectionEntry<'blog'>;
@@ -12,6 +13,7 @@ const formatted = new Date(date).toLocaleDateString('es-ES', {
   month: 'short',
   day: 'numeric',
 });
+const giscusTerm = withBase(`/posts/${post.slug}`);
 ---
 <article class="post-card">
   <a class="card-link" href={`/posts/${post.slug}`}>
@@ -27,5 +29,68 @@ const formatted = new Date(date).toLocaleDateString('es-ES', {
     </div>
     <h3>{title}</h3>
     <p>{description}</p>
+    <div class="card-reactions" data-giscus-term={giscusTerm} aria-hidden="true"></div>
   </a>
 </article>
+
+<script>
+  const REPO       = 'jordimorosbadenes/setupandhold';
+  const REPO_ID    = 'R_kgDOQxFETg';
+  const CATEGORY   = 'Announcements';
+  const CATEGORY_ID = 'DIC_kwDOQxFETs4C3D9B';
+
+  async function loadReactions() {
+    const els = document.querySelectorAll<HTMLElement>('[data-giscus-term]');
+    await Promise.all(Array.from(els).map(async (el) => {
+      const term = el.dataset.giscusTerm;
+      if (!term) return;
+      try {
+        const params = new URLSearchParams({
+          repo: REPO,
+          repoId: REPO_ID,
+          category: CATEGORY,
+          categoryId: CATEGORY_ID,
+          mapping: 'pathname',
+          term,
+          strict: '0',
+          reactionsEnabled: '1',
+          emitMetadata: '1',
+          inputPosition: 'top',
+        });
+        const res = await fetch(`https://giscus.app/api/discussions?${params}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const discussion = data?.discussion;
+        if (!discussion) return;
+
+        // Sum individual reactions if reactionCount is not present
+        let reactions: number = discussion.reactionCount ?? 0;
+        if (!reactions && discussion.reactions) {
+          reactions = Object.values<number>(discussion.reactions).reduce((a, b) => a + b, 0);
+        }
+        const comments: number = discussion.totalCommentCount ?? 0;
+        if (reactions === 0 && comments === 0) return;
+
+        const parts: string[] = [];
+        if (reactions > 0) parts.push(`❤️ ${reactions}`);
+        if (comments > 0) parts.push(`💬 ${comments}`);
+        el.textContent = parts.join('\u00a0\u00a0'); // Two spaces between
+      } catch {
+        // silently fail — no discussion yet for this post
+      }
+    }));
+  }
+
+  loadReactions();
+</script>
+
+<style>
+  .card-reactions {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 0.75rem;
+  }
+  .card-reactions:empty {
+    margin-top: 0;
+  }
+</style>
