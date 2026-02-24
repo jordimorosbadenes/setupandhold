@@ -37,9 +37,10 @@
       const categoryId = 'DIC_kwDOQxFETs4C3D9B';
 
       function getInitialTheme() {
-        // Prefer explicit site data-theme on <html>, then user preference
+        // If the site has an explicit theme set (from localStorage via BaseLayout), use it
         const htmlTheme = document.documentElement.dataset.theme;
-        if (htmlTheme === 'dark') return 'dark';
+        if (htmlTheme === 'dark' || htmlTheme === 'light') return htmlTheme;
+        // Only fall back to OS preference if no stored theme exists
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
         return 'light';
       }
@@ -100,11 +101,13 @@
         localStorage.setItem(key, JSON.stringify({ reactions, comments }));
       });
 
-      // Also react to OS-level preference changes
+      // React to OS-level preference changes only if the user has no stored preference
       if (window.matchMedia) {
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
         const handler = (e) => {
-          postThemeToGiscus(e.matches ? 'dark' : 'light');
+          if (!localStorage.getItem('theme')) {
+            postThemeToGiscus(e.matches ? 'dark' : 'light');
+          }
         };
         if (mq.addEventListener) mq.addEventListener('change', handler);
         else mq.addListener(handler);
