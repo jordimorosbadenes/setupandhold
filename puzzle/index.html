@@ -5,33 +5,167 @@
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
     </script><link rel="stylesheet" href="/_astro/about.DRdFSPmh.css">
-<link rel="stylesheet" href="/_astro/puzzle.C_ZuvFbg.css"><script type="module" src="/_astro/hoisted.Dy25G91j.js"></script></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <section class="hero" data-astro-cid-pn244me4> <div class="hero-copy prose" data-astro-cid-pn244me4> <h1 data-astro-cid-pn244me4>Generador de Puzzles 3D</h1> <p data-astro-cid-pn244me4>
+<style>.puzzle-embed{position:relative;margin:0 auto;max-width:1100px;background:transparent;padding:0;min-height:300px}.puzzle-iframe{display:block;width:100%;min-height:300px;height:800px;border:none;overflow:hidden;opacity:0;transition:opacity .2s ease}.puzzle-iframe.loaded{opacity:1}.embed-wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);z-index:20;transition:opacity .22s ease,visibility .22s ease}.embed-wait.hide{opacity:0;visibility:hidden;pointer-events:none}.embed-loader{font-size:32px;animation:embed-spin 1s linear infinite}@keyframes embed-spin{to{transform:rotate(360deg)}}.embed-msg{display:grid;gap:4px;color:var(--text);font-weight:600}.embed-msg .embed-note{color:var(--muted);font-weight:500}.embed-msg .embed-status{color:var(--muted);font-weight:400;font-style:italic}.premium-section{margin:20px auto;max-width:1100px;padding:16px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}.premium-section.unlocked{display:none}.premium-section__row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.premium-section__label{color:var(--text);font-weight:600}.premium-section__toggle{padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg-soft);color:var(--text);font-weight:600;cursor:pointer;transition:border-color .14s ease,color .14s ease}.premium-section__toggle:hover{border-color:var(--accent);color:var(--accent)}.premium-gate{margin-top:12px}.premium-gate__text{color:var(--muted);font-size:.95rem;margin:0 0 10px}.premium-gate__cta{display:flex;justify-content:center;margin:0 0 12px}.premium-gate__link{display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;border-radius:999px;text-decoration:none;font-weight:800;letter-spacing:.02em;color:#2a1a00!important;background:linear-gradient(120deg,#f7e08a,#d4af37)!important;border:1px solid rgba(212,175,55,.55);box-shadow:0 10px 22px #0000002e;transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}.premium-gate__link:hover{transform:translateY(-1px);filter:brightness(1.02)}.premium-gate__row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.premium-gate__input{width:100%;padding:10px 12px;background:var(--bg-soft);border:1px solid var(--border);border-radius:12px;color:var(--text);font-weight:600}.premium-gate__btn{padding:8px 14px;border-radius:999px;border:1px solid rgba(52,211,153,.55);background:linear-gradient(120deg,#6ee7b7,#34d399);color:#062012;font-weight:600;cursor:pointer;transition:transform .14s ease;white-space:nowrap}.premium-gate__btn:hover{transform:translateY(-1px)}.premium-gate__error{display:none;margin-top:10px;color:#ff8a8a}:root[data-theme=light] .premium-gate__error{color:#c33}.construction-warning{margin:20px auto;max-width:1100px;padding:20px;background:#ffc1071a;border:1px solid rgba(255,193,7,.3);border-radius:var(--radius);text-align:center;color:var(--text)}.construction-warning h2{margin:0 0 10px;color:var(--text);font-size:1.8rem}.construction-warning p{margin:0;color:var(--muted)}@media (max-width: 900px){.puzzle-embed{margin:0 12px}.premium-section{margin:20px 12px;padding:14px}}
+</style></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <section class="hero"> <div class="hero-copy prose"> <h1>Generador de Puzzles 3D</h1> <p>
 Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
-</p> <div class="hero-actions" data-astro-cid-pn244me4> <a class="button" href="/" data-astro-cid-pn244me4>Ir al inicio</a> </div> </div> </section> <section class="construction-warning" data-astro-cid-pn244me4> <div class="construction-content" data-astro-cid-pn244me4> <h2 data-astro-cid-pn244me4>🚧 Página en Construcción</h2> <p data-astro-cid-pn244me4>Esta página aún no está terminada y algunas funcionalidades pueden no funcionar correctamente o estar incompletas.</p> </div> </section> <link rel="stylesheet" id="backend-style" href="https://puzzle-generator-vkgt.onrender.com/static/style.css" media="print" onload="this.media='all'"> <section class="puzzle-shell blocked" data-api-base="https://puzzle-generator-vkgt.onrender.com" data-gumroad-product-id="FspVL8bkIYZVXzA2k7Rj3g==" data-astro-cid-pn244me4> <div id="backend-wait" class="backend-wait" aria-live="polite" data-astro-cid-pn244me4> <div class="loader" aria-hidden="true" data-astro-cid-pn244me4>🧩</div> <div class="backend-msg" data-astro-cid-pn244me4> <strong data-astro-cid-pn244me4>Arrancando backend…</strong> <span class="backend-note" data-astro-cid-pn244me4>Render se está despertando. Puede tardar ~1 minuto la primera vez.</span> <span class="backend-status" aria-live="polite" data-astro-cid-pn244me4></span> </div> </div> <div class="container" id="puzzle-container" aria-live="polite" data-astro-cid-pn244me4> <h1 data-astro-cid-pn244me4>🧩 Puzzle Generator Web</h1> <p class="subtitle" data-astro-cid-pn244me4>
-Crea puzzles 3D con visualización isométrica e imprime en tu impresora 3D.
-</p> <div class="panel config-panel" data-astro-cid-pn244me4> <h2 data-astro-cid-pn244me4>⚙️ Configuración del Puzzle</h2> <div class="form-grid" data-astro-cid-pn244me4> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Filas (M):</label> <input type="number" id="M" value="5" min="2" max="20" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Columnas (N):</label> <input type="number" id="N" value="6" min="2" max="20" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Tamaño mínimo (celdas):</label> <input type="number" id="min_size" value="3" min="1" max="10" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Tamaño máximo (celdas):</label> <input type="number" id="max_size" value="4" min="1" max="10" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Modo:</label> <select id="mode" data-astro-cid-pn244me4> <option value="Fast (original)" data-astro-cid-pn244me4>Rápido (original)</option> <option value="Force minimum" data-astro-cid-pn244me4>Forzar mínimo</option> <option value="Balanced" selected data-astro-cid-pn244me4>Equilibrado</option> <option value="Strategic" data-astro-cid-pn244me4>Estratégico</option> </select> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Bordes bloqueados:</label> <select id="border_prob" data-astro-cid-pn244me4> <option value="0" data-astro-cid-pn244me4>0%</option> <option value="25" selected data-astro-cid-pn244me4>25%</option> <option value="50" data-astro-cid-pn244me4>50%</option> <option value="75" data-astro-cid-pn244me4>75%</option> </select> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Celdas aire:</label> <select id="air_prob" data-astro-cid-pn244me4> <option value="0" selected data-astro-cid-pn244me4>0%</option> <option value="5" data-astro-cid-pn244me4>5%</option> <option value="10" data-astro-cid-pn244me4>10%</option> <option value="15" data-astro-cid-pn244me4>15%</option> </select> </div> </div> <button id="generate-btn" class="btn btn-primary" data-astro-cid-pn244me4>▶ Generar Puzzle</button> </div> <div id="status" class="status" data-astro-cid-pn244me4></div> <div class="canvas-area" data-astro-cid-pn244me4> <div class="canvas-section" data-astro-cid-pn244me4> <h3 data-astro-cid-pn244me4>🧩 Puzzle</h3> <div class="premium-lock" data-premium-lock data-astro-cid-pn244me4> <div class="view-controls" data-astro-cid-pn244me4> <button class="view-btn active" id="btn-isometric" onclick="switchView(event, 'isometric')" data-astro-cid-pn244me4>Isométrico</button> <button class="view-btn" id="btn-flat" onclick="switchView(event, 'flat')" data-astro-cid-pn244me4>Plano</button> </div> <div class="premium-lock__canvas" data-astro-cid-pn244me4> <canvas id="puzzle-canvas" width="600" height="600" data-astro-cid-pn244me4></canvas> <div class="premium-lock__overlay" data-astro-cid-pn244me4> <button type="button" class="premium-unlock premium-unlock--open" data-premium-open data-astro-cid-pn244me4>🔓 Desbloquear</button> <div class="premium-gate premium-gate--hidden" role="group" aria-label="Acceso premium" data-premium-gate data-astro-cid-pn244me4> <h4 class="premium-gate__title" data-astro-cid-pn244me4>🔒 Modo premium</h4> <p class="premium-gate__text" data-astro-cid-pn244me4>Introduce tu clave para desbloquear el visor.</p> <div class="premium-gate__cta" data-astro-cid-pn244me4> <a class="premium-gate__link" href="https://jordimororock.gumroad.com/l/nbscvo" target="_blank" rel="noreferrer" data-astro-cid-pn244me4>Conseguir clave</a> </div> <div class="premium-gate__row" data-astro-cid-pn244me4> <input class="premium-gate__input" type="text" inputmode="text" autocomplete="one-time-code" placeholder="Clave" aria-label="Clave" data-premium-key data-astro-cid-pn244me4> <button type="button" class="premium-unlock" data-premium-unlock data-astro-cid-pn244me4>🔓 Desbloquear</button> </div> <div class="premium-gate__error" data-premium-error aria-live="polite" data-astro-cid-pn244me4></div> </div> </div> </div> </div> </div> <div class="canvas-section" data-astro-cid-pn244me4> <h3 data-astro-cid-pn244me4>🎨 Galería de Piezas</h3> <canvas id="gallery-canvas" width="500" height="600" data-astro-cid-pn244me4></canvas> </div> </div> <div class="panel solutions-panel" data-astro-cid-pn244me4> <h2 data-astro-cid-pn244me4>🔍 Buscar Soluciones</h2> <div class="solution-controls" data-astro-cid-pn244me4> <button id="solve-10-btn" class="btn" data-astro-cid-pn244me4>Buscar 10 soluciones</button> <button id="solve-50-btn" class="btn" data-astro-cid-pn244me4>Buscar 50 soluciones</button> <button id="prev-btn" class="btn" data-astro-cid-pn244me4>◀ Anterior</button> <button id="next-btn" class="btn" data-astro-cid-pn244me4>▶ Siguiente</button> <button id="original-btn" class="btn" data-astro-cid-pn244me4>Original</button> </div> <div id="solution-info" class="solution-info" data-astro-cid-pn244me4>Solución: 0 (Original) | Encontradas: 0</div> </div> <div class="panel export-panel" data-astro-cid-pn244me4> <h2 data-astro-cid-pn244me4>🖨️ Exportar a STL para Impresión 3D</h2> <div class="form-grid" data-astro-cid-pn244me4> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Tamaño cubo (mm):</label> <input type="number" id="stl_cube_size" value="10" step="0.5" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Altura piezas (mm):</label> <input type="number" id="stl_height" value="2" step="0.5" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Tolerancia (mm):</label> <input type="number" id="stl_tolerance" value="0.3" step="0.1" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Separación (mm):</label> <input type="number" id="stl_gap" value="5" step="0.5" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Tamaño borde base (mm):</label> <input type="number" id="stl_border" value="5" step="0.5" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Espesor base (mm):</label> <input type="number" id="stl_base_thickness" value="1" step="0.5" data-astro-cid-pn244me4> </div> <div class="form-group" data-astro-cid-pn244me4> <label data-astro-cid-pn244me4>Altura paredes (mm):</label> <input type="number" id="stl_wall_height" value="2" step="0.5" data-astro-cid-pn244me4> </div> </div> <div class="export-buttons" data-astro-cid-pn244me4> <button id="export-stl-btn" class="btn btn-success" data-astro-cid-pn244me4>Descargar STL (Base + Piezas)</button> </div> <div id="status-viewer" class="status" data-astro-cid-pn244me4></div> <h3 style="margin-top: 20px;" data-astro-cid-pn244me4>📦 Vista Previa 3D</h3> <div id="viewer-3d" style="width: 100%; height: 500px; border: 1px solid var(--border); border-radius: 12px; background-color: rgba(255,255,255,0.02);" data-astro-cid-pn244me4></div> </div> </div> </section> <script>
-    (function patchFetch() {
-      const base = "https://puzzle-generator-vkgt.onrender.com";
-      const originalFetch = window.fetch.bind(window);
-      window.fetch = (input, init) => {
-        if (typeof input === 'string' && input.startsWith('/')) {
-          return originalFetch(base + input, init);
-        }
-        if (input && typeof input.url === 'string' && input.url.startsWith('/')) {
-          input = new Request(base + input.url, input);
-        }
-        return originalFetch(input, init);
+</p> <div class="hero-actions"> <a class="button" href="/">Ir al inicio</a> </div> </div> </section> <section class="construction-warning"> <div class="construction-content"> <h2>🚧 Página en Construcción</h2> <p>Esta página aún no está terminada y algunas funcionalidades pueden no funcionar correctamente o estar incompletas.</p> </div> </section>  <section class="premium-section" id="premium-bar" data-gumroad-product-id="FspVL8bkIYZVXzA2k7Rj3g==" data-gumroad-url="https://jordimororock.gumroad.com/l/nbscvo"> <div class="premium-section__row"> <span class="premium-section__label">🔒 El canvas del puzzle está bloqueado.</span> <button type="button" class="premium-section__toggle" id="premium-toggle">Desbloquear</button> </div> <div class="premium-gate" id="premium-gate" style="display:none;"> <p class="premium-gate__text">Introduce tu clave de compra para desbloquear la vista del puzzle.</p> <div class="premium-gate__cta"> <a class="premium-gate__link" href="https://jordimororock.gumroad.com/l/nbscvo" target="_blank" rel="noreferrer">Conseguir clave</a> </div> <div class="premium-gate__row"> <input class="premium-gate__input" type="text" inputmode="text" autocomplete="one-time-code" placeholder="Clave de compra" aria-label="Clave" id="premium-key"> <button type="button" class="premium-gate__btn" id="premium-unlock">🔓 Verificar</button> </div> <div class="premium-gate__error" id="premium-error" aria-live="polite"></div> </div> </section>  <section class="puzzle-embed" data-api-base="https://puzzle-generator-vkgt.onrender.com" data-gumroad-product-id="FspVL8bkIYZVXzA2k7Rj3g==" data-gumroad-url="https://jordimororock.gumroad.com/l/nbscvo"> <!-- Wait overlay while backend cold-starts --> <div id="embed-wait" class="embed-wait" aria-live="polite"> <div class="embed-loader" aria-hidden="true">🧩</div> <div class="embed-msg"> <strong>Arrancando backend…</strong> <span class="embed-note">Render se está despertando. Puede tardar ~1 minuto la primera vez.</span> <span class="embed-status" aria-live="polite"></span> </div> </div> <!-- The entire PuzzleGenerator UI lives inside this iframe.
+         No HTML duplication, no CSS overrides — the backend serves
+         its own page with ?embed=1 to activate the embed theme. --> <iframe id="puzzle-iframe" class="puzzle-iframe" title="Puzzle Generator" scrolling="no" allowtransparency="true" style="background: transparent;" allowfullscreen></iframe> </section> <script>(function(){const apiBase = "https://puzzle-generator-vkgt.onrender.com";
+const GUMROAD_PRODUCT_ID = "FspVL8bkIYZVXzA2k7Rj3g==";
+
+    (() => {
+      const embed  = document.querySelector('.puzzle-embed');
+      const iframe = document.getElementById('puzzle-iframe');
+      const waitEl = document.getElementById('embed-wait');
+      const statusEl = embed?.querySelector('.embed-status');
+      const base   = (apiBase || '').replace(/\/$/, '');
+
+      if (!base) {
+        if (statusEl) statusEl.textContent = 'Falta configurar PUBLIC_PUZZLEGEN_URL.';
+        return;
+      }
+
+      /* ---- Health polling ---- */
+      const pingHealth = async () => {
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 8000);
+          const res = await fetch(`${base}/health`, { signal: ctrl.signal });
+          clearTimeout(t);
+          return res.ok;
+        } catch { return false; }
       };
+
+      const boot = async () => {
+        let ok = false;
+        while (!ok) {
+          ok = await pingHealth();
+          if (!ok) {
+            if (statusEl) statusEl.textContent = 'Esperando al backend…';
+            await new Promise(r => setTimeout(r, 3000));
+          }
+        }
+        if (statusEl) statusEl.textContent = 'Cargando interfaz…';
+        const theme = document.documentElement.dataset.theme || 'dark';
+        iframe.src = `${base}/?embed=1&theme=${theme}`;
+      };
+
+      /* ---- Messages from iframe ---- */
+      let iframeLoaded = false;
+
+      window.addEventListener('message', (e) => {
+        const d = e.data;
+        if (!d || typeof d !== 'object') return;
+
+        if (d.type === 'puzzle-loaded') {
+          iframeLoaded = true;
+          waitEl?.classList.add('hide');
+          iframe.classList.add('loaded');
+        }
+
+        if (d.type === 'puzzle-resize' && typeof d.height === 'number') {
+          iframe.style.height = d.height + 'px';
+        }
+      });
+
+      // Fallback: use iframe load event if postMessage doesn't fire
+      iframe.addEventListener('load', () => {
+        if (!iframeLoaded) {
+          setTimeout(() => {
+            iframeLoaded = true;
+            waitEl?.classList.add('hide');
+            iframe.classList.add('loaded');
+          }, 500);
+        }
+      });
+
+      /* ---- Theme bridge ---- */
+      const syncTheme = () => {
+        const theme = document.documentElement.dataset.theme || 'dark';
+        try { iframe.contentWindow?.postMessage({ type: 'theme-change', theme }, '*'); } catch {}
+      };
+
+      new MutationObserver(() => syncTheme())
+        .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      /* ---- Premium lock ---- */
+      const premiumSection = document.getElementById('premium-bar');
+      const premiumToggle  = document.getElementById('premium-toggle');
+      const premiumGate    = document.getElementById('premium-gate');
+      const premiumKey     = document.getElementById('premium-key');
+      const premiumBtn     = document.getElementById('premium-unlock');
+      const premiumError   = document.getElementById('premium-error');
+
+      const setPremium = (unlocked) => {
+        try { iframe.contentWindow?.postMessage({ type: 'premium-status', unlocked }, '*'); } catch {}
+        if (unlocked && premiumSection) premiumSection.classList.add('unlocked');
+      };
+
+      premiumToggle?.addEventListener('click', () => {
+        const hidden = premiumGate.style.display === 'none';
+        premiumGate.style.display = hidden ? '' : 'none';
+        if (hidden) setTimeout(() => premiumKey?.focus(), 0);
+      });
+
+      const verifyKey = async () => {
+        const key = (premiumKey?.value || '').trim();
+        if (!key) {
+          showPremiumError('Introduce una clave válida.');
+          return;
+        }
+        if (!GUMROAD_PRODUCT_ID) {
+          showPremiumError('Falta configurar el product_id de Gumroad.');
+          return;
+        }
+        const prev = premiumBtn.textContent;
+        premiumBtn.disabled = true;
+        premiumBtn.textContent = 'Verificando…';
+        showPremiumError('');
+
+        try {
+          const body = new URLSearchParams({
+            product_id: GUMROAD_PRODUCT_ID,
+            license_key: key,
+            increment_uses_count: 'false',
+          });
+          const res = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body,
+          });
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok || !data || data.success !== true) {
+            showPremiumError('Clave no válida. Revisa que la hayas copiado tal cual.');
+            return;
+          }
+          const p = data.purchase || {};
+          if (p.refunded || p.disputed || p.chargebacked) {
+            showPremiumError('Esta compra no está activa (reembolso o disputa).');
+            return;
+          }
+          setPremium(true);
+        } catch {
+          showPremiumError('No se pudo verificar la clave. Inténtalo de nuevo.');
+        } finally {
+          premiumBtn.disabled = false;
+          premiumBtn.textContent = prev;
+        }
+      };
+
+      function showPremiumError(text) {
+        if (!premiumError) return;
+        premiumError.textContent = text;
+        premiumError.style.display = text ? 'block' : 'none';
+      }
+
+      premiumBtn?.addEventListener('click', verifyKey);
+      premiumKey?.addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyKey(); });
+
+      /* ---- Start ---- */
+      boot();
     })();
-  </script> <script type="module">
-    import * as THREE from 'https://esm.sh/three@0.128.0';
-    import { STLLoader } from 'https://esm.sh/three@0.128.0/examples/jsm/loaders/STLLoader.js';
-    import { OrbitControls } from 'https://esm.sh/three@0.128.0/examples/jsm/controls/OrbitControls.js';
-    const THREE_NS = Object.assign({}, THREE, { STLLoader, OrbitControls });
-    window.THREE = THREE_NS;
-    window._threeReady = true;
-    window.dispatchEvent(new Event('three-ready'));
-  </script>   </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+  })();</script>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
     (() => {
       const key = 'theme';
       const apply = (value) => {
@@ -56,4 +190,4 @@ Crea puzzles 3D con visualización isométrica e imprime en tu impresora 3D.
         init();
       }
     })();
-  </script> </body></html>  
+  </script> </body></html> 
