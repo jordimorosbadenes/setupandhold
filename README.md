@@ -12,13 +12,21 @@ muestra.
 winget install -e --id OpenJS.NodeJS.LTS
 
 ## Después de instalar, cierra y abre PowerShell y comprueba:
+
+```bash
 node -v
 npm -v
+```
 
-## Puesta en marcha
+## Puesta en marcha, instalación
 
 ```bash
 npm install
+```
+
+## Ejecución en modo dev
+
+```bash
 npm run dev
 ```
 
