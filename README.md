@@ -9,13 +9,20 @@ muestra.
 - Node.js 18+ (se recomienda 20+)
 - npm (o pnpm/yarn si prefieres; ajusta los comandos)
 
+```bash
 winget install -e --id OpenJS.NodeJS.LTS
+```
 
 ## Después de instalar, cierra y abre PowerShell y comprueba:
 
 ```bash
 node -v
 npm -v
+```
+## Si npm no funciona porque la ejcución de scripts está deshabilitada, haz primero:
+
+```bash
+Set-ExecutionPolicy RemoteSigned
 ```
 
 ## Puesta en marcha, instalación

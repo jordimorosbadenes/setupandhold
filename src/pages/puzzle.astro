@@ -12,9 +12,9 @@ const apiBase = PUZZLEGEN_URL;
 >
   <section class="hero">
     <div class="hero-copy prose">
-      <h1>Generador de Puzzles 3D</h1>
+      <h1>PuzzleStudio3D</h1>
       <p>
-        Generador de puzzles 3D con vista isométrica, búsqueda de soluciones y exportación a STL.
+        Genera y personaliza puzzles 3D: elige el tipo de puzzle, personaliza en el editor de texturas, y exporta de manera flexible a STL/3MF listo para impresión.
       </p>
       <div class="hero-actions">
         <a class="button" href={withBase('/')}>Ir al inicio</a>
@@ -78,7 +78,8 @@ const apiBase = PUZZLEGEN_URL;
 
     <!-- The entire PuzzleGenerator UI lives inside this iframe.
          No HTML duplication, no CSS overrides — the backend serves
-         its own page with ?embed=1 to activate the embed theme. -->
+         its own page with ?embed=1 to activate the embed theme.
+         Transparent background with iframes: https://fvsch.com/transparent-iframes -->
     <iframe
       id="puzzle-iframe"
       class="puzzle-iframe"
