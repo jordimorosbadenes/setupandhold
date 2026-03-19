@@ -1,0 +1,4639 @@
+﻿// ============================================================
+//  CONFIGURACIÓN DE VALORES POR DEFECTO DE RELLENO
+//  Edita este bloque para cambiar los valores iniciales de cada
+//  tipo de relleno según el tipo de puzzle y forma de pieza.
+//
+//  CLAVES DE PUZZLE:
+//    'normal'    → puzzle normal (piezas rectangulares)
+//    'fractal_0' → puzzle fractal, piezas circulares
+//    'fractal_1' → puzzle fractal, piezas cuadradas
+//    'fractal_2' → puzzle fractal, piezas octagonales
+//
+//  PARÁMETROS COMUNES (aplican a todos los rellenos excepto Sólido):
+//    infill_wall          → grosor de la pared exterior de la pieza (mm)
+//
+//  PARÁMETROS POR TIPO DE RELLENO:
+//    hollow   → (sin parámetros extra)
+//    grid     → infill_fill_width  grosor línea rejilla (mm)
+//               infill_spacing     separación entre líneas (mm)
+//               infill_angle       ángulo de rotación (°)
+//    stripes  → infill_fill_width_s  ancho de cada raya (mm)
+//               infill_spacing_s    separación entre rayas (mm)
+//               infill_angle        ángulo de rotación (°)
+//    zigzag   → infill_fill_width_z  grosor línea zigzag (mm)
+//               infill_spacing_z    separación entre líneas (mm)
+//               infill_amplitude    amplitud del zigzag (mm)
+//               infill_angle        ángulo de rotación (°)
+//    honeycomb→ infill_fill_width_h  grosor pared celda hexagonal (mm)
+//               infill_cell_size    tamaño de cada celda (mm)
+//               infill_angle        ángulo de rotación (°)
+//    circles  → infill_fill_width_c  grosor del anillo de cada círculo (mm)
+// ============================================================
+const INFILL_DEFAULTS = {
+    // ── PUZZLE NORMAL (piezas rectangulares) ─────────────────
+    normal: {
+        common:    { infill_wall: 2.0 },
+        hollow:    {},
+        grid:      { infill_fill_width: 1.0,  infill_spacing: 3.5,  infill_angle: 45 },
+        stripes:   { infill_fill_width_s: 1.5, infill_spacing_s: 2.0, infill_angle: 45 },
+        zigzag:    { infill_fill_width_z: 1.5, infill_spacing_z: 1.5, infill_amplitude: 1.0, infill_angle: 45 },
+        honeycomb: { infill_fill_width_h: 0.5, infill_cell_size: 4.0, infill_angle: 45 },
+        circles:   { infill_fill_width_c: 2.2 },
+    },
+    // ── FRACTAL — piezas CIRCULARES (arc_shape = 0) ──────────
+    fractal_0: {
+        common:    { infill_wall: 1.5 },
+        hollow:    {},
+        grid:      { infill_fill_width: 1.0,  infill_spacing: 3.0,  infill_angle: 0 },
+        stripes:   { infill_fill_width_s: 1.0, infill_spacing_s: 1.5, infill_angle: 0 },
+        zigzag:    { infill_fill_width_z: 1.0, infill_spacing_z: 1.5, infill_amplitude: 1.0, infill_angle: 0 },
+        honeycomb: { infill_fill_width_h: 0.5, infill_cell_size: 3.5, infill_angle: 0 },
+        circles:   { infill_fill_width_c: 1.7 },
+    },
+    // ── FRACTAL — piezas CUADRADAS (arc_shape = 1) ───────────
+    fractal_1: {
+        common:    { infill_wall: 1.5 },
+        hollow:    {},
+        grid:      { infill_fill_width: 1.0,  infill_spacing: 3.0,  infill_angle: 0 },
+        stripes:   { infill_fill_width_s: 1.0, infill_spacing_s: 1.5, infill_angle: 0 },
+        zigzag:    { infill_fill_width_z: 1.0, infill_spacing_z: 1.5, infill_amplitude: 1.0, infill_angle: 0 },
+        honeycomb: { infill_fill_width_h: 0.5, infill_cell_size: 3.5, infill_angle: 0 },
+        circles:   { infill_fill_width_c: 2.33 },
+    },
+    // ── FRACTAL — piezas OCTAGONALES (arc_shape = 2) ─────────
+    fractal_2: {
+        common:    { infill_wall: 1.5 },
+        hollow:    {},
+        grid:      { infill_fill_width: 1.0,  infill_spacing: 3.0,  infill_angle: 0 },
+        stripes:   { infill_fill_width_s: 1.0, infill_spacing_s: 1.5, infill_angle: 0 },
+        zigzag:    { infill_fill_width_z: 1.0, infill_spacing_z: 1.5, infill_amplitude: 1.0, infill_angle: 0 },
+        honeycomb: { infill_fill_width_h: 0.5, infill_cell_size: 3.5, infill_angle: 0 },
+        circles:   { infill_fill_width_c: 1.7 },
+    },
+    // ── JIGSAW ───────────────────────────────────────────────
+    jigsaw: {
+        common:    { infill_wall: 1.5 },
+        hollow:    {},
+        grid:      { infill_fill_width: 1.0,  infill_spacing: 3.0,  infill_angle: 0 },
+        stripes:   { infill_fill_width_s: 1.0, infill_spacing_s: 1.5, infill_angle: 0 },
+        zigzag:    { infill_fill_width_z: 1.0, infill_spacing_z: 1.5, infill_amplitude: 1.0, infill_angle: 0 },
+        honeycomb: { infill_fill_width_h: 0.5, infill_cell_size: 3.5, infill_angle: 0 },
+        circles:   { infill_fill_width_c: 1.7 },
+    },
+};
+// ============================================================
+
+// ============================================================
+//  PARÁMETROS DE VISUALIZACIÓN (isométrico / plano / 2D)
+//  Modifica estos valores para ajustar la apariencia de los
+//  visores de puzzle sin tocar el resto del código.
+// ============================================================
+const VIEWER_PARAMS = {
+    // ── Isométrico ──────────────────────────────────────────
+    /** Factor de altura de extrusión relativo al tamaño del puzzle */
+    extrudeHeightFactor: 0.08,
+    /** Factor de margen de borde de la base respecto al tamaño del puzzle */
+    baseBorderFactor: 0.06,
+    /** Margen en píxeles alrededor del puzzle proyectado */
+    isoMarginPx: 30,
+    /** Segmentos para circular contoured base en isométrico */
+    circleBaseSegments: 72,
+    /** Segmentos para clip circular en isométrico */
+    circleClipSegments: 72,
+    /** Grosor de línea de contorno de pieza (factor sobre fitScale × coordSize) */
+    pieceStrokeWidthFactor: 0.002,
+    /** Color base de la plataforma */
+    baseColor: '#d0d4dc',
+    /** Oscurecimiento lateral derecho (deltas relativos de shade) */
+    baseShadeRight: -30,
+    /** Oscurecimiento lateral izquierdo */
+    baseShadeLeft: -15,
+    /** Gradiente superior de la base */
+    baseTopGradient: ['#e0e4ec', -8],
+
+    // ── Vista plana (flat / SVG) ────────────────────────────
+    /** Padding en el viewBox SVG (factor sobre tamaño puzzle) */
+    flatPadFactor: 0.05,
+    /** Margen de borde de la base en flat (factor) */
+    flatBaseBorderFactor: 0.04,
+    /** Grosor de trazo de borde de base (factor) */
+    flatBaseStrokeFactor: 0.004,
+    /** Grosor de trazo de pieza (factor) */
+    flatStrokeFactor: 0.002,
+
+    // ── Visor 2D acabados ───────────────────────────────────
+    /** Padding en píxeles para el visor 2D */
+    viewer2DPadPx: 20,
+};
+
+// Estado global
+let puzzleData = {
+    grid: null,
+    pieces: null,
+    solutions: [],         // array of solution piece-arrays
+    currentSolutionPage: 0,
+    galleryPage: 0,        // current gallery page
+    viewMode: 'isometric',
+    puzzleType: 'normal',  // 'normal' | 'fractal' | 'jigsaw'
+    arcsData: null,        // arcos fractal para STL
+    svgPaths: null,        // SVG path 'd' strings para renderizado fractal
+    fractalNcols: 0,
+    fractalNrows: 0
+};
+
+const PIECE_COLORS = [
+    "#FF6666", "#FFCC66", "#99CC66", "#66CCCC", "#6699CC",
+    "#CC99CC", "#FF99CC", "#CCCCCC", "#99CC99", "#CC6666",
+    "#99CCCC", "#CC9966", "#66CC99", "#9966CC", "#9999CC",
+    "#FF9966", "#FF6699", "#66FF99", "#99FFCC", "#FFCC99"
+];
+
+// Colores de sombra (versiones oscuras)
+const SHADOW_COLORS = PIECE_COLORS.map(c => {
+    const r = parseInt(c.slice(1, 3), 16);
+    const g = parseInt(c.slice(3, 5), 16);
+    const b = parseInt(c.slice(5, 7), 16);
+    return `rgb(${Math.max(0, r-50)}, ${Math.max(0, g-50)}, ${Math.max(0, b-50)})`;
+});
+
+// Canvas variables
+const puzzleCanvas = document.getElementById('puzzle-canvas');
+const galleryCanvas = document.getElementById('gallery-canvas');
+const puzzleCtx = puzzleCanvas.getContext('2d');
+const galleryCtx = galleryCanvas.getContext('2d');
+
+// Event Listeners
+document.getElementById('generate-btn').addEventListener('click', generatePuzzle);
+document.getElementById('solve-10-btn').addEventListener('click', () => findSolutions(10));
+document.getElementById('solve-50-btn').addEventListener('click', () => findSolutions(50));
+document.getElementById('sol-prev-page').addEventListener('click', prevSolutionPage);
+document.getElementById('sol-next-page').addEventListener('click', nextSolutionPage);
+const exportStlBtn = document.getElementById('export-stl-btn');
+if (exportStlBtn) exportStlBtn.addEventListener('click', exportSTL);
+
+// New download buttons
+const exportPiecesBtn = document.getElementById('export-stl-pieces-btn');
+const exportBaseBtn   = document.getElementById('export-stl-base-btn');
+const exportBothSingleBtn  = document.getElementById('export-stl-both-single-btn');
+const exportBothSeparateBtn = document.getElementById('export-stl-both-separate-btn');
+if (exportPiecesBtn) exportPiecesBtn.addEventListener('click', () => exportSTL('pieces'));
+if (exportBaseBtn)   exportBaseBtn.addEventListener('click',   () => exportSTL('base'));
+if (exportBothSingleBtn)  exportBothSingleBtn.addEventListener('click',  () => exportSTL('both'));
+if (exportBothSeparateBtn) exportBothSeparateBtn.addEventListener('click', exportSTLSeparate);
+
+// 3MF multi-color download button
+const export3mfBtn = document.getElementById('export-3mf-btn');
+if (export3mfBtn) export3mfBtn.addEventListener('click', export3MF);
+
+// Ripple effect for btn-t1 buttons
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-t1')) {
+        const button = e.target;
+        
+        // Create ripple element
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        
+        // Get button dimensions and click position
+        const rect = button.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        // Set ripple size and position
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        
+        // Add ripple to button
+        button.appendChild(ripple);
+        
+        // Remove ripple after animation
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    }
+});
+
+// Utility Functions: status por sección
+function showStatus(elementId, message, type = 'info') {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.textContent = message;
+        el.className = `status ${type}`;
+    }
+    console.log(`[${elementId}:${type}]`, message);
+}
+
+function showGenerateStatus(message, type = 'info') {
+    showStatus('status-generate', message, type);
+}
+
+function showSolutionsStatus(message, type = 'info') {
+    showStatus('status-solutions', message, type);
+}
+
+function showExportStatus(message, type = 'info') {
+    showStatus('status-viewer', message, type);
+}
+
+function showDownloadStatus(message, type = 'info') {
+    showStatus('status-download', message, type);
+}
+
+function onTargetSolutionsChange(value) {
+    const disclaimer = document.getElementById('target-disclaimer');
+    if (disclaimer) {
+        disclaimer.style.display = value === '1' ? 'block' : 'none';
+    }
+}
+
+const PUZZLE_DEFAULTS = {
+    normal:  { M: 6,  N: 7,  min_size: 3, max_size: 4 },
+    fractal: { M: 8, N: 8, min_size: 3, max_size: 6 },
+    jigsaw:  { M: 5, N: 7, min_size: 3, max_size: 5 }
+};
+
+function switchPuzzleType(value) {
+    document.getElementById('btn-type-normal').classList.toggle('active', value === 'normal');
+    document.getElementById('btn-type-fractal').classList.toggle('active', value === 'fractal');
+    document.getElementById('btn-type-jigsaw').classList.toggle('active', value === 'jigsaw');
+
+    // Apply per-type defaults
+    const defs = PUZZLE_DEFAULTS[value] || PUZZLE_DEFAULTS.normal;
+    document.getElementById('M').value = defs.M;
+    document.getElementById('N').value = defs.N;
+    document.getElementById('min_size').value = defs.min_size;
+    document.getElementById('max_size').value = defs.max_size;
+
+    onPuzzleTypeChange(value);
+}
+
+function onPuzzleTypeChange(value) {
+    const normalOnlyEls = document.querySelectorAll('.normal-only');
+    const fractalOnlyEls = document.querySelectorAll('.fractal-only');
+    const jigsawOnlyEls = document.querySelectorAll('.jigsaw-only');
+    const solutionsPanel = document.getElementById('solutions-panel');
+    const isFractal = value === 'fractal';
+    const isJigsaw = value === 'jigsaw';
+
+    normalOnlyEls.forEach(el => {
+        el.style.display = (isFractal || isJigsaw) ? 'none' : '';
+    });
+    fractalOnlyEls.forEach(el => {
+        el.style.display = isFractal ? '' : 'none';
+    });
+    jigsawOnlyEls.forEach(el => {
+        el.style.display = isJigsaw ? '' : 'none';
+    });
+    // Hide min/max size for jigsaw (each cell = one piece)
+    const minGroup = document.getElementById('min_size').closest('.form-group');
+    const maxGroup = document.getElementById('max_size').closest('.form-group');
+    if (minGroup) minGroup.style.display = isJigsaw ? 'none' : '';
+    if (maxGroup) maxGroup.style.display = isJigsaw ? 'none' : '';
+    if (solutionsPanel) {
+        solutionsPanel.style.display = (isFractal || isJigsaw) ? 'none' : '';
+    }
+    // Toggle canvas vs SVG containers
+    setFractalVisibility(isFractal || isJigsaw);
+    // Update jigsaw sub-type visibility
+    if (isJigsaw) onJigsawTypeChange();
+}
+
+function onJigsawTypeChange() {
+    const jtype = document.getElementById('jigsaw_type');
+    const isHexOrCircular = jtype && (jtype.value === 'hexagonal' || jtype.value === 'circular');
+    // Rows/Cols (M,N) are for rectangular; rings for hexagonal/circular
+    const mGroup = document.getElementById('M').closest('.form-group');
+    const nGroup = document.getElementById('N').closest('.form-group');
+    if (mGroup) mGroup.style.display = isHexOrCircular ? 'none' : '';
+    if (nGroup) nGroup.style.display = isHexOrCircular ? 'none' : '';
+    document.querySelectorAll('.jigsaw-hex-only').forEach(el => {
+        el.style.display = isHexOrCircular ? '' : 'none';
+    });
+}
+
+async function generatePuzzle() {
+    try {
+        showGenerateStatus('⏳ Generando puzzle...', 'info');
+        
+        // Animación de generación
+        puzzleCtx.fillStyle = 'rgba(102, 126, 234, 0.1)';
+        puzzleCtx.fillRect(0, 0, puzzleCanvas.width, puzzleCanvas.height);
+
+        const puzzleType = document.getElementById('btn-type-jigsaw').classList.contains('active') ? 'jigsaw'
+            : document.getElementById('btn-type-fractal').classList.contains('active') ? 'fractal' : 'normal';
+        const M = parseInt(document.getElementById('M').value);
+        const N = parseInt(document.getElementById('N').value);
+        const min_size = parseInt(document.getElementById('min_size').value);
+        const max_size = parseInt(document.getElementById('max_size').value);
+
+        let data;
+
+        if (puzzleType === 'jigsaw') {
+            // Generar puzzle jigsaw
+            const jigsaw_type = document.getElementById('jigsaw_type').value;
+            const tab_size = parseInt(document.getElementById('jigsaw_tab_size').value);
+            const jitter = parseInt(document.getElementById('jigsaw_jitter').value);
+            const body = { jigsaw_type, tab_size, jitter, min_size, max_size };
+            if (jigsaw_type === 'hexagonal' || jigsaw_type === 'circular') {
+                body.rings = parseInt(document.getElementById('jigsaw_rings').value);
+                body.circle_warp = (jigsaw_type === 'circular');
+                body.truncate_edge = document.getElementById('jigsaw_truncate_edge').checked;
+                body.contoured_base = document.getElementById('jigsaw_contoured_base').checked;
+                // Send the actual type to backend (hexagonal or circular)
+                body.jigsaw_type = jigsaw_type;
+            } else {
+                body.rows = M;
+                body.cols = N;
+            }
+            const response = await fetch('/api/generate_jigsaw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            data = await response.json();
+        } else if (puzzleType === 'fractal') {
+            // Generar puzzle fractal
+            const arc_shape = parseInt(document.getElementById('arc_shape').value);
+            const response = await fetch('/api/generate_fractal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ M, N, min_size, max_size, arc_shape })
+            });
+            data = await response.json();
+        } else {
+            // Generar puzzle normal
+            const border_prob = parseInt(document.getElementById('border_prob').value) / 100;
+            const air_prob = parseInt(document.getElementById('air_prob').value) / 100;
+            const target_solutions = parseInt(document.getElementById('target_solutions').value);
+
+            // Si hay target de soluciones, arrancar polling de progreso
+            let progressInterval = null;
+            if (target_solutions > 0) {
+                const targetLabel = target_solutions === 1
+                    ? 'solución única'
+                    : `al menos ${target_solutions} soluciones`;
+                showGenerateStatus(`⏳ Buscando puzzle con ${targetLabel}... intento 1 / 50`, 'info');
+                progressInterval = setInterval(async () => {
+                    try {
+                        const pr = await fetch('/api/progress');
+                        const pd = await pr.json();
+                        if (pd.active) {
+                            showGenerateStatus(
+                                `⏳ Buscando puzzle con ${targetLabel}... intento ${pd.attempt} / ${pd.max}`,
+                                'info'
+                            );
+                        }
+                    } catch (_) {}
+                }, 300);
+            }
+
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        M, N, min_size, max_size, border_prob, air_prob, target_solutions
+                    })
+                });
+                data = await response.json();
+            } finally {
+                if (progressInterval) clearInterval(progressInterval);
+            }
+        }
+
+        if (data.success) {
+            puzzleData.grid = data.grid;
+            puzzleData.pieces = data.pieces;
+            puzzleData.solutions = [];
+            puzzleData.currentSolutionPage = 0;
+            puzzleData.galleryPage = 0;
+            puzzleData.puzzleType = puzzleType;
+            puzzleData.arcsData = data.arcs_data || null;
+            puzzleData.svgPaths = data.svg_paths || null;
+            puzzleData.fractalNcols = data.ncols || 0;
+            puzzleData.fractalNrows = data.nrows || 0;
+            puzzleData.jigsawType = data.jigsaw_type || null;
+            puzzleData.truncateEdge = data.truncate_edge || false;
+            puzzleData.hexRadius = data.hex_radius || 0;
+            puzzleData.hexOffset = data.hex_offset || 0;
+
+            // Apply per-puzzle-type infill defaults
+            if (typeof applyInfillDefaults === 'function') applyInfillDefaults();
+
+            let statusMsg = `✅ ${data.piece_count} piezas generadas`;
+            let statusType = 'success';
+            if (data.warning) {
+                statusMsg = `⚠️ ${data.warning}`;
+                statusType = 'error';
+            } else if (data.target_met) {
+                const t = data.target_solutions;
+                const targetLabel = t === 1 ? 'Solución única' : `Al menos ${t} soluciones`;
+                statusMsg += ` | 🎯 ${targetLabel} (${data.attempts} intento${data.attempts > 1 ? 's' : ''})`;
+            }
+            showGenerateStatus(statusMsg, statusType);
+
+            // Dibujar puzzle según tipo y modo de vista
+            if (puzzleType === 'fractal' || puzzleType === 'jigsaw') {
+                drawPuzzleFractal();
+            } else {
+                if (puzzleData.viewMode === 'flat') {
+                    drawPuzzleFlat();
+                } else {
+                    setFractalVisibility(false);
+                    drawPuzzle();
+                }
+            }
+            drawGallery();
+            updateSolutionInfo();
+            // Hide solution previews on new puzzle
+            const previewContainer = document.getElementById('solutions-preview');
+            if (previewContainer) previewContainer.style.display = 'none';
+            // Ocultar el hint del visor de configuración una vez hay puzzle
+            const configHint = document.getElementById('config-viewer-hint');
+            if (configHint) configHint.style.display = 'none';
+
+            // Actualizar visor 3D automáticamente
+            if (typeof scheduleViewerUpdate === 'function') {
+                scheduleViewerUpdate();
+            }
+            // Actualizar visor 2D de acabados
+            if (typeof render2DViewer === 'function') {
+                render2DViewer();
+            }
+            // Actualizar inline 3D
+            if (typeof scheduleInline3DUpdate === 'function') {
+                scheduleInline3DUpdate();
+            }
+        } else {
+            showGenerateStatus(`❌ Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showGenerateStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+async function findSolutions(max_solutions) {
+    if (!puzzleData.grid || !puzzleData.pieces) {
+        showSolutionsStatus('⚠️ Primero genera un puzzle', 'error');
+        return;
+    }
+
+    try {
+        showSolutionsStatus(`⏳ Buscando ${max_solutions} soluciones...`, 'info');
+
+        const response = await fetch('/api/find_solutions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max_solutions })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            puzzleData.solutions = data.solutions || [];
+            puzzleData.currentSolutionPage = 0;
+            showSolutionsStatus(`✅ ${data.solutions_count} soluciones encontradas`, 'success');
+            updateSolutionInfo();
+            renderSolutionPreviews();
+        } else {
+            showSolutionsStatus(`❌ Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showSolutionsStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+const SOLUTIONS_PER_PAGE = 4;
+
+function nextSolutionPage() {
+    const totalPages = Math.ceil(puzzleData.solutions.length / SOLUTIONS_PER_PAGE);
+    if (totalPages === 0) return;
+    puzzleData.currentSolutionPage = (puzzleData.currentSolutionPage + 1) % totalPages;
+    renderSolutionPreviews();
+}
+
+function prevSolutionPage() {
+    const totalPages = Math.ceil(puzzleData.solutions.length / SOLUTIONS_PER_PAGE);
+    if (totalPages === 0) return;
+    puzzleData.currentSolutionPage = (puzzleData.currentSolutionPage - 1 + totalPages) % totalPages;
+    renderSolutionPreviews();
+}
+
+function updateSolutionInfo() {
+    const infoEl = document.getElementById('solution-info');
+    infoEl.textContent = `Soluciones encontradas: ${puzzleData.solutions.length}`;
+}
+
+function renderSolutionPreviews() {
+    const container = document.getElementById('solutions-preview');
+    const total = puzzleData.solutions.length;
+
+    if (total === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    const totalPages = Math.ceil(total / SOLUTIONS_PER_PAGE);
+    const page = puzzleData.currentSolutionPage;
+    const startIdx = page * SOLUTIONS_PER_PAGE;
+
+    // Update pagination info
+    document.getElementById('sol-page-info').textContent = `Página ${page + 1} / ${totalPages}`;
+
+    // Draw each of the 4 canvas slots
+    for (let i = 0; i < SOLUTIONS_PER_PAGE; i++) {
+        const solIdx = startIdx + i;
+        const canvas = document.getElementById(`sol-canvas-${i}`);
+        const title = document.getElementById(`sol-title-${i}`);
+        const card = canvas.parentElement;
+
+        if (solIdx < total) {
+            card.style.visibility = 'visible';
+            card.style.opacity = '1';
+            title.textContent = `Solución ${solIdx + 1}`;
+            drawSolutionOnCanvas(canvas, puzzleData.solutions[solIdx]);
+        } else {
+            // Empty slot - clear and hide
+            card.style.visibility = 'hidden';
+            card.style.opacity = '0';
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+}
+
+function drawSolutionOnCanvas(canvas, solutionPieces) {
+    const ctx = canvas.getContext('2d');
+    const grid = puzzleData.grid;
+    if (!grid || !solutionPieces) return;
+
+    const M = grid.length;
+    const N = grid[0].length;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const padding = 16;
+    const cellSize = Math.min((w - padding * 2) / N, (h - padding * 2) / M);
+    const offsetX = (w - cellSize * N) / 2;
+    const offsetY = (h - cellSize * M) / 2;
+
+    // Clear
+    ctx.fillStyle = '#f5f7fa';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw blocked cells (value 0)
+    for (let r = 0; r < M; r++) {
+        for (let c = 0; c < N; c++) {
+            if (grid[r][c] === 0) {
+                const x = offsetX + c * cellSize;
+                const y = offsetY + r * cellSize;
+                ctx.fillStyle = '#555555';
+                ctx.fillRect(x, y, cellSize, cellSize);
+            } else if (grid[r][c] === -1) {
+                const x = offsetX + c * cellSize;
+                const y = offsetY + r * cellSize;
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(x, y, cellSize, cellSize);
+            }
+        }
+    }
+
+    // Build a cell-to-piece map from the solution
+    const cellPieceMap = {};
+    for (let idx = 0; idx < solutionPieces.length; idx++) {
+        const piece = solutionPieces[idx];
+        for (let cell of piece) {
+            cellPieceMap[`${cell[0]},${cell[1]}`] = idx;
+        }
+    }
+
+    // Draw pieces with colors
+    for (let pieceIdx = 0; pieceIdx < solutionPieces.length; pieceIdx++) {
+        const piece = solutionPieces[pieceIdx];
+        const color = PIECE_COLORS[pieceIdx % PIECE_COLORS.length];
+
+        for (let cell of piece) {
+            const r = cell[0];
+            const c = cell[1];
+            const x = offsetX + c * cellSize;
+            const y = offsetY + r * cellSize;
+
+            // Gradient fill
+            const gradient = ctx.createLinearGradient(x, y, x, y + cellSize);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, shadeColor(color, -15));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, cellSize, cellSize);
+        }
+    }
+
+    // Draw grid lines to separate pieces
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    for (let r = 0; r < M; r++) {
+        for (let c = 0; c < N; c++) {
+            const myPiece = cellPieceMap[`${r},${c}`];
+            if (myPiece === undefined) continue;
+
+            const x = offsetX + c * cellSize;
+            const y = offsetY + r * cellSize;
+
+            // Right border
+            if (c + 1 < N) {
+                const rightPiece = cellPieceMap[`${r},${c + 1}`];
+                if (rightPiece !== myPiece) {
+                    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x + cellSize, y);
+                    ctx.lineTo(x + cellSize, y + cellSize);
+                    ctx.stroke();
+                }
+            }
+
+            // Bottom border
+            if (r + 1 < M) {
+                const bottomPiece = cellPieceMap[`${r + 1},${c}`];
+                if (bottomPiece !== myPiece) {
+                    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + cellSize);
+                    ctx.lineTo(x + cellSize, y + cellSize);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    // Outer border
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(offsetX, offsetY, cellSize * N, cellSize * M);
+}
+
+// Drawing Functions - VISUALIZACIÓN ISOMÉTRICA MEJORADA
+function drawPuzzle() {
+    if (!puzzleData.grid || !puzzleData.pieces) return;
+
+    const grid = puzzleData.grid;
+    const pieces = puzzleData.pieces;
+    const M = grid.length;
+    const N = grid[0].length;
+
+    const w = puzzleCanvas.width;
+    const h = puzzleCanvas.height;
+
+    // Clear canvas
+    const gradientBg = puzzleCtx.createLinearGradient(0, 0, w, h);
+    gradientBg.addColorStop(0, '#f5f7fa');
+    gradientBg.addColorStop(1, '#e9ecef');
+    puzzleCtx.fillStyle = gradientBg;
+    puzzleCtx.fillRect(0, 0, w, h);
+
+    // Base shape: rectangle [0, 0] → [N, M] with border margin
+    const coordW = N;
+    const coordH = M;
+    const baseBorder = Math.max(coordW, coordH) * VIEWER_PARAMS.baseBorderFactor;
+    const extrudeH = Math.max(coordW, coordH) * VIEWER_PARAMS.extrudeHeightFactor;
+
+    const baseShape = [
+        [-baseBorder, -baseBorder],
+        [coordW + baseBorder, -baseBorder],
+        [coordW + baseBorder, coordH + baseBorder],
+        [-baseBorder, coordH + baseBorder]
+    ];
+
+    // Isometric projection helpers
+    const projectTop = (x, y) => [(x - y) * ISO_COS30, (x + y) * ISO_SIN30];
+    const projectBot = (x, y) => [(x - y) * ISO_COS30, (x + y) * ISO_SIN30 + extrudeH];
+
+    // Compute bounding box
+    let bMinX = Infinity, bMaxX = -Infinity;
+    let bMinY = Infinity, bMaxY = -Infinity;
+    for (const [bx, by] of baseShape) {
+        const [sx1, sy1] = projectTop(bx, by);
+        const [sx2, sy2] = projectBot(bx, by);
+        bMinX = Math.min(bMinX, sx1, sx2);
+        bMaxX = Math.max(bMaxX, sx1, sx2);
+        bMinY = Math.min(bMinY, sy1, sy2);
+        bMaxY = Math.max(bMaxY, sy1, sy2);
+    }
+
+    const projW = bMaxX - bMinX;
+    const projH = bMaxY - bMinY;
+    const margin = VIEWER_PARAMS.isoMarginPx;
+    const fitScale = Math.min((w - margin * 2) / projW, (h - margin * 2) / projH);
+    const offX = w / 2 - (bMinX + projW / 2) * fitScale;
+    const offY = h / 2 - (bMinY + projH / 2) * fitScale;
+
+    const toScreen = (px, py) => [px * fitScale + offX, py * fitScale + offY];
+
+    // === Draw extruded base (same approach as fractal/jigsaw) ===
+    const baseColor = VIEWER_PARAMS.baseColor;
+    const baseColorRight = shadeColor(baseColor, VIEWER_PARAMS.baseShadeRight);
+    const baseColorLeft = shadeColor(baseColor, VIEWER_PARAMS.baseShadeLeft);
+
+    const baseTopScreen = baseShape.map(([bx, by]) => {
+        const [px, py] = projectTop(bx, by);
+        return toScreen(px, py);
+    });
+    const baseBotScreen = baseShape.map(([bx, by]) => {
+        const [px, py] = projectBot(bx, by);
+        return toScreen(px, py);
+    });
+
+    const nBase = baseShape.length;
+    let baseCx = 0, baseCy = 0;
+    for (const [bx, by] of baseShape) { baseCx += bx; baseCy += by; }
+    baseCx /= nBase; baseCy /= nBase;
+
+    // Classify edges as front-facing or back-facing
+    const frontEdges = [];
+    const backEdges = [];
+    for (let j = 0; j < nBase; j++) {
+        const j2 = (j + 1) % nBase;
+        const mx = (baseShape[j][0] + baseShape[j2][0]) / 2;
+        const my = (baseShape[j][1] + baseShape[j2][1]) / 2;
+        const nx = mx - baseCx;
+        const ny = my - baseCy;
+        if (nx + ny > 0) {
+            const shade = nx > ny ? baseColorRight : baseColorLeft;
+            frontEdges.push({ j, j2, shade });
+        } else {
+            backEdges.push({ j, j2 });
+        }
+    }
+
+    // Draw back-facing walls
+    for (const { j, j2 } of backEdges) {
+        puzzleCtx.fillStyle = shadeColor(baseColor, -5);
+        puzzleCtx.beginPath();
+        puzzleCtx.moveTo(baseTopScreen[j][0], baseTopScreen[j][1]);
+        puzzleCtx.lineTo(baseTopScreen[j2][0], baseTopScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j2][0], baseBotScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j][0], baseBotScreen[j][1]);
+        puzzleCtx.closePath();
+        puzzleCtx.fill();
+    }
+
+    // Base top face
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(baseTopScreen[0][0], baseTopScreen[0][1]);
+    for (let j = 1; j < nBase; j++) {
+        puzzleCtx.lineTo(baseTopScreen[j][0], baseTopScreen[j][1]);
+    }
+    puzzleCtx.closePath();
+    const baseGrad = puzzleCtx.createLinearGradient(0, baseTopScreen[0][1], 0, baseTopScreen[nBase - 1][1]);
+    baseGrad.addColorStop(0, VIEWER_PARAMS.baseTopGradient[0]);
+    baseGrad.addColorStop(1, shadeColor(VIEWER_PARAMS.baseTopGradient[0], VIEWER_PARAMS.baseTopGradient[1]));
+    puzzleCtx.fillStyle = baseGrad;
+    puzzleCtx.fill();
+    puzzleCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+    puzzleCtx.lineWidth = 1;
+    puzzleCtx.stroke();
+
+    // Draw front-facing walls
+    for (const { j, j2, shade } of frontEdges) {
+        puzzleCtx.fillStyle = shade;
+        puzzleCtx.beginPath();
+        puzzleCtx.moveTo(baseTopScreen[j][0], baseTopScreen[j][1]);
+        puzzleCtx.lineTo(baseTopScreen[j2][0], baseTopScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j2][0], baseBotScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j][0], baseBotScreen[j][1]);
+        puzzleCtx.closePath();
+        puzzleCtx.fill();
+        puzzleCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+        puzzleCtx.lineWidth = 1;
+        puzzleCtx.stroke();
+    }
+
+    // === Draw cells on top surface ===
+    let cellPieceMap = {};
+    for (let idx = 0; idx < pieces.length; idx++) {
+        for (let cell of pieces[idx]) {
+            cellPieceMap[`${cell[0]},${cell[1]}`] = idx;
+        }
+    }
+
+    // Draw cells back-to-front (smaller r+c first)
+    let cellsToDraw = [];
+    for (let r = 0; r < M; r++) {
+        for (let c = 0; c < N; c++) {
+            cellsToDraw.push({ r, c, depth: r + c });
+        }
+    }
+    cellsToDraw.sort((a, b) => a.depth - b.depth);
+
+    const strokeW = Math.max(0.5, fitScale * 0.015);
+
+    for (const { r, c } of cellsToDraw) {
+        const val = grid[r][c];
+        const pieceIdx = cellPieceMap[`${r},${c}`];
+
+        let color;
+        if (val === 0) color = '#555555';
+        else if (val === -1) color = '#f0f0f0';
+        else if (pieceIdx !== undefined && pieceIdx >= 0) {
+            color = PIECE_COLORS[pieceIdx % PIECE_COLORS.length];
+        } else {
+            color = '#e0e0e0';
+        }
+
+        // Draw isometric diamond (top face of cell)
+        const corners = [
+            [c, r], [c + 1, r], [c + 1, r + 1], [c, r + 1]
+        ];
+        puzzleCtx.beginPath();
+        for (let k = 0; k < 4; k++) {
+            const [px, py] = projectTop(corners[k][0], corners[k][1]);
+            const [sx, sy] = toScreen(px, py);
+            if (k === 0) puzzleCtx.moveTo(sx, sy);
+            else puzzleCtx.lineTo(sx, sy);
+        }
+        puzzleCtx.closePath();
+
+        puzzleCtx.fillStyle = color;
+        puzzleCtx.fill();
+
+        // Draw piece outlines: only on edges between different pieces
+        for (let k = 0; k < 4; k++) {
+            const k2 = (k + 1) % 4;
+            let nr, nc;
+            if (k === 0) { nr = r - 1; nc = c; }       // top edge
+            else if (k === 1) { nr = r; nc = c + 1; }   // right edge
+            else if (k === 2) { nr = r + 1; nc = c; }   // bottom edge
+            else { nr = r; nc = c - 1; }                  // left edge
+
+            const neighborIdx = (nr >= 0 && nr < M && nc >= 0 && nc < N) ? (cellPieceMap[`${nr},${nc}`] ?? -1) : -2;
+            if (neighborIdx !== pieceIdx) {
+                const [px1, py1] = projectTop(corners[k][0], corners[k][1]);
+                const [sx1, sy1] = toScreen(px1, py1);
+                const [px2, py2] = projectTop(corners[k2][0], corners[k2][1]);
+                const [sx2, sy2] = toScreen(px2, py2);
+                puzzleCtx.strokeStyle = 'rgba(0,0,0,0.35)';
+                puzzleCtx.lineWidth = strokeW;
+                puzzleCtx.beginPath();
+                puzzleCtx.moveTo(sx1, sy1);
+                puzzleCtx.lineTo(sx2, sy2);
+                puzzleCtx.stroke();
+            }
+        }
+    }
+}
+
+function drawIsometricCubeSimple(x, y, size, color, gaps = {}) {
+    const s = size;
+    const hf = 0.5; // height factor: 0.5 = half-height cubes
+
+    // Sombra
+    puzzleCtx.shadowColor = 'rgba(0,0,0,0.2)';
+    puzzleCtx.shadowBlur = 5;
+    puzzleCtx.shadowOffsetX = 1;
+    puzzleCtx.shadowOffsetY = 1;
+
+    // Cara superior (diamond stays the same shape, just shifted down)
+    const topY = y + s * 0.25 * (1 - hf); // shift top face down when shorter
+    const gradTop = puzzleCtx.createLinearGradient(
+        x + s * 0.25, topY,
+        x + s * 0.25, topY + s * 0.25
+    );
+    gradTop.addColorStop(0, color);
+    gradTop.addColorStop(1, shadeColor(color, -10));
+    puzzleCtx.fillStyle = gradTop;
+    
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(x + s * 0.5, topY);
+    puzzleCtx.lineTo(x + s, topY + s * 0.25);
+    puzzleCtx.lineTo(x + s * 0.5, topY + s * 0.5);
+    puzzleCtx.lineTo(x, topY + s * 0.25);
+    puzzleCtx.closePath();
+    puzzleCtx.fill();
+
+    // Side height in pixels
+    const sideH = s * 0.5 * hf;
+
+    // Lado derecho
+    const gradRight = puzzleCtx.createLinearGradient(
+        x + s, topY + s * 0.25,
+        x + s * 0.5, topY + s * 0.25 + sideH
+    );
+    const rightColor = shadeColor(color, -25);
+    gradRight.addColorStop(0, shadeColor(rightColor, 5));
+    gradRight.addColorStop(1, rightColor);
+    puzzleCtx.fillStyle = gradRight;
+    
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(x + s, topY + s * 0.25);
+    puzzleCtx.lineTo(x + s, topY + s * 0.25 + sideH);
+    puzzleCtx.lineTo(x + s * 0.5, topY + s * 0.5 + sideH);
+    puzzleCtx.lineTo(x + s * 0.5, topY + s * 0.5);
+    puzzleCtx.closePath();
+    puzzleCtx.fill();
+
+    // Lado izquierdo
+    const gradLeft = puzzleCtx.createLinearGradient(
+        x, topY + s * 0.25,
+        x + s * 0.5, topY + s * 0.25 + sideH
+    );
+    const leftColor = shadeColor(color, -35);
+    gradLeft.addColorStop(0, shadeColor(leftColor, 5));
+    gradLeft.addColorStop(1, leftColor);
+    puzzleCtx.fillStyle = gradLeft;
+    
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(x, topY + s * 0.25);
+    puzzleCtx.lineTo(x, topY + s * 0.25 + sideH);
+    puzzleCtx.lineTo(x + s * 0.5, topY + s * 0.5 + sideH);
+    puzzleCtx.lineTo(x + s * 0.5, topY + s * 0.5);
+    puzzleCtx.closePath();
+    puzzleCtx.fill();
+
+    puzzleCtx.shadowColor = 'transparent';
+}
+
+function drawIsometricCell(x, y, size, cellValue, pieceIdx, gaps = {}) {
+    const s = size;
+    const gap = 2;
+    
+    // Color base
+    let color = '#e0e0e0';
+    if (cellValue === 0) {
+        color = '#333333';
+    } else if (cellValue === -1) {
+        color = '#f0f0f0';
+    } else if (pieceIdx >= 0) {
+        color = PIECE_COLORS[pieceIdx % PIECE_COLORS.length];
+    }
+
+    // Aplicar separación solo en los bordes indicados
+    const adjustedX = x + (gaps.gapLeft ? gap / 2 : 0);
+    const adjustedY = y + (gaps.gapTop ? gap / 2 : 0);
+    
+    // Calcular tamaño ajustado según separaciones
+    let adjustedS = s;
+    if (gaps.gapLeft) adjustedS -= gap / 2;
+    if (gaps.gapRight) adjustedS -= gap / 2;
+
+    // Sombra suave
+    puzzleCtx.shadowColor = 'rgba(0,0,0,0.25)';
+    puzzleCtx.shadowBlur = 6;
+    puzzleCtx.shadowOffsetX = 1;
+    puzzleCtx.shadowOffsetY = 1;
+
+    // Cara superior con gradiente
+    const gradTop = puzzleCtx.createLinearGradient(
+        adjustedX + adjustedS * 0.25, adjustedY,
+        adjustedX + adjustedS * 0.25, adjustedY + adjustedS * 0.25
+    );
+    gradTop.addColorStop(0, color);
+    gradTop.addColorStop(1, shadeColor(color, -15));
+    puzzleCtx.fillStyle = gradTop;
+    
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(adjustedX + adjustedS * 0.5, adjustedY);
+    puzzleCtx.lineTo(adjustedX + adjustedS, adjustedY + adjustedS * 0.25);
+    puzzleCtx.lineTo(adjustedX + adjustedS * 0.5, adjustedY + adjustedS * 0.5);
+    puzzleCtx.lineTo(adjustedX, adjustedY + adjustedS * 0.25);
+    puzzleCtx.closePath();
+    puzzleCtx.fill();
+    
+    // Borde sutil
+    puzzleCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+    puzzleCtx.lineWidth = 1;
+    puzzleCtx.stroke();
+
+    // Lado derecho con gradiente
+    const gradRight = puzzleCtx.createLinearGradient(
+        adjustedX + adjustedS, adjustedY + adjustedS * 0.25,
+        adjustedX + adjustedS * 0.5, adjustedY + adjustedS * 0.75
+    );
+    const rightColor = shadeColor(color, -25);
+    gradRight.addColorStop(0, shadeColor(rightColor, 10));
+    gradRight.addColorStop(1, rightColor);
+    puzzleCtx.fillStyle = gradRight;
+    
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(adjustedX + adjustedS, adjustedY + adjustedS * 0.25);
+    puzzleCtx.lineTo(adjustedX + adjustedS, adjustedY + adjustedS * 0.75);
+    puzzleCtx.lineTo(adjustedX + adjustedS * 0.5, adjustedY + adjustedS);
+    puzzleCtx.lineTo(adjustedX + adjustedS * 0.5, adjustedY + adjustedS * 0.5);
+    puzzleCtx.closePath();
+    puzzleCtx.fill();
+    
+    puzzleCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+    puzzleCtx.lineWidth = 0.8;
+    puzzleCtx.stroke();
+
+    // Lado izquierdo con gradiente
+    const gradLeft = puzzleCtx.createLinearGradient(
+        adjustedX, adjustedY + adjustedS * 0.25,
+        adjustedX + adjustedS * 0.5, adjustedY + adjustedS * 0.75
+    );
+    const leftColor = shadeColor(color, -40);
+    gradLeft.addColorStop(0, shadeColor(leftColor, 10));
+    gradLeft.addColorStop(1, leftColor);
+    puzzleCtx.fillStyle = gradLeft;
+    
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(adjustedX, adjustedY + adjustedS * 0.25);
+    puzzleCtx.lineTo(adjustedX, adjustedY + adjustedS * 0.75);
+    puzzleCtx.lineTo(adjustedX + adjustedS * 0.5, adjustedY + adjustedS);
+    puzzleCtx.lineTo(adjustedX + adjustedS * 0.5, adjustedY + adjustedS * 0.5);
+    puzzleCtx.closePath();
+    puzzleCtx.fill();
+    
+    puzzleCtx.strokeStyle = 'rgba(0,0,0,0.2)';
+    puzzleCtx.lineWidth = 0.8;
+    puzzleCtx.stroke();
+
+    puzzleCtx.shadowColor = 'transparent';
+    puzzleCtx.shadowOffsetX = 0;
+    puzzleCtx.shadowOffsetY = 0;
+
+    // Número de pieza (solo si es válido)
+    if (cellValue > 0 && pieceIdx >= 0) {
+        puzzleCtx.fillStyle = 'white';
+        puzzleCtx.font = 'bold 12px Arial';
+        puzzleCtx.textAlign = 'center';
+        puzzleCtx.textBaseline = 'middle';
+        puzzleCtx.shadowColor = 'rgba(0,0,0,0.5)';
+        puzzleCtx.shadowBlur = 3;
+        puzzleCtx.fillText(String(pieceIdx + 1), adjustedX + adjustedS * 0.5, adjustedY + adjustedS * 0.25);
+        puzzleCtx.shadowColor = 'transparent';
+    }
+}
+
+function shadeColor(color, percent) {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+        (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+        (B < 255 ? B < 1 ? 0 : B : 255))
+        .toString(16).slice(1);
+}
+
+const GALLERY_COLS = 3;
+const GALLERY_ROWS = 4;
+const GALLERY_PER_PAGE = GALLERY_COLS * GALLERY_ROWS;
+
+function galleryNextPage() {
+    if (!puzzleData.pieces) return;
+    const totalPages = Math.ceil(puzzleData.pieces.length / GALLERY_PER_PAGE);
+    if (totalPages <= 1) return;
+    puzzleData.galleryPage = (puzzleData.galleryPage + 1) % totalPages;
+    drawGallery();
+}
+
+function galleryPrevPage() {
+    if (!puzzleData.pieces) return;
+    const totalPages = Math.ceil(puzzleData.pieces.length / GALLERY_PER_PAGE);
+    if (totalPages <= 1) return;
+    puzzleData.galleryPage = (puzzleData.galleryPage - 1 + totalPages) % totalPages;
+    drawGallery();
+}
+
+function updateGalleryPageInfo() {
+    const totalPages = puzzleData.pieces ? Math.ceil(puzzleData.pieces.length / GALLERY_PER_PAGE) : 1;
+    const page = puzzleData.galleryPage + 1;
+    const info = document.getElementById('gallery-page-info');
+    if (info) info.textContent = `Página ${page} / ${totalPages}`;
+    const prevBtn = document.getElementById('gallery-prev');
+    const nextBtn = document.getElementById('gallery-next');
+    if (prevBtn) prevBtn.style.visibility = totalPages > 1 ? 'visible' : 'hidden';
+    if (nextBtn) nextBtn.style.visibility = totalPages > 1 ? 'visible' : 'hidden';
+}
+
+function drawGallery() {
+    if (!puzzleData.pieces) return;
+
+    const pieces = puzzleData.pieces;
+    const isFractal = puzzleData.puzzleType === 'fractal' || puzzleData.puzzleType === 'jigsaw';
+    const w = galleryCanvas.width;
+    const h = galleryCanvas.height;
+
+    // Fondo
+    const gradientBg = galleryCtx.createLinearGradient(0, 0, w, h);
+    gradientBg.addColorStop(0, '#f5f7fa');
+    gradientBg.addColorStop(1, '#e9ecef');
+    galleryCtx.fillStyle = gradientBg;
+    galleryCtx.fillRect(0, 0, w, h);
+
+    updateGalleryPageInfo();
+
+    const padding = 10;
+    const usableW = w - padding * 2;
+    const usableH = h - padding * 2;
+    const cellW = usableW / GALLERY_COLS;
+    const cellH = usableH / GALLERY_ROWS;
+
+    // Calculate global scale so all pieces are drawn at the same relative size
+    // Find the largest piece bounding box across ALL pieces
+    let globalMaxW = 0, globalMaxH = 0;
+
+    if (isFractal && puzzleData.svgPaths) {
+        for (const d of puzzleData.svgPaths) {
+            if (!d) continue;
+            const bbox = computeSvgPathBBox(d);
+            if (bbox) {
+                globalMaxW = Math.max(globalMaxW, bbox.width);
+                globalMaxH = Math.max(globalMaxH, bbox.height);
+            }
+        }
+    } else {
+        for (const piece of pieces) {
+            const minR = Math.min(...piece.map(c => c[0]));
+            const maxR = Math.max(...piece.map(c => c[0]));
+            const minC = Math.min(...piece.map(c => c[1]));
+            const maxC = Math.max(...piece.map(c => c[1]));
+            globalMaxW = Math.max(globalMaxW, maxC - minC + 1);
+            globalMaxH = Math.max(globalMaxH, maxR - minR + 1);
+        }
+    }
+
+    if (globalMaxW === 0 || globalMaxH === 0) return;
+
+    // Uniform scale: fit the largest piece into a cell, all others use the same scale
+    const innerPad = 8;
+    const innerW = cellW - innerPad * 2;
+    const innerH = cellH - innerPad * 2;
+
+    // Page slice
+    const startIdx = puzzleData.galleryPage * GALLERY_PER_PAGE;
+    const endIdx = Math.min(startIdx + GALLERY_PER_PAGE, pieces.length);
+
+    if (isFractal && puzzleData.svgPaths) {
+        // Fractal gallery: draw SVG paths on canvas
+        const scaleF = Math.min(innerW / globalMaxW, innerH / globalMaxH);
+
+        for (let i = startIdx; i < endIdx; i++) {
+            const d = puzzleData.svgPaths[i];
+            if (!d) continue;
+            const bbox = computeSvgPathBBox(d);
+            if (!bbox) continue;
+
+            const col = (i - startIdx) % GALLERY_COLS;
+            const row = Math.floor((i - startIdx) / GALLERY_COLS);
+            const cx = padding + col * cellW + cellW / 2;
+            const cy = padding + row * cellH + cellH / 2;
+
+            const pieceW = bbox.width * scaleF;
+            const pieceH = bbox.height * scaleF;
+            const ox = cx - pieceW / 2;
+            const oy = cy - pieceH / 2;
+
+            // Parse and draw the SVG path on canvas
+            const color = PIECE_COLORS[i % PIECE_COLORS.length];
+            drawSvgPathOnCanvas(galleryCtx, d, bbox, ox, oy, scaleF, color);
+        }
+    } else {
+        // Normal gallery: draw grid-based pieces on canvas
+        const cellScale = Math.min(innerW / globalMaxW, innerH / globalMaxH);
+
+        for (let i = startIdx; i < endIdx; i++) {
+            const piece = pieces[i];
+            const color = PIECE_COLORS[i % PIECE_COLORS.length];
+
+            const minR = Math.min(...piece.map(c => c[0]));
+            const maxR = Math.max(...piece.map(c => c[0]));
+            const minC = Math.min(...piece.map(c => c[1]));
+            const maxC = Math.max(...piece.map(c => c[1]));
+            const pw = (maxC - minC + 1) * cellScale;
+            const ph = (maxR - minR + 1) * cellScale;
+
+            const col = (i - startIdx) % GALLERY_COLS;
+            const row = Math.floor((i - startIdx) / GALLERY_COLS);
+            const cx = padding + col * cellW + cellW / 2;
+            const cy = padding + row * cellH + cellH / 2;
+            const ox = cx - pw / 2;
+            const oy = cy - ph / 2;
+
+            for (const cell of piece) {
+                const r = cell[0] - minR;
+                const c = cell[1] - minC;
+                const x = ox + c * cellScale;
+                const y = oy + r * cellScale;
+
+                const gradient = galleryCtx.createLinearGradient(x, y, x, y + cellScale);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, shadeColor(color, -20));
+                galleryCtx.fillStyle = gradient;
+                drawRoundedRect(galleryCtx, x, y, cellScale, cellScale, 2, true);
+
+                galleryCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+                galleryCtx.lineWidth = 0.8;
+                drawRoundedRect(galleryCtx, x, y, cellScale, cellScale, 2, false, true);
+            }
+        }
+    }
+}
+
+/**
+ * Parse an SVG path 'd' string and draw it on a canvas context.
+ * Translates/scales from the path's bbox to the target position.
+ */
+function drawSvgPathOnCanvas(ctx, d, bbox, ox, oy, scale, fillColor) {
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.scale(scale, scale);
+    ctx.translate(-bbox.minX, -bbox.minY);
+
+    // Build a Path2D from the SVG 'd' string
+    const path = new Path2D(d);
+
+    // First pass: thicker fill-color stroke to fatten narrow slivers
+    // (octagonal shapes have thin wedge areas that look like stray lines at small scale)
+    ctx.strokeStyle = fillColor;
+    ctx.lineWidth = 0.12;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke(path);
+
+    // Fill on top
+    ctx.fillStyle = fillColor;
+    ctx.fill(path);
+
+    // Outline
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 0.05;
+    ctx.lineJoin = 'round';
+    ctx.stroke(path);
+
+    ctx.restore();
+}
+
+function drawRoundedRect(ctx, x, y, width, height, radius, fill = false, stroke = false) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    
+    if (fill !== false) ctx.fill();
+    if (stroke) ctx.stroke();
+}
+
+function drawFlatCellWithGaps(x, y, size, gaps) {
+    const gap = 2;
+    let x1 = x + (gaps.gapLeft ? gap : 0);
+    let y1 = y + (gaps.gapTop ? gap : 0);
+    let w = size - (gaps.gapLeft ? gap : 0) - (gaps.gapRight ? gap : 0);
+    let h = size - (gaps.gapTop ? gap : 0) - (gaps.gapBottom ? gap : 0);
+    
+    drawRoundedRect(puzzleCtx, x1, y1, w, h, 3, true);
+}
+
+function drawFlatCellPiece(x, y, cellSize, color, r, c, M, N, cellPieceMap, pieceIdx) {
+    // Sombra
+    puzzleCtx.shadowColor = 'rgba(0,0,0,0.2)';
+    puzzleCtx.shadowBlur = 5;
+    puzzleCtx.shadowOffsetX = 1;
+    puzzleCtx.shadowOffsetY = 1;
+
+    // Gradiente
+    const gradient = puzzleCtx.createLinearGradient(x, y, x, y + cellSize);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, shadeColor(color, -15));
+    puzzleCtx.fillStyle = gradient;
+    
+    puzzleCtx.fillRect(x, y, cellSize, cellSize);
+
+    puzzleCtx.shadowColor = 'transparent';
+}
+
+function drawFlatCellPlain(x, y, cellSize, color) {
+    // Sombra
+    puzzleCtx.shadowColor = 'rgba(0,0,0,0.2)';
+    puzzleCtx.shadowBlur = 5;
+    puzzleCtx.shadowOffsetX = 1;
+    puzzleCtx.shadowOffsetY = 1;
+
+    // Gradiente
+    const gradient = puzzleCtx.createLinearGradient(x, y, x, y + cellSize);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, shadeColor(color, -15));
+    puzzleCtx.fillStyle = gradient;
+    
+    puzzleCtx.fillRect(x, y, cellSize, cellSize);
+
+    puzzleCtx.shadowColor = 'transparent';
+}
+
+function buildSTLPayload(modeOverride) {
+    const isFractal = puzzleData && (puzzleData.puzzleType === 'fractal' || puzzleData.puzzleType === 'jigsaw');
+    const arcShapeEl = document.getElementById('arc_shape');
+    const arcShape = arcShapeEl ? arcShapeEl.value : '0';
+
+    // Determine acabados mode (infill vs texture vs image)
+    const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
+    const isTexture = acabadosMode && acabadosMode.value === 'texture';
+    const isImage = acabadosMode && acabadosMode.value === 'image';
+
+    // In texture or image mode, pieces are solid; infill is handled separately
+    const infillType = (isTexture || isImage) ? 'solid' : document.getElementById('stl_infill_type').value;
+
+    // Determine viewer mode: which checkbox is checked, or use override
+    const mode = modeOverride || getViewerMode();
+    const include_pieces = (mode === 'pieces' || mode === 'both');
+    const include_base   = (mode === 'base'   || mode === 'both');
+
+    const payload = {
+        cube_size: parseFloat(document.getElementById('stl_cube_size').value),
+        height: parseFloat(document.getElementById('stl_height').value),
+        gap_mm: 1,  // hardcoded
+        tolerance_mm: parseFloat(document.getElementById('stl_tolerance').value),
+        border: parseFloat(document.getElementById('stl_border').value),
+        base_thickness: parseFloat(document.getElementById('stl_base_thickness').value),
+        wall_height: parseFloat(document.getElementById('stl_wall_height').value),
+        assembled: document.getElementById('stl_assembled').checked,
+        include_pieces,
+        include_base,
+        infill_type: infillType,
+        puzzle_type: isFractal ? (puzzleData.puzzleType || 'fractal') : 'normal',
+        arc_shape: parseInt(arcShape),
+        acabados_mode: isImage ? 'texture' : (isTexture ? 'texture' : 'infill')
+    };
+
+    // Pass contoured base flag for hex/circular jigsaw
+    const contouredBaseEl = document.getElementById('jigsaw_contoured_base');
+    if (contouredBaseEl) payload.contoured_base = contouredBaseEl.checked;
+
+    // Pass truncate_edge flag for hex/circular jigsaw
+    const truncateEdgeEl = document.getElementById('jigsaw_truncate_edge');
+    if (truncateEdgeEl) payload.truncate_edge = truncateEdgeEl.checked;
+
+    // Pattern offset from 2D viewer drag (convert screen pixels to model mm)
+    const offsetScale = viewer2DScale > 0 ? viewer2DScale : 1;
+    if (isTexture || isImage) {
+        payload.texture_offset_x = patternOffsetX / offsetScale;
+        payload.texture_offset_y = patternOffsetY / offsetScale;
+    } else {
+        payload.infill_offset_x = patternOffsetX / offsetScale;
+        payload.infill_offset_y = patternOffsetY / offsetScale;
+    }
+
+    // Common infill params (all non-solid types)
+    if (infillType !== 'solid') {
+        payload.infill_wall = parseFloat(document.getElementById('stl_infill_wall').value);
+    }
+
+    // Per-type specific params (angle included per-type where applicable)
+    if (infillType === 'grid') {
+        payload.infill_fill_width = parseFloat(document.getElementById('stl_infill_fill_width').value);
+        payload.infill_spacing = parseFloat(document.getElementById('stl_infill_spacing').value);
+        payload.infill_angle = parseFloat(document.getElementById('stl_infill_angle_grid').value);
+    } else if (infillType === 'stripes') {
+        payload.infill_fill_width = parseFloat(document.getElementById('stl_infill_fill_width_s').value);
+        payload.infill_spacing = parseFloat(document.getElementById('stl_infill_spacing_s').value);
+        payload.infill_angle = parseFloat(document.getElementById('stl_infill_angle_stripes').value);
+    } else if (infillType === 'zigzag') {
+        payload.infill_fill_width = parseFloat(document.getElementById('stl_infill_fill_width_z').value);
+        payload.infill_spacing = parseFloat(document.getElementById('stl_infill_spacing_z').value);
+        payload.infill_amplitude = parseFloat(document.getElementById('stl_infill_amplitude').value);
+        payload.infill_angle = parseFloat(document.getElementById('stl_infill_angle_zigzag').value);
+    } else if (infillType === 'honeycomb') {
+        payload.infill_fill_width = parseFloat(document.getElementById('stl_infill_fill_width_h').value);
+        payload.infill_cell_size = parseFloat(document.getElementById('stl_infill_cell_size').value);
+        payload.infill_angle = parseFloat(document.getElementById('stl_infill_angle_honeycomb').value);
+    } else if (infillType === 'circles') {
+        payload.infill_fill_width = parseFloat(document.getElementById('stl_infill_fill_width_c').value);
+        payload.infill_fill_gaps = true; // always fill gaps for Lego pattern
+        payload.infill_circle_radius = parseFloat((document.getElementById('stl_infill_circle_radius') || {}).value) || 40;
+        payload.infill_circle_filled = (document.getElementById('stl_infill_circle_filled') || {}).checked !== false;
+    }
+
+    // Texture mode params
+    if (isTexture || isImage) {
+        if (isImage) {
+            payload.texture_type = 'custom';
+            payload.texture_direction = (document.getElementById('stl_image_direction') || {}).value || 'outward';
+            payload.texture_height = parseFloat((document.getElementById('stl_image_height') || {}).value) || 0.6;
+            payload.texture_wall = parseFloat((document.getElementById('stl_image_wall') || {}).value) || 1.5;
+            payload.texture_no_border = (document.getElementById('stl_image_no_border') || {}).checked || false;
+            payload.texture_line_thickness = parseInt((document.getElementById('stl_image_line_thickness') || {}).value) || 0;
+            payload.texture_engrave_depth = parseFloat((document.getElementById('stl_image_engrave_depth') || {}).value) || 0.4;
+            // Include the processed B/W image as raw pixel data for STL generation
+            if (customTextureImage) {
+                const zoom = parseFloat((document.getElementById('stl_texture_custom_zoom') || {}).value) || 100;
+                payload.texture_zoom = zoom;
+                const imgCtx = customTextureImage.getContext('2d');
+                const imgData = imgCtx.getImageData(0, 0, customTextureImage.width, customTextureImage.height);
+                const gray = new Uint8Array(customTextureImage.width * customTextureImage.height);
+                for (let i = 0; i < gray.length; i++) gray[i] = imgData.data[i * 4];
+                payload.texture_image_data = Array.from(gray);
+                payload.texture_image_width = customTextureImage.width;
+                payload.texture_image_height = customTextureImage.height;
+            }
+        } else {
+        const textureType = document.getElementById('stl_texture_type').value;
+        payload.texture_type = textureType;
+        payload.texture_direction = document.getElementById('stl_texture_direction').value;
+        payload.texture_height = parseFloat(document.getElementById('stl_texture_height').value);
+        payload.texture_wall = parseFloat(document.getElementById('stl_texture_wall').value);
+        payload.texture_no_border = document.getElementById('stl_texture_no_border').checked;
+        payload.texture_invert = document.getElementById('stl_texture_invert').checked;
+        payload.texture_engrave_depth = parseFloat((document.getElementById('stl_texture_engrave_depth') || {}).value) || 0.4;
+
+        // Pattern-specific texture params
+        if (textureType === 'grid') {
+            payload.texture_fill_width = parseFloat(document.getElementById('stl_texture_fill_width_grid').value);
+            payload.texture_spacing = parseFloat(document.getElementById('stl_texture_spacing_grid').value);
+            payload.texture_angle = parseFloat(document.getElementById('stl_texture_angle_grid').value);
+        } else if (textureType === 'stripes') {
+            payload.texture_fill_width = parseFloat(document.getElementById('stl_texture_fill_width_stripes').value);
+            payload.texture_spacing = parseFloat(document.getElementById('stl_texture_spacing_stripes').value);
+            payload.texture_angle = parseFloat(document.getElementById('stl_texture_angle_stripes').value);
+        } else if (textureType === 'zigzag') {
+            payload.texture_fill_width = parseFloat(document.getElementById('stl_texture_fill_width_zigzag').value);
+            payload.texture_spacing = parseFloat(document.getElementById('stl_texture_spacing_zigzag').value);
+            payload.texture_amplitude = parseFloat(document.getElementById('stl_texture_amplitude').value);
+            payload.texture_angle = parseFloat(document.getElementById('stl_texture_angle_zigzag').value);
+        } else if (textureType === 'honeycomb') {
+            payload.texture_fill_width = parseFloat(document.getElementById('stl_texture_fill_width_honeycomb').value);
+            payload.texture_cell_size = parseFloat(document.getElementById('stl_texture_cell_size').value);
+            payload.texture_angle = parseFloat(document.getElementById('stl_texture_angle_honeycomb').value);
+        } else if (textureType === 'circles') {
+            payload.texture_fill_width = parseFloat(document.getElementById('stl_texture_fill_width_circles').value);
+            payload.texture_circle_radius = parseFloat((document.getElementById('stl_texture_circle_radius') || {}).value) || 40;
+            payload.texture_circle_filled = (document.getElementById('stl_texture_circle_filled') || {}).checked !== false;
+        }
+        }
+    }
+
+    // Corner style
+    const cornerStyle = document.getElementById('stl_corner_style');
+    if (cornerStyle) payload.corner_style = cornerStyle.value;
+    const cornerRadius = document.getElementById('stl_corner_radius');
+    if (cornerRadius && cornerStyle && cornerStyle.value === 'round') {
+        payload.corner_radius = parseFloat(cornerRadius.value);
+    }
+
+    // Force sharp corners for jigsaw and fractal-circular (no piece corner adjustment)
+    const isFracCircular = payload.puzzle_type === 'fractal' &&
+        parseInt(payload.arc_shape) === 0;
+    if (payload.puzzle_type === 'jigsaw' || isFracCircular) {
+        payload.corner_style = 'sharp';
+        delete payload.corner_radius;
+    }
+
+    // Base corner style
+    const baseCornerStyle = document.getElementById('stl_base_corner_style');
+    if (baseCornerStyle) payload.base_corner_style = baseCornerStyle.value;
+    const baseCornerRadius = document.getElementById('stl_base_corner_radius');
+    if (baseCornerRadius && baseCornerStyle && baseCornerStyle.value === 'round') {
+        payload.base_corner_radius = parseFloat(baseCornerRadius.value);
+    }
+    const baseCornerRadiusInner = document.getElementById('stl_base_corner_radius_inner');
+    if (baseCornerRadiusInner && baseCornerStyle && baseCornerStyle.value === 'round') {
+        payload.base_corner_radius_inner = parseFloat(baseCornerRadiusInner.value);
+    }
+
+    // Fill border gaps (fractal bases)
+    const fillBorderGapsEl = document.getElementById('stl_fill_border_gaps');
+    if (fillBorderGapsEl) payload.fill_border_gaps = fillBorderGapsEl.checked;
+
+    return payload;
+}
+
+async function exportSTL(mode) {
+    if (!puzzleData.grid || !puzzleData.pieces) {
+        showDownloadStatus('⚠️ Primero genera un puzzle', 'error');
+        return;
+    }
+
+    const payload = buildSTLPayload(mode);
+
+    const fileNames = { pieces: 'puzzle_piezas.stl', base: 'puzzle_base.stl', both: 'puzzle_completo.stl' };
+    const fileName = fileNames[mode] || 'puzzle_project.stl';
+
+    try {
+        showDownloadStatus('⏳ Generando STL...', 'info');
+
+        const response = await fetch('/api/export_stl', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showDownloadStatus('✅ STL descargado', 'success');
+        } else {
+            const errorData = await response.json();
+            showDownloadStatus(`❌ Error: ${errorData.error}`, 'error');
+        }
+    } catch (error) {
+        showDownloadStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+async function exportSTLSeparate() {
+    if (!puzzleData.grid || !puzzleData.pieces) {
+        showDownloadStatus('⚠️ Primero genera un puzzle', 'error');
+        return;
+    }
+
+    try {
+        showDownloadStatus('⏳ Generando piezas y base por separado...', 'info');
+
+        // Export pieces
+        await exportSTL('pieces');
+        // Small delay before exporting base
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Export base
+        await exportSTL('base');
+    } catch (error) {
+        showDownloadStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+async function export3MF() {
+    if (!puzzleData.grid && !puzzleData.svg_paths) {
+        showDownloadStatus('⚠️ Primero genera un puzzle', 'error');
+        return;
+    }
+
+    const payload = buildSTLPayload('both');
+    // Add color info
+    const pieceColorEl = document.getElementById('stl_color_pieces');
+    const baseColorEl = document.getElementById('stl_color_base');
+    const reliefColorEl = document.getElementById('stl_color_relief');
+    payload.color_pieces = pieceColorEl ? pieceColorEl.value : '#6699CC';
+    payload.color_base = baseColorEl ? baseColorEl.value : '#808080';
+    payload.color_relief = reliefColorEl ? reliefColorEl.value : '#FF6633';
+
+    try {
+        showDownloadStatus('⏳ Generando 3MF multi-color...', 'info');
+
+        const response = await fetch('/api/export_3mf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'puzzle_multicolor.3mf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showDownloadStatus('✅ 3MF multi-color descargado', 'success');
+        } else {
+            const errorData = await response.json();
+            showDownloadStatus(`❌ Error: ${errorData.error}`, 'error');
+        }
+    } catch (error) {
+        showDownloadStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+async function viewSTL() {
+    try {
+        const payload = buildSTLPayload();
+        if (!payload.include_pieces && !payload.include_base) {
+            // Nothing to show — clear the viewer
+            if (threeGroup) {
+                while (threeGroup.children.length) threeGroup.remove(threeGroup.children[0]);
+                addPrinterBed(threeGroup);
+            }
+            showExportStatus('ℹ️ Nada que mostrar — selecciona piezas o base', 'info');
+            return;
+        }
+        showExportStatus('⏳ Generando y cargando modelo...', 'info');
+
+        // Fetch separate base/pieces STL data for multi-color viewing
+        const response = await fetch('/api/export_stl_separate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            showExportStatus(`❌ Error: ${errorData.error}`, 'error');
+            return;
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+            showExportStatus(`❌ Error: ${data.error}`, 'error');
+            return;
+        }
+
+        // Get colors from pickers
+        const pieceColorEl = document.getElementById('stl_color_pieces');
+        const baseColorEl = document.getElementById('stl_color_base');
+        const reliefColorEl = document.getElementById('stl_color_relief');
+        const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
+        const baseColor = baseColorEl ? baseColorEl.value : '#808080';
+        const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
+
+        // Load into Three.js with separate colors
+        const threeOk = await loadThreeFromSeparate(data.base, data.pieces, baseColor, pieceColor, data.relief, reliefColor);
+
+        if (threeOk) {
+            showExportStatus('✅ Modelo cargado con colores', 'success');
+        } else {
+            showExportStatus('❌ Error: no se pudo cargar el modelo', 'error');
+        }
+    } catch (error) {
+        showExportStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+// Cambiar modo de visualización
+function switchView(event, mode) {
+    event.preventDefault();
+    puzzleData.viewMode = mode;
+    
+    // Actualizar botones
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Redibujar con la nueva vista
+    if (puzzleData.puzzleType === 'fractal' || puzzleData.puzzleType === 'jigsaw') {
+        drawPuzzleFractal();
+    } else {
+        if (mode === 'flat') {
+            drawPuzzleFlat();
+        } else {
+            setFractalVisibility(false);
+            drawPuzzle();
+        }
+    }
+}
+
+// Vista plana (original)
+function drawPuzzleFlat() {
+    if (!puzzleData.grid || !puzzleData.pieces) return;
+
+    const grid = puzzleData.grid;
+    const pieces = puzzleData.pieces;
+    const M = grid.length;
+    const N = grid[0].length;
+
+    // Use SVG container (same aesthetic as fractal/jigsaw flat)
+    setFractalVisibility(true);
+
+    const baseBorder = Math.max(N, M) * VIEWER_PARAMS.flatBaseBorderFactor;
+    const pad = Math.max(N, M) * VIEWER_PARAMS.flatPadFactor;
+    const container = document.getElementById('fractal-puzzle-svg');
+    container.innerHTML = '';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('viewBox', `${-baseBorder - pad} ${-baseBorder - pad} ${N + (baseBorder + pad) * 2} ${M + (baseBorder + pad) * 2}`);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%)';
+    svg.style.borderRadius = '8px';
+
+    // Background
+    const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bgRect.setAttribute('x', -baseBorder - pad);
+    bgRect.setAttribute('y', -baseBorder - pad);
+    bgRect.setAttribute('width', N + (baseBorder + pad) * 2);
+    bgRect.setAttribute('height', M + (baseBorder + pad) * 2);
+    bgRect.setAttribute('fill', '#f5f7fa');
+    svg.appendChild(bgRect);
+
+    // Base rectangle with border margin
+    const baseStrokeW = Math.max(N, M) * VIEWER_PARAMS.flatBaseStrokeFactor;
+    const baseRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    baseRect.setAttribute('x', -baseBorder);
+    baseRect.setAttribute('y', -baseBorder);
+    baseRect.setAttribute('width', N + baseBorder * 2);
+    baseRect.setAttribute('height', M + baseBorder * 2);
+    baseRect.setAttribute('fill', '#e8ecf2');
+    baseRect.setAttribute('stroke', '#b0b8c8');
+    baseRect.setAttribute('stroke-width', baseStrokeW);
+    baseRect.setAttribute('rx', '0.08');
+    svg.appendChild(baseRect);
+
+    // Build cell-to-piece map
+    let cellPieceMap = {};
+    for (let idx = 0; idx < pieces.length; idx++) {
+        for (let cell of pieces[idx]) {
+            cellPieceMap[`${cell[0]},${cell[1]}`] = idx;
+        }
+    }
+
+    const strokeW = Math.max(N, M) * 0.002;
+
+    // Draw cells
+    for (let r = 0; r < M; r++) {
+        for (let c = 0; c < N; c++) {
+            const val = grid[r][c];
+            const pieceIdx = cellPieceMap[`${r},${c}`];
+
+            let color;
+            if (val === 0) color = '#555555';
+            else if (val === -1) color = '#f0f0f0';
+            else if (pieceIdx !== undefined && pieceIdx >= 0) {
+                color = PIECE_COLORS[pieceIdx % PIECE_COLORS.length];
+            } else {
+                color = '#e0e0e0';
+            }
+
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', c);
+            rect.setAttribute('y', r);
+            rect.setAttribute('width', 1);
+            rect.setAttribute('height', 1);
+            rect.setAttribute('fill', color);
+            svg.appendChild(rect);
+        }
+    }
+
+    // Draw piece outlines (edges between different pieces)
+    for (let r = 0; r < M; r++) {
+        for (let c = 0; c < N; c++) {
+            const pieceIdx = cellPieceMap[`${r},${c}`] ?? -1;
+            // Right edge
+            if (c + 1 < N) {
+                const rightIdx = cellPieceMap[`${r},${c + 1}`] ?? -1;
+                if (rightIdx !== pieceIdx) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', c + 1);
+                    line.setAttribute('y1', r);
+                    line.setAttribute('x2', c + 1);
+                    line.setAttribute('y2', r + 1);
+                    line.setAttribute('stroke', 'rgba(0,0,0,0.4)');
+                    line.setAttribute('stroke-width', strokeW);
+                    svg.appendChild(line);
+                }
+            }
+            // Bottom edge
+            if (r + 1 < M) {
+                const bottomIdx = cellPieceMap[`${r + 1},${c}`] ?? -1;
+                if (bottomIdx !== pieceIdx) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', c);
+                    line.setAttribute('y1', r + 1);
+                    line.setAttribute('x2', c + 1);
+                    line.setAttribute('y2', r + 1);
+                    line.setAttribute('stroke', 'rgba(0,0,0,0.4)');
+                    line.setAttribute('stroke-width', strokeW);
+                    svg.appendChild(line);
+                }
+            }
+        }
+    }
+
+    // Border outline
+    const border = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    border.setAttribute('x', 0);
+    border.setAttribute('y', 0);
+    border.setAttribute('width', N);
+    border.setAttribute('height', M);
+    border.setAttribute('fill', 'none');
+    border.setAttribute('stroke', 'rgba(0,0,0,0.3)');
+    border.setAttribute('stroke-width', strokeW);
+    svg.appendChild(border);
+
+    container.appendChild(svg);
+}
+
+// =====================================================
+// FRACTAL JIGSAW: Renderizado SVG
+// =====================================================
+
+// Muestra/oculta los elementos canvas vs SVG según el tipo de puzzle
+function setFractalVisibility(isFractal) {
+    const puzzleSvg = document.getElementById('fractal-puzzle-svg');
+    if (isFractal) {
+        // For flat mode: show SVG, hide canvas. For isometric: show canvas, hide SVG.
+        if (puzzleData.viewMode === 'flat') {
+            puzzleCanvas.style.display = 'none';
+            puzzleSvg.style.display = 'block';
+        } else {
+            puzzleCanvas.style.display = 'block';
+            puzzleSvg.style.display = 'none';
+        }
+    } else {
+        puzzleCanvas.style.display = 'block';
+        puzzleSvg.style.display = 'none';
+    }
+    // Gallery always uses canvas now
+    galleryCanvas.style.display = 'block';
+}
+
+// Dibuja el puzzle fractal: isométrico o plano (SVG)
+function drawPuzzleFractal() {
+    if (puzzleData.viewMode === 'isometric') {
+        drawPuzzleFractalIsometric();
+    } else {
+        drawPuzzleFractalFlat();
+    }
+}
+
+/**
+ * Parse an SVG path 'd' string (M/A/L/C/Z commands) into polygon points.
+ * Pure math — no DOM manipulation. arcSegs controls smoothness of arcs.
+ */
+function parseSvgPathToPoints(d, arcSegs) {
+    if (!d) return [];
+    const pts = [];
+    let cx = 0, cy = 0;
+    // Tokenize: split on command letters, keeping them
+    const tokens = d.match(/[MALZCmalzc][^MALZCmalzc]*/g);
+    if (!tokens) return [];
+
+    for (const token of tokens) {
+        const cmd = token[0];
+        const nums = token.slice(1).trim().replace(/,/g, ' ').split(/\s+/).filter(s => s.length > 0).map(Number);
+
+        if (cmd === 'M' || cmd === 'm') {
+            cx = nums[0]; cy = nums[1];
+            pts.push(cx, cy);
+        } else if (cmd === 'L') {
+            for (let k = 0; k < nums.length; k += 2) {
+                cx = nums[k]; cy = nums[k + 1];
+                pts.push(cx, cy);
+            }
+        } else if (cmd === 'l') {
+            for (let k = 0; k < nums.length; k += 2) {
+                cx += nums[k]; cy += nums[k + 1];
+                pts.push(cx, cy);
+            }
+        } else if (cmd === 'A' || cmd === 'a') {
+            // A rx ry x-rot large-arc sweep ex ey
+            for (let k = 0; k + 6 < nums.length; k += 7) {
+                const rx = nums[k];
+                const largeArc = nums[k + 3];
+                const sweepFlag = nums[k + 4];
+                let ex = nums[k + 5], ey = nums[k + 6];
+                if (cmd === 'a') { ex += cx; ey += cy; }
+
+                // Compute arc center
+                const dx = ex - cx, dy = ey - cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 1e-9 || dist > 2 * rx) {
+                    cx = ex; cy = ey;
+                    pts.push(cx, cy);
+                    continue;
+                }
+                const a = dist / 2;
+                const h = Math.sqrt(Math.max(0, rx * rx - a * a));
+                const mx = (cx + ex) / 2, my = (cy + ey) / 2;
+                const px = -dy / dist, py = dx / dist;
+                const acx = sweepFlag === 1 ? mx + h * px : mx - h * px;
+                const acy = sweepFlag === 1 ? my + h * py : my - h * py;
+
+                // Compute sweep angle
+                let startA = Math.atan2(cy - acy, cx - acx);
+                let endA = Math.atan2(ey - acy, ex - acx);
+                let sweep = endA - startA;
+                if (sweepFlag === 1) {
+                    if (sweep > 0) sweep -= 2 * Math.PI;
+                    if (largeArc === 0 && sweep < -Math.PI) sweep += 2 * Math.PI;
+                } else {
+                    if (sweep < 0) sweep += 2 * Math.PI;
+                    if (largeArc === 0 && sweep > Math.PI) sweep -= 2 * Math.PI;
+                }
+
+                // Tessellate arc
+                for (let s = 1; s <= arcSegs; s++) {
+                    const t = s / arcSegs;
+                    const angle = startA + t * sweep;
+                    pts.push(acx + rx * Math.cos(angle), acy + rx * Math.sin(angle));
+                }
+                cx = ex; cy = ey;
+            }
+        } else if (cmd === 'C' || cmd === 'c') {
+            // Cubic bezier: C x1 y1 x2 y2 ex ey (absolute) / c dx1 dy1 dx2 dy2 dex dey (relative)
+            for (let k = 0; k + 5 < nums.length; k += 6) {
+                let x1 = nums[k], y1 = nums[k+1];
+                let x2 = nums[k+2], y2 = nums[k+3];
+                let ex = nums[k+4], ey = nums[k+5];
+                if (cmd === 'c') {
+                    x1 += cx; y1 += cy;
+                    x2 += cx; y2 += cy;
+                    ex += cx; ey += cy;
+                }
+                const segs = arcSegs || 8;
+                for (let s = 1; s <= segs; s++) {
+                    const t = s / segs;
+                    const mt = 1 - t;
+                    const px = mt*mt*mt*cx + 3*mt*mt*t*x1 + 3*mt*t*t*x2 + t*t*t*ex;
+                    const py = mt*mt*mt*cy + 3*mt*mt*t*y1 + 3*mt*t*t*y2 + t*t*t*ey;
+                    pts.push(px, py);
+                }
+                cx = ex; cy = ey;
+            }
+        }
+        // Z: ignore (polygon is implicitly closed)
+    }
+    return pts; // flat array [x0,y0, x1,y1, ...]
+}
+
+// Precomputed isometric constants
+const ISO_COS30 = Math.cos(Math.PI / 6); // ≈ 0.866
+const ISO_SIN30 = 0.5;
+
+// Isometric view for fractal: extrude actual SVG path shapes in 3D
+function drawPuzzleFractalIsometric() {
+    const svgPaths = puzzleData.svgPaths;
+    if (!svgPaths || !svgPaths.length) return;
+
+    setFractalVisibility(true);
+
+    const w = puzzleCanvas.width;
+    const h = puzzleCanvas.height;
+
+    // Clear canvas
+    const gradientBg = puzzleCtx.createLinearGradient(0, 0, w, h);
+    gradientBg.addColorStop(0, '#f5f7fa');
+    gradientBg.addColorStop(1, '#e9ecef');
+    puzzleCtx.fillStyle = gradientBg;
+    puzzleCtx.fillRect(0, 0, w, h);
+
+    const isJigsaw = puzzleData.puzzleType === 'jigsaw';
+    const ncols = puzzleData.fractalNcols || 1;
+    const nrows = puzzleData.fractalNrows || 1;
+    const jt = puzzleData.jigsawType;
+    const isHex = isJigsaw && (jt === 'hexagonal' || jt === 'circular');
+
+    // Check contoured_base checkbox to decide base shape
+    const contouredBaseEl = document.getElementById('jigsaw_contoured_base');
+    const contouredBase = isHex && contouredBaseEl && contouredBaseEl.checked;
+
+    // Check truncate_edge for piece clipping
+    const truncateEdge = puzzleData.truncateEdge || false;
+
+    // Coordinate range: fractal uses ncols*2, jigsaw uses ncols
+    const coordW = isJigsaw ? ncols : ncols * 2;
+    const coordH = isJigsaw ? nrows : nrows * 2;
+
+    // Border margin around pieces
+    const baseBorder = Math.max(coordW, coordH) * VIEWER_PARAMS.baseBorderFactor;
+
+    // Base extrusion height in SVG-coordinate units
+    const extrudeH = Math.max(coordW, coordH) * VIEWER_PARAMS.extrudeHeightFactor;
+
+    // Build base shape points (in SVG coordinates)
+    let baseShape;
+    if (contouredBase) {
+        // Hexagonal or circular base matching puzzle shape
+        const cx = coordW / 2, cy = coordH / 2;
+        const r = Math.min(coordW, coordH) / 2 + baseBorder;
+        if (jt === 'circular') {
+            // Smooth circle with many segments
+            const nSegs = VIEWER_PARAMS.circleBaseSegments;
+            baseShape = [];
+            for (let i = 0; i < nSegs; i++) {
+                const angle = i * 2 * Math.PI / nSegs;
+                baseShape.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+            }
+        } else {
+            // Flat-top hexagon (matching Draradech orientation)
+            baseShape = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.PI - i * Math.PI / 3;
+                baseShape.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+            }
+        }
+    } else {
+        // Rectangle base with border
+        baseShape = [
+            [-baseBorder, -baseBorder],
+            [coordW + baseBorder, -baseBorder],
+            [coordW + baseBorder, coordH + baseBorder],
+            [-baseBorder, coordH + baseBorder]
+        ];
+    }
+
+    // Build clip boundary for truncate_edge (hex/circle outline for pieces)
+    let clipShape = null;
+    if (truncateEdge && isHex) {
+        const cx = coordW / 2, cy = coordH / 2;
+        const hexR = puzzleData.hexRadius || (Math.min(coordW, coordH) / 2 * 0.95);
+        const hexOff = puzzleData.hexOffset || 0;
+        // Clip radius in SVG coords: hexR is in normalized units, center is at hexR + hexOff
+        if (jt === 'circular') {
+            clipShape = { type: 'circle', cx, cy, r: hexR };
+        } else {
+            clipShape = { type: 'hex', cx, cy, r: hexR };
+        }
+    }
+
+    // Parse all pieces
+    const arcSegs = 8;
+    const piecesFlat = [];
+    for (let i = 0; i < svgPaths.length; i++) {
+        const flat = parseSvgPathToPoints(svgPaths[i], arcSegs);
+        if (flat.length < 6) continue;
+        piecesFlat.push({ idx: i, flat, color: PIECE_COLORS[i % PIECE_COLORS.length] });
+    }
+
+    // Project functions
+    const projectTop = (x, y) => [(x - y) * ISO_COS30, (x + y) * ISO_SIN30];
+    const projectBot = (x, y) => [(x - y) * ISO_COS30, (x + y) * ISO_SIN30 + extrudeH];
+
+    // Compute bounding box of projected base + extrusion
+    let bMinX = Infinity, bMaxX = -Infinity;
+    let bMinY = Infinity, bMaxY = -Infinity;
+    for (const [bx, by] of baseShape) {
+        const [sx1, sy1] = projectTop(bx, by);
+        const [sx2, sy2] = projectBot(bx, by);
+        bMinX = Math.min(bMinX, sx1, sx2);
+        bMaxX = Math.max(bMaxX, sx1, sx2);
+        bMinY = Math.min(bMinY, sy1, sy2);
+        bMaxY = Math.max(bMaxY, sy1, sy2);
+    }
+
+    const projW = bMaxX - bMinX;
+    const projH = bMaxY - bMinY;
+    const margin = VIEWER_PARAMS.isoMarginPx;
+    const fitScale = Math.min((w - margin * 2) / projW, (h - margin * 2) / projH);
+    const offX = w / 2 - (bMinX + projW / 2) * fitScale;
+    const offY = h / 2 - (bMinY + projH / 2) * fitScale;
+
+    const toScreen = (px, py) => [px * fitScale + offX, py * fitScale + offY];
+
+    // === Draw extruded base ===
+    const baseColor = VIEWER_PARAMS.baseColor;
+    const baseColorRight = shadeColor(baseColor, VIEWER_PARAMS.baseShadeRight);
+    const baseColorLeft = shadeColor(baseColor, VIEWER_PARAMS.baseShadeLeft);
+
+    // Project base top and bottom vertices
+    const baseTopScreen = baseShape.map(([bx, by]) => {
+        const [px, py] = projectTop(bx, by);
+        return toScreen(px, py);
+    });
+    const baseBotScreen = baseShape.map(([bx, by]) => {
+        const [px, py] = projectBot(bx, by);
+        return toScreen(px, py);
+    });
+
+    // Compute base center for outward normal classification
+    const nBase = baseShape.length;
+    let baseCx = 0, baseCy = 0;
+    for (const [bx, by] of baseShape) { baseCx += bx; baseCy += by; }
+    baseCx /= nBase; baseCy /= nBase;
+
+    // Classify edges as front-facing or back-facing
+    // Front-facing: outward normal points toward viewer (positive x+y direction in world)
+    const frontEdges = [];
+    const backEdges = [];
+    for (let j = 0; j < nBase; j++) {
+        const j2 = (j + 1) % nBase;
+        const mx = (baseShape[j][0] + baseShape[j2][0]) / 2;
+        const my = (baseShape[j][1] + baseShape[j2][1]) / 2;
+        const nx = mx - baseCx;  // outward normal direction
+        const ny = my - baseCy;
+        if (nx + ny > 0) {
+            // Front-facing: visible side wall
+            // Shade based on normal direction
+            const shade = nx > ny ? baseColorRight : baseColorLeft;
+            frontEdges.push({ j, j2, shade });
+        } else {
+            backEdges.push({ j, j2 });
+        }
+    }
+
+    // Draw back-facing walls first (they'll be covered by top face)
+    for (const { j, j2 } of backEdges) {
+        puzzleCtx.fillStyle = shadeColor(baseColor, -5);
+        puzzleCtx.beginPath();
+        puzzleCtx.moveTo(baseTopScreen[j][0], baseTopScreen[j][1]);
+        puzzleCtx.lineTo(baseTopScreen[j2][0], baseTopScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j2][0], baseBotScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j][0], baseBotScreen[j][1]);
+        puzzleCtx.closePath();
+        puzzleCtx.fill();
+    }
+
+    // Draw base top face
+    puzzleCtx.beginPath();
+    puzzleCtx.moveTo(baseTopScreen[0][0], baseTopScreen[0][1]);
+    for (let j = 1; j < nBase; j++) {
+        puzzleCtx.lineTo(baseTopScreen[j][0], baseTopScreen[j][1]);
+    }
+    puzzleCtx.closePath();
+    const baseGrad = puzzleCtx.createLinearGradient(0, baseTopScreen[0][1], 0, baseTopScreen[nBase - 1][1]);
+    baseGrad.addColorStop(0, VIEWER_PARAMS.baseTopGradient[0]);
+    baseGrad.addColorStop(1, shadeColor(VIEWER_PARAMS.baseTopGradient[0], VIEWER_PARAMS.baseTopGradient[1]));
+    puzzleCtx.fillStyle = baseGrad;
+    puzzleCtx.fill();
+    puzzleCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+    puzzleCtx.lineWidth = 1;
+    puzzleCtx.stroke();
+
+    // Draw front-facing walls (on top of top face, visible below it)
+    for (const { j, j2, shade } of frontEdges) {
+        puzzleCtx.fillStyle = shade;
+        puzzleCtx.beginPath();
+        puzzleCtx.moveTo(baseTopScreen[j][0], baseTopScreen[j][1]);
+        puzzleCtx.lineTo(baseTopScreen[j2][0], baseTopScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j2][0], baseBotScreen[j2][1]);
+        puzzleCtx.lineTo(baseBotScreen[j][0], baseBotScreen[j][1]);
+        puzzleCtx.closePath();
+        puzzleCtx.fill();
+        // Edge outline
+        puzzleCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+        puzzleCtx.lineWidth = 1;
+        puzzleCtx.stroke();
+    }
+
+    // === Draw piece top faces (flat, on the base top surface) ===
+    // Sort pieces back-to-front for proper overlap of outlines
+    const sortedPieces = piecesFlat.map(pc => {
+        const f = pc.flat;
+        let minD = Infinity;
+        for (let k = 0; k < f.length; k += 2) {
+            const d = f[k] + f[k + 1];
+            if (d < minD) minD = d;
+        }
+        return { ...pc, depth: minD };
+    });
+    sortedPieces.sort((a, b) => a.depth - b.depth);
+
+    const strokeW = Math.max(0.5, fitScale * Math.max(coordW, coordH) * VIEWER_PARAMS.pieceStrokeWidthFactor);
+
+    // Apply clip path for truncate_edge if needed
+    if (clipShape) {
+        puzzleCtx.save();
+        puzzleCtx.beginPath();
+        if (clipShape.type === 'circle') {
+            // Project circle boundary as an ellipse-like polygon
+            const nPts = VIEWER_PARAMS.circleClipSegments;
+            for (let k = 0; k < nPts; k++) {
+                const angle = k * 2 * Math.PI / nPts;
+                const cx = clipShape.cx + clipShape.r * Math.cos(angle);
+                const cy = clipShape.cy + clipShape.r * Math.sin(angle);
+                const [px, py] = projectTop(cx, cy);
+                const [sx, sy] = toScreen(px, py);
+                if (k === 0) puzzleCtx.moveTo(sx, sy);
+                else puzzleCtx.lineTo(sx, sy);
+            }
+        } else {
+            // Hex clip boundary
+            for (let k = 0; k < 6; k++) {
+                const angle = Math.PI - k * Math.PI / 3;
+                const cx = clipShape.cx + clipShape.r * Math.cos(angle);
+                const cy = clipShape.cy + clipShape.r * Math.sin(angle);
+                const [px, py] = projectTop(cx, cy);
+                const [sx, sy] = toScreen(px, py);
+                if (k === 0) puzzleCtx.moveTo(sx, sy);
+                else puzzleCtx.lineTo(sx, sy);
+            }
+        }
+        puzzleCtx.closePath();
+        puzzleCtx.clip();
+    }
+
+    for (const pc of sortedPieces) {
+        const f = pc.flat;
+        const nPts = f.length / 2;
+        if (nPts < 3) continue;
+
+        // Project each point to isometric top surface
+        puzzleCtx.beginPath();
+        for (let k = 0; k < nPts; k++) {
+            const [px, py] = projectTop(f[k * 2], f[k * 2 + 1]);
+            const [sx, sy] = toScreen(px, py);
+            if (k === 0) puzzleCtx.moveTo(sx, sy);
+            else puzzleCtx.lineTo(sx, sy);
+        }
+        puzzleCtx.closePath();
+
+        // Gradient fill
+        let yMin = Infinity, yMax = -Infinity;
+        for (let k = 0; k < nPts; k++) {
+            const [, py] = projectTop(f[k * 2], f[k * 2 + 1]);
+            const [, sy] = toScreen(0, py);
+            if (sy < yMin) yMin = sy;
+            if (sy > yMax) yMax = sy;
+        }
+        const gradTop = puzzleCtx.createLinearGradient(0, yMin, 0, yMax);
+        gradTop.addColorStop(0, pc.color);
+        gradTop.addColorStop(1, shadeColor(pc.color, -10));
+        puzzleCtx.fillStyle = gradTop;
+        puzzleCtx.fill();
+
+        // Outline
+        puzzleCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+        puzzleCtx.lineWidth = strokeW;
+        puzzleCtx.stroke();
+    }
+
+    // Restore clip if applied
+    if (clipShape) {
+        puzzleCtx.restore();
+    }
+}
+
+// Flat SVG view for fractal (original)
+function drawPuzzleFractalFlat() {
+    const svgPaths = puzzleData.svgPaths;
+    if (!svgPaths || !svgPaths.length) return;
+
+    setFractalVisibility(true);
+
+    const ncols = puzzleData.fractalNcols;
+    const nrows = puzzleData.fractalNrows;
+    const isJigsaw = puzzleData.puzzleType === 'jigsaw';
+    const jt = puzzleData.jigsawType;
+    const isHex = isJigsaw && (jt === 'hexagonal' || jt === 'circular');
+    const vbW = isJigsaw ? ncols : ncols * 2;
+    const vbH = isJigsaw ? nrows : nrows * 2;
+    const pad = Math.max(vbW, vbH) * VIEWER_PARAMS.flatPadFactor;
+
+    // Check contoured_base checkbox
+    const contouredBaseEl = document.getElementById('jigsaw_contoured_base');
+    const contouredBase = isHex && contouredBaseEl && contouredBaseEl.checked;
+
+    // Check truncate_edge
+    const truncateEdge = puzzleData.truncateEdge || false;
+
+    const container = document.getElementById('fractal-puzzle-svg');
+    container.innerHTML = '';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('viewBox', `${-pad} ${-pad} ${vbW + pad * 2} ${vbH + pad * 2}`);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%)';
+    svg.style.borderRadius = '8px';
+
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // Background
+    const bgRect = document.createElementNS(ns, 'rect');
+    bgRect.setAttribute('x', -pad);
+    bgRect.setAttribute('y', -pad);
+    bgRect.setAttribute('width', vbW + pad * 2);
+    bgRect.setAttribute('height', vbH + pad * 2);
+    bgRect.setAttribute('fill', '#f5f7fa');
+    svg.appendChild(bgRect);
+
+    // Base shape (visible behind pieces)
+    const baseBorder = Math.max(vbW, vbH) * VIEWER_PARAMS.flatBaseBorderFactor;
+    const baseStrokeW = Math.max(vbW, vbH) * VIEWER_PARAMS.flatBaseStrokeFactor;
+
+    if (contouredBase) {
+        const cx = vbW / 2, cy = vbH / 2;
+        const r = Math.min(vbW, vbH) / 2 + baseBorder;
+        if (jt === 'circular') {
+            const baseCircle = document.createElementNS(ns, 'circle');
+            baseCircle.setAttribute('cx', cx);
+            baseCircle.setAttribute('cy', cy);
+            baseCircle.setAttribute('r', r);
+            baseCircle.setAttribute('fill', '#e8ecf2');
+            baseCircle.setAttribute('stroke', '#b0b8c8');
+            baseCircle.setAttribute('stroke-width', baseStrokeW);
+            svg.appendChild(baseCircle);
+        } else {
+            // Flat-top hexagon
+            let pts = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.PI - i * Math.PI / 3;
+                pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+            }
+            const basePoly = document.createElementNS(ns, 'polygon');
+            basePoly.setAttribute('points', pts.join(' '));
+            basePoly.setAttribute('fill', '#e8ecf2');
+            basePoly.setAttribute('stroke', '#b0b8c8');
+            basePoly.setAttribute('stroke-width', baseStrokeW);
+            svg.appendChild(basePoly);
+        }
+    } else {
+        // Rectangular base with border
+        const baseRect = document.createElementNS(ns, 'rect');
+        baseRect.setAttribute('x', -baseBorder);
+        baseRect.setAttribute('y', -baseBorder);
+        baseRect.setAttribute('width', vbW + baseBorder * 2);
+        baseRect.setAttribute('height', vbH + baseBorder * 2);
+        baseRect.setAttribute('fill', '#e8ecf2');
+        baseRect.setAttribute('stroke', '#b0b8c8');
+        baseRect.setAttribute('stroke-width', baseStrokeW);
+        baseRect.setAttribute('rx', '0.15');
+        svg.appendChild(baseRect);
+    }
+
+    // SVG clipPath for truncate_edge (clips pieces to hex/circle boundary)
+    let clipId = null;
+    if (truncateEdge && isHex) {
+        const cx = vbW / 2, cy = vbH / 2;
+        const hexR = puzzleData.hexRadius || (Math.min(vbW, vbH) / 2 * 0.95);
+        clipId = 'truncate-clip-' + Date.now();
+        const defs = document.createElementNS(ns, 'defs');
+        const clipPath = document.createElementNS(ns, 'clipPath');
+        clipPath.setAttribute('id', clipId);
+        if (jt === 'circular') {
+            const clipCircle = document.createElementNS(ns, 'circle');
+            clipCircle.setAttribute('cx', cx);
+            clipCircle.setAttribute('cy', cy);
+            clipCircle.setAttribute('r', hexR);
+            clipPath.appendChild(clipCircle);
+        } else {
+            let pts = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.PI - i * Math.PI / 3;
+                pts.push(`${cx + hexR * Math.cos(angle)},${cy + hexR * Math.sin(angle)}`);
+            }
+            const clipPoly = document.createElementNS(ns, 'polygon');
+            clipPoly.setAttribute('points', pts.join(' '));
+            clipPath.appendChild(clipPoly);
+        }
+        defs.appendChild(clipPath);
+        svg.appendChild(defs);
+    }
+
+    // Stroke width proportional to puzzle size
+    const strokeW = Math.max(vbW, vbH) * VIEWER_PARAMS.flatStrokeFactor;
+
+    // Group for pieces (optionally clipped)
+    const piecesGroup = document.createElementNS(ns, 'g');
+    if (clipId) {
+        piecesGroup.setAttribute('clip-path', `url(#${clipId})`);
+    }
+
+    // Draw each piece
+    for (let i = 0; i < svgPaths.length; i++) {
+        const d = svgPaths[i];
+        if (!d) continue;
+
+        const path = document.createElementNS(ns, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', PIECE_COLORS[i % PIECE_COLORS.length]);
+        path.setAttribute('stroke', 'black');
+        path.setAttribute('stroke-width', strokeW);
+        path.setAttribute('stroke-linejoin', 'round');
+        piecesGroup.appendChild(path);
+    }
+
+    svg.appendChild(piecesGroup);
+
+    // Draw truncation boundary outline on top
+    if (truncateEdge && isHex) {
+        const cx = vbW / 2, cy = vbH / 2;
+        const hexR = puzzleData.hexRadius || (Math.min(vbW, vbH) / 2 * 0.95);
+        if (jt === 'circular') {
+            const outline = document.createElementNS(ns, 'circle');
+            outline.setAttribute('cx', cx);
+            outline.setAttribute('cy', cy);
+            outline.setAttribute('r', hexR);
+            outline.setAttribute('fill', 'none');
+            outline.setAttribute('stroke', 'black');
+            outline.setAttribute('stroke-width', strokeW * 1.5);
+            svg.appendChild(outline);
+        } else {
+            let pts = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.PI - i * Math.PI / 3;
+                pts.push(`${cx + hexR * Math.cos(angle)},${cy + hexR * Math.sin(angle)}`);
+            }
+            const outline = document.createElementNS(ns, 'polygon');
+            outline.setAttribute('points', pts.join(' '));
+            outline.setAttribute('fill', 'none');
+            outline.setAttribute('stroke', 'black');
+            outline.setAttribute('stroke-width', strokeW * 1.5);
+            svg.appendChild(outline);
+        }
+    }
+
+    container.appendChild(svg);
+}
+
+// Parsea un SVG path 'd' string para calcular su bounding box.
+// Usa un enfoque simple: crea un SVG temporal, le añade el path y usa getBBox().
+function computeSvgPathBBox(d) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const tmpSvg = document.createElementNS(ns, 'svg');
+    tmpSvg.style.position = 'absolute';
+    tmpSvg.style.left = '-9999px';
+    tmpSvg.style.top = '-9999px';
+    tmpSvg.style.width = '0';
+    tmpSvg.style.height = '0';
+    document.body.appendChild(tmpSvg);
+
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    tmpSvg.appendChild(path);
+
+    const bbox = path.getBBox();
+    document.body.removeChild(tmpSvg);
+
+    if (bbox.width <= 0 || bbox.height <= 0) return null;
+    return {
+        minX: bbox.x,
+        minY: bbox.y,
+        maxX: bbox.x + bbox.width,
+        maxY: bbox.y + bbox.height,
+        width: bbox.width,
+        height: bbox.height
+    };
+}
+
+// Initial state
+updateSolutionInfo();
+
+// -----------------------------
+// 3D Viewer (Three.js)
+// -----------------------------
+let threeScene = null;
+let threeRenderer = null;
+let threeCamera = null;
+let threeGroup = null;
+let threeGrid = null;
+let viewerHasModel = false;
+let stlUpdateTimer = null;
+
+// (enhanceNumberInputs eliminado)
+
+/**
+ * Create a text label sprite for the 3D scene.
+ */
+function makeTextSprite(text, size) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 64;
+    canvas.height = 32;
+    ctx.fillStyle = '#aaaaaa';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 32, 16);
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(size, size * 0.5, 1);
+    return sprite;
+}
+
+/**
+ * Add 256×256mm printer bed with grid and cm ruler markings.
+ */
+function addPrinterBed(group) {
+    const bedSize = 256;
+    // Bed plane
+    const bedGeom = new THREE.PlaneGeometry(bedSize, bedSize);
+    const bedMat = new THREE.MeshStandardMaterial({
+        color: 0x333333, metalness: 0.3, roughness: 0.8, side: THREE.DoubleSide
+    });
+    const bedMesh = new THREE.Mesh(bedGeom, bedMat);
+    bedMesh.rotation.set(-Math.PI / 2, 0, 0);
+    group.add(bedMesh);
+
+    // Grid (every 10mm = 1cm → 25.6 divisions, use 25 for clean lines)
+    const gridHelper = new THREE.GridHelper(bedSize, 25, 0x555555, 0x444444);
+    gridHelper.position.set(0, 0.05, 0);
+    group.add(gridHelper);
+
+    // Ruler tick marks and labels every 2cm along X and Z edges
+    const half = bedSize / 2;
+    const tickLen = 4;
+    const tickMat = new THREE.LineBasicMaterial({ color: 0x999999 });
+
+    for (let cm = 0; cm <= 25; cm += 2) {
+        const pos = -half + cm * 10; // mm position from center
+
+        // X-axis ruler (along front edge, z = +half)
+        const xPts = [
+            new THREE.Vector3(pos, 0.1, half),
+            new THREE.Vector3(pos, 0.1, half + tickLen)
+        ];
+        const xLine = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(xPts), tickMat
+        );
+        group.add(xLine);
+
+        // Label
+        if (cm > 0 && cm < 25) {
+            const label = makeTextSprite(cm + '', 10);
+            label.position.set(pos, 0.1, half + tickLen + 5);
+            group.add(label);
+        }
+
+        // Z-axis ruler (along left edge, x = -half)
+        const zPts = [
+            new THREE.Vector3(-half, 0.1, pos),
+            new THREE.Vector3(-half - tickLen, 0.1, pos)
+        ];
+        const zLine = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(zPts), tickMat
+        );
+        group.add(zLine);
+
+        if (cm > 0 && cm < 25) {
+            const label = makeTextSprite(cm + '', 10);
+            label.position.set(-half - tickLen - 5, 0.1, pos);
+            group.add(label);
+        }
+    }
+
+    // "cm" label at the end of each ruler
+    const cmLabelX = makeTextSprite('cm', 12);
+    cmLabelX.position.set(half, 0.1, half + tickLen + 5);
+    group.add(cmLabelX);
+
+    const cmLabelZ = makeTextSprite('cm', 12);
+    cmLabelZ.position.set(-half - tickLen - 5, 0.1, half);
+    group.add(cmLabelZ);
+}
+
+function init3DViewer() {
+    const container = document.getElementById('viewer-3d');
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+    threeRenderer.setSize(rect.width, rect.height);
+    threeRenderer.setPixelRatio(window.devicePixelRatio || 1);
+    threeRenderer.setClearColor(0xf5f7fa);
+    container.innerHTML = '';
+    container.appendChild(threeRenderer.domElement);
+
+    threeScene = new THREE.Scene();
+    threeCamera = new THREE.PerspectiveCamera(45, rect.width / rect.height, 0.1, 10000);
+    // Ángulo original sencillo
+    threeCamera.position.set(200, 200, 400);
+    threeCamera.lookAt(0, 0, 0);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+    dir.position.set(1, 1, 1);
+    threeScene.add(dir);
+    threeScene.add(new THREE.AmbientLight(0x666666));
+
+    threeGroup = new THREE.Group();
+    threeScene.add(threeGroup);
+
+    // Initial printer bed with rulers
+    addPrinterBed(threeGroup);
+
+    // Orbit controls for interaction
+    try {
+        const controls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = false;
+        controls.minDistance = 10;
+        controls.maxDistance = 5000;
+        window._threeControls = controls;
+    } catch (e) {
+        console.warn('OrbitControls no disponible:', e);
+    }
+
+    window.addEventListener('resize', () => {
+        if (!threeRenderer) return;
+        const r = container.getBoundingClientRect();
+        threeRenderer.setSize(r.width, r.height);
+        threeCamera.aspect = r.width / r.height;
+        threeCamera.updateProjectionMatrix();
+    });
+
+    (function animate() {
+        requestAnimationFrame(animate);
+        if (window._threeControls) window._threeControls.update();
+        threeRenderer.render(threeScene, threeCamera);
+    })();
+
+    showExportStatus('🎥 Visor 3D inicializado', 'info');
+}
+
+async function loadThreeFromSeparate(baseB64, piecesB64, baseColor, pieceColor, reliefB64, reliefColor) {
+    /**
+     * Load separate base, pieces, and relief STL data into Three.js with different colors.
+     * baseB64/piecesB64/reliefB64: base64-encoded STL binary strings (may be null/undefined).
+     */
+    if (!baseB64 && !piecesB64) return false;
+    if (!threeScene) init3DViewer();
+    if (!threeGroup) return false;
+    if (typeof THREE.STLLoader !== 'function') {
+        console.error('STLLoader no disponible');
+        return false;
+    }
+
+    const loader = new THREE.STLLoader();
+
+    const prevCamPos = threeCamera ? threeCamera.position.clone() : null;
+    const prevTarget = window._threeControls ? window._threeControls.target.clone() : null;
+
+    while (threeGroup.children.length) threeGroup.remove(threeGroup.children[0]);
+    addPrinterBed(threeGroup);
+
+    // Compute combined bounding box for centering
+    const allMeshes = [];
+
+    async function addSTLMesh(b64Data, hexColor) {
+        const bytes = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const blob = new Blob([bytes], { type: 'model/stl' });
+        const url = window.URL.createObjectURL(blob);
+        try {
+            const geometry = await loader.loadAsync(url);
+            try { geometry.computeVertexNormals(); } catch (e) {}
+            const material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(hexColor),
+                metalness: 0.2,
+                roughness: 0.7,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.set(-Math.PI / 2, 0, 0);
+            mesh.updateMatrixWorld(true);
+            allMeshes.push(mesh);
+        } finally {
+            window.URL.revokeObjectURL(url);
+        }
+    }
+
+    try {
+        if (baseB64) await addSTLMesh(baseB64, baseColor);
+        if (piecesB64) await addSTLMesh(piecesB64, pieceColor);
+        if (reliefB64) await addSTLMesh(reliefB64, reliefColor || '#FF6633');
+
+        // Center all meshes together
+        const tempGroup = new THREE.Group();
+        allMeshes.forEach(m => tempGroup.add(m));
+        tempGroup.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(tempGroup);
+        const center = box.getCenter(new THREE.Vector3());
+
+        allMeshes.forEach(m => {
+            tempGroup.remove(m);
+            m.position.set(
+                m.position.x - center.x,
+                m.position.y - box.min.y,
+                m.position.z - center.z
+            );
+            // Tag meshes for color updates
+            m.userData.colorRole = allMeshes.indexOf(m) === 0 && baseB64 ? 'base' : 'pieces';
+            threeGroup.add(m);
+        });
+
+        if (!viewerHasModel) {
+            frameCameraTo(threeGroup);
+            viewerHasModel = true;
+        } else {
+            if (prevCamPos) threeCamera.position.copy(prevCamPos);
+            if (prevTarget && window._threeControls) window._threeControls.target.copy(prevTarget);
+        }
+        return true;
+    } catch (err) {
+        console.error('Error cargando STL separados en Three:', err);
+        return false;
+    }
+}
+
+// Update Three.js mesh colors without re-fetching geometry
+function updateThreeColors() {
+    if (!threeGroup) return;
+    const pieceColorEl = document.getElementById('stl_color_pieces');
+    const baseColorEl = document.getElementById('stl_color_base');
+    const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
+    const baseColor = baseColorEl ? baseColorEl.value : '#808080';
+
+    threeGroup.children.forEach(child => {
+        if (!child.userData || !child.userData.colorRole) return;
+        if (child.material) {
+            if (child.userData.colorRole === 'base') {
+                child.material.color.set(baseColor);
+            } else if (child.userData.colorRole === 'pieces') {
+                child.material.color.set(pieceColor);
+            }
+            child.material.needsUpdate = true;
+        }
+    });
+}
+
+async function loadThreeFromBlob(blob) {
+    if (!blob) return false;
+    if (!threeScene) init3DViewer();
+    if (!threeGroup) return false;
+    if (typeof THREE.STLLoader !== 'function') {
+        console.error('STLLoader no disponible');
+        return false;
+    }
+
+    const loader = new THREE.STLLoader();
+    const url = window.URL.createObjectURL(blob);
+    try {
+        const geometry = await loader.loadAsync(url);
+        try { geometry.computeVertexNormals(); } catch (e) {}
+
+        const prevCamPos = threeCamera ? threeCamera.position.clone() : null;
+        const prevTarget = window._threeControls ? window._threeControls.target.clone() : null;
+
+        while (threeGroup.children.length) threeGroup.remove(threeGroup.children[0]);
+        addPrinterBed(threeGroup);
+
+        const material = new THREE.MeshStandardMaterial({ color: 0x6699cc, metalness: 0.2, roughness: 0.7 });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.set(-Math.PI / 2, 0, 0);
+        mesh.updateMatrixWorld(true);
+
+        const box = new THREE.Box3().setFromObject(mesh);
+        const center = box.getCenter(new THREE.Vector3());
+        mesh.position.set(-center.x, -box.min.y, -center.z);
+        threeGroup.add(mesh);
+
+        if (!viewerHasModel) {
+            frameCameraTo(threeGroup);
+            viewerHasModel = true;
+        } else {
+            if (prevCamPos) threeCamera.position.copy(prevCamPos);
+            if (prevTarget && window._threeControls) window._threeControls.target.copy(prevTarget);
+        }
+        return true;
+    } catch (err) {
+        console.error('Error cargando STL en Three:', err);
+        return false;
+    } finally {
+        window.URL.revokeObjectURL(url);
+    }
+}
+
+function addAxesHelper(size = 100) {
+    if (!threeGroup) return;
+    const axes = new THREE.AxesHelper(size);
+    threeGroup.add(axes);
+}
+
+function addTestCube() {
+    if (!threeGroup) return;
+    const geom = new THREE.BoxGeometry(50, 20, 50);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x00aaee, metalness: 0.2, roughness: 0.7 });
+    const cube = new THREE.Mesh(geom, mat);
+    cube.position.set(0, -10, 0);
+    threeGroup.add(cube);
+}
+
+function frameCameraTo(targetObject) {
+    if (!targetObject || !threeCamera) return;
+    const box = new THREE.Box3().setFromObject(targetObject);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim === 0 || !isFinite(maxDim)) return;
+    const fov = threeCamera.fov * Math.PI / 180;
+    let cameraZ = Math.abs(maxDim / (2 * Math.tan(fov / 2)));
+    cameraZ *= 1.02; // más ajustado para llenar visor
+    // Mantener ángulo original: dirección (200,200,400) normalizada
+    const dir = new THREE.Vector3(200, 300, -200).normalize();
+    const pos = center.clone().add(dir.multiplyScalar(cameraZ));
+    threeCamera.position.copy(pos);
+    threeCamera.lookAt(center);
+    if (window._threeControls) window._threeControls.target.copy(center);
+}
+
+// Actualizar visor automáticamente cuando cambian parámetros STL
+function scheduleViewerUpdate() {
+    // Only update the advanced viewer if it's visible
+    const advContent = document.getElementById('advanced-viewer-content');
+    if (!advContent || advContent.style.display === 'none') return;
+    if (stlUpdateTimer) clearTimeout(stlUpdateTimer);
+    stlUpdateTimer = setTimeout(() => {
+        viewSTL();
+    }, 300);
+}
+
+// Manual reload button
+const viewerReloadBtn = document.getElementById('viewer-reload-btn');
+if (viewerReloadBtn) {
+    viewerReloadBtn.addEventListener('click', () => { viewSTL(); });
+}
+
+// Advanced viewer toggle
+const advToggle = document.getElementById('advanced_viewer_toggle');
+const advContent = document.getElementById('advanced-viewer-content');
+if (advToggle && advContent) {
+    advToggle.addEventListener('change', () => {
+        advContent.style.display = advToggle.checked ? '' : 'none';
+        if (advToggle.checked) viewSTL();
+    });
+}
+
+const cubeInput = document.getElementById('stl_cube_size');
+const heightInput = document.getElementById('stl_height');
+const tolInput = document.getElementById('stl_tolerance');
+const borderInput = document.getElementById('stl_border');
+const baseThkInput = document.getElementById('stl_base_thickness');
+const wallHInput = document.getElementById('stl_wall_height');
+
+// Collect all infill sub-option inputs for auto-refresh
+const allInfillInputs = document.querySelectorAll('.infill-opts input');
+
+[cubeInput, heightInput, tolInput, borderInput, baseThkInput, wallHInput].forEach(inp => {
+    if (inp) {
+        inp.addEventListener('input', scheduleViewerUpdate);
+        inp.addEventListener('change', () => { scheduleViewerUpdate(); scheduleInline3DUpdate(); });
+    }
+});
+
+// Corner style inputs auto-refresh
+const cornerRadiusInput = document.getElementById('stl_corner_radius');
+const cornerStyleInput = document.getElementById('stl_corner_style');
+const cornerRadiusGroup = document.getElementById('corner-radius-group');
+const cornersOptsGroup = document.getElementById('piece-opts-corners');
+
+// Base corner style inputs auto-refresh
+const baseCornerRadiusInput = document.getElementById('stl_base_corner_radius');
+const baseCornerRadiusInnerInput = document.getElementById('stl_base_corner_radius_inner');
+const baseCornerStyleInput = document.getElementById('stl_base_corner_style');
+const baseCornerRadiusGroup = document.getElementById('base-corner-radius-group');
+const baseCornerRadiusInnerGroup = document.getElementById('base-corner-radius-inner-group');
+const baseCornerOptsGroup = document.getElementById('base-opts-corners');
+
+[cornerStyleInput, cornerRadiusInput, baseCornerStyleInput, baseCornerRadiusInput, baseCornerRadiusInnerInput].forEach(inp => {
+    if (inp) {
+        inp.addEventListener('input', scheduleViewerUpdate);
+        inp.addEventListener('change', () => { scheduleViewerUpdate(); scheduleInline3DUpdate(); });
+    }
+});
+
+allInfillInputs.forEach(inp => {
+    inp.addEventListener('input', scheduleViewerUpdate);
+    inp.addEventListener('change', () => { scheduleViewerUpdate(); scheduleInline3DUpdate(); });
+});
+
+// Per-puzzle-type + arc-shape + infill-type defaults
+// (values defined in INFILL_DEFAULTS at the top of this file)
+const infillDefaults = INFILL_DEFAULTS;
+
+function getInfillDefaults() {
+    const pType = puzzleData && puzzleData.puzzleType;
+    let key;
+    if (pType === 'jigsaw') {
+        key = 'jigsaw';
+    } else if (pType === 'fractal') {
+        const arcShape = document.getElementById('arc_shape') ? document.getElementById('arc_shape').value : '0';
+        key = 'fractal_' + arcShape;
+    } else {
+        key = 'normal';
+    }
+    return infillDefaults[key] || infillDefaults['normal'];
+}
+
+function applyInfillDefaults() {
+    const defs = getInfillDefaults();
+    const infillType = infillSelect ? infillSelect.value : 'solid';
+
+    // Apply common params
+    const common = defs.common || {};
+    const commonMap = {
+        stl_infill_wall: 'infill_wall'
+    };
+    for (const [elId, key] of Object.entries(commonMap)) {
+        const el = document.getElementById(elId);
+        if (el && common[key] !== undefined) el.value = common[key];
+    }
+
+    // Apply infill-type-specific params (including per-type angle where applicable)
+    const specific = defs[infillType] || {};
+    const specificMap = {
+        stl_infill_fill_width:        'infill_fill_width',
+        stl_infill_spacing:           'infill_spacing',
+        stl_infill_angle_grid:        'infill_angle',
+        stl_infill_fill_width_s:      'infill_fill_width_s',
+        stl_infill_spacing_s:         'infill_spacing_s',
+        stl_infill_angle_stripes:     'infill_angle',
+        stl_infill_fill_width_z:      'infill_fill_width_z',
+        stl_infill_spacing_z:         'infill_spacing_z',
+        stl_infill_amplitude:         'infill_amplitude',
+        stl_infill_angle_zigzag:      'infill_angle',
+        stl_infill_fill_width_h:      'infill_fill_width_h',
+        stl_infill_cell_size:         'infill_cell_size',
+        stl_infill_angle_honeycomb:   'infill_angle',
+        stl_infill_fill_width_c:      'infill_fill_width_c'
+    };
+    for (const [elId, key] of Object.entries(specificMap)) {
+        const el = document.getElementById(elId);
+        if (el && specific[key] !== undefined) el.value = specific[key];
+    }
+
+    // Update corner style visibility when puzzle type changes
+    if (typeof updateCornerStyleUI === 'function') updateCornerStyleUI();
+}
+
+// Infill type selector: show/hide sub-options
+const infillSelect = document.getElementById('stl_infill_type');
+// Infill types that have a type-specific params panel (col 1)
+const INFILL_WITH_PARAMS = ['grid', 'stripes', 'zigzag', 'honeycomb', 'circles'];
+// Infill types that have a common options panel (col 2)
+const INFILL_WITH_COMMON = ['hollow', 'grid', 'stripes', 'zigzag', 'honeycomb', 'circles'];
+function updateInfillOptions() {
+    // Clear all active states first
+    document.querySelectorAll('.infill-opts').forEach(el => el.classList.remove('active'));
+    const sel = infillSelect ? infillSelect.value : 'solid';
+    // Col 1: show type-specific panel or placeholder
+    const paramsPanel = document.getElementById('infill-opts-' + sel);
+    const noParamsEl  = document.getElementById('no-opts-params');
+    if (INFILL_WITH_PARAMS.includes(sel) && paramsPanel) {
+        paramsPanel.classList.add('active');
+    } else if (noParamsEl) {
+        noParamsEl.classList.add('active');
+    }
+    // Col 2: show common panel or placeholder
+    const commonPanel = document.getElementById('infill-opts-common');
+    const noCommonEl  = document.getElementById('no-opts-common');
+    if (INFILL_WITH_COMMON.includes(sel) && commonPanel) {
+        commonPanel.classList.add('active');
+    } else if (noCommonEl) {
+        noCommonEl.classList.add('active');
+    }
+    // Apply defaults for this infill type
+    applyInfillDefaults();
+    scheduleViewerUpdate();
+}
+if (infillSelect) {
+    infillSelect.addEventListener('change', updateInfillOptions);
+    updateInfillOptions(); // init
+}
+
+// --- Acabados mode switch (Relleno / Textura / Imagen) ---
+function updateAcabadosMode() {
+    const mode = document.querySelector('input[name="acabados_mode"]:checked');
+    const val = mode ? mode.value : 'infill';
+    const infillPanel = document.getElementById('acabados-infill-panel');
+    const texturePanel = document.getElementById('acabados-texture-panel');
+    const imagePanel = document.getElementById('acabados-image-panel');
+    if (infillPanel) infillPanel.style.display = (val === 'infill') ? '' : 'none';
+    if (texturePanel) texturePanel.style.display = (val === 'texture') ? '' : 'none';
+    if (imagePanel) imagePanel.style.display = (val === 'image') ? '' : 'none';
+    // All infill/texture opts live outside their panels — CSS .active handles per-type visibility
+    document.querySelectorAll('.infill-opts').forEach(el => {
+        el.style.display = (val === 'infill') ? '' : 'none';
+    });
+    document.querySelectorAll('.texture-opts').forEach(el => {
+        el.style.display = (val === 'texture') ? '' : 'none';
+    });
+    document.querySelectorAll('.image-opts').forEach(el => {
+        el.style.display = (val === 'image') ? 'flex' : 'none';
+    });
+    // Update active class on labels
+    document.querySelectorAll('.acabados-mode-label').forEach(lbl => {
+        const radio = lbl.querySelector('input[type="radio"]');
+        lbl.classList.toggle('active', radio && radio.checked);
+    });
+    if (val === 'texture') updateTextureOptions();
+    updateDragHints();
+    scheduleViewerUpdate();
+}
+document.querySelectorAll('input[name="acabados_mode"]').forEach(r => {
+    r.addEventListener('change', updateAcabadosMode);
+});
+updateAcabadosMode(); // init
+
+// --- Texture type selector: show/hide per-pattern panels ---
+function updateTextureOptions() {
+    // Hide per-type panels, keep common always visible
+    document.querySelectorAll('.texture-opts').forEach(el => {
+        if (el.id !== 'texture-opts-common') el.classList.remove('active');
+    });
+    const commonPanel = document.getElementById('texture-opts-common');
+    if (commonPanel) commonPanel.classList.add('active');
+    const sel = document.getElementById('stl_texture_type');
+    const textureType = sel ? sel.value : 'grid';
+    const panel = document.getElementById('texture-opts-' + textureType);
+    if (panel) panel.classList.add('active');
+    scheduleViewerUpdate();
+}
+const textureSelect = document.getElementById('stl_texture_type');
+if (textureSelect) {
+    textureSelect.addEventListener('change', updateTextureOptions);
+}
+
+// Toggle margin input disabled state when "sin borde" checkbox is changed
+function setupBorderToggle(checkboxId, wallInputId) {
+    const checkbox = document.getElementById(checkboxId);
+    if (!checkbox) return;
+    
+    const wallInput = document.getElementById(wallInputId);
+    const wallRangeInput = wallInput ? wallInput.parentElement.querySelector('input[type="range"]') : null;
+    
+    // Set initial state
+    if (wallRangeInput && wallInput) {
+        wallRangeInput.disabled = checkbox.checked;
+        wallInput.disabled = checkbox.checked;
+    }
+    
+    // Listen for changes
+    checkbox.addEventListener('change', () => {
+        if (wallRangeInput && wallInput) {
+            wallRangeInput.disabled = checkbox.checked;
+            wallInput.disabled = checkbox.checked;
+        }
+    });
+}
+
+// Setup for both texture and image border toggles
+setupBorderToggle('stl_texture_no_border', 'stl_texture_wall');
+setupBorderToggle('stl_image_no_border', 'stl_image_wall');
+// Setup for circle-filled toggles (disable circle border thickness inputs)
+setupBorderToggle('stl_infill_circle_filled', 'stl_infill_fill_width_c');
+setupBorderToggle('stl_texture_circle_filled', 'stl_texture_fill_width_circles');
+
+// Auto-refresh bindings for all texture inputs
+['stl_texture_direction', 'stl_texture_height', 'stl_texture_wall',
+ 'stl_texture_fill_width_grid', 'stl_texture_spacing_grid', 'stl_texture_angle_grid',
+ 'stl_texture_fill_width_stripes', 'stl_texture_spacing_stripes', 'stl_texture_angle_stripes',
+ 'stl_texture_fill_width_zigzag', 'stl_texture_spacing_zigzag', 'stl_texture_amplitude',
+ 'stl_texture_angle_zigzag',
+ 'stl_texture_fill_width_honeycomb', 'stl_texture_cell_size', 'stl_texture_angle_honeycomb',
+ 'stl_texture_fill_width_circles'
+].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('input', scheduleViewerUpdate);
+        // <select> elements fire 'change' not 'input', listen for both
+        if (el.tagName === 'SELECT') el.addEventListener('change', () => { scheduleViewerUpdate(); scheduleInline3DUpdate(); });
+    }
+});
+['stl_texture_no_border', 'stl_texture_invert'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', scheduleViewerUpdate);
+});
+// Ensure circle-filled toggles also refresh the viewer when changed
+['stl_infill_circle_filled', 'stl_texture_circle_filled'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', scheduleViewerUpdate);
+});
+
+// Viewer mode: mutually exclusive checkboxes (like radio buttons)
+// Returns 'pieces', 'base', or 'both'
+function getViewerMode() {
+    if (document.getElementById('viewer_mode_pieces')?.checked) return 'pieces';
+    if (document.getElementById('viewer_mode_base')?.checked) return 'base';
+    return 'both';
+}
+
+function setViewerMode(mode) {
+    const ids = { pieces: 'viewer_mode_pieces', base: 'viewer_mode_base', both: 'viewer_mode_both' };
+    // Uncheck all, check the selected one, update active class on labels
+    Object.entries(ids).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = (key === mode);
+        const label = el ? el.closest('label') : null;
+        if (label) label.classList.toggle('active', key === mode);
+    });
+    scheduleViewerUpdate();
+}
+
+['viewer_mode_pieces', 'viewer_mode_base', 'viewer_mode_both'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('change', () => {
+            if (el.checked) {
+                const mode = el.value;
+                setViewerMode(mode);
+            } else {
+                // Prevent unchecking without selecting another — re-check this one
+                el.checked = true;
+            }
+        });
+    }
+});
+
+// assembled checkbox updates viewer
+const assembledCheck = document.getElementById('stl_assembled');
+if (assembledCheck) assembledCheck.addEventListener('change', () => { scheduleViewerUpdate(); scheduleInline3DUpdate(); });
+
+// Fill gaps checkbox also updates viewer
+const fillGapsCheck = document.getElementById('stl_infill_fill_gaps');
+if (fillGapsCheck) fillGapsCheck.addEventListener('change', scheduleViewerUpdate);
+
+// Fill border gaps checkbox also updates viewer
+const fillBorderGapsCheck = document.getElementById('stl_fill_border_gaps');
+if (fillBorderGapsCheck) fillBorderGapsCheck.addEventListener('change', scheduleViewerUpdate);
+
+// Color pickers: update hex label and viewer colors (no geometry re-fetch needed)
+const colorPiecesInput = document.getElementById('stl_color_pieces');
+const colorBaseInput = document.getElementById('stl_color_base');
+const colorReliefInput = document.getElementById('stl_color_relief');
+const colorPiecesHex = document.getElementById('stl_color_pieces_hex');
+const colorBaseHex = document.getElementById('stl_color_base_hex');
+const colorReliefHex = document.getElementById('stl_color_relief_hex');
+
+function onColorPickerChange(inputEl, hexEl) {
+    if (hexEl) hexEl.textContent = inputEl.value.toUpperCase();
+    updateThreeColors();
+    scheduleInline3DUpdate();
+}
+
+if (colorPiecesInput) {
+    colorPiecesInput.addEventListener('input', () => onColorPickerChange(colorPiecesInput, colorPiecesHex));
+}
+if (colorBaseInput) {
+    colorBaseInput.addEventListener('input', () => onColorPickerChange(colorBaseInput, colorBaseHex));
+}
+if (colorReliefInput) {
+    colorReliefInput.addEventListener('input', () => onColorPickerChange(colorReliefInput, colorReliefHex));
+}
+
+// Corner style selector: show/hide radius input & handle fractal circular / jigsaw
+function updateCornerStyleUI() {
+    const style = cornerStyleInput ? cornerStyleInput.value : 'sharp';
+    const noAdjustMsg = document.getElementById('corner-no-adjust-msg');
+    const controlsWrap = document.getElementById('corner-controls-wrap');
+    const isFracCircular = puzzleData && puzzleData.puzzleType === 'fractal' &&
+        document.getElementById('arc_shape') && document.getElementById('arc_shape').value === '0';
+    const isJigsaw = puzzleData && puzzleData.puzzleType === 'jigsaw';
+    const hideCornerControls = isFracCircular || isJigsaw;
+
+    // Show/hide the info message and controls
+    if (noAdjustMsg) noAdjustMsg.style.display = hideCornerControls ? '' : 'none';
+    if (controlsWrap) controlsWrap.style.display = hideCornerControls ? 'none' : '';
+
+    if (cornerRadiusGroup && !hideCornerControls) {
+        cornerRadiusGroup.style.display = (style === 'round') ? '' : 'none';
+    }
+    // Base corners
+    const baseStyle = baseCornerStyleInput ? baseCornerStyleInput.value : 'sharp';
+    if (baseCornerRadiusGroup) {
+        baseCornerRadiusGroup.style.display = (baseStyle === 'round') ? '' : 'none';
+    }
+    if (baseCornerRadiusInnerGroup) {
+        baseCornerRadiusInnerGroup.style.display = (baseStyle === 'round') ? '' : 'none';
+    }
+    // Show fill border gaps checkbox only for fractal/jigsaw puzzles
+    const fillGapsGroup = document.getElementById('base-fill-gaps-group');
+    if (fillGapsGroup) {
+        const isFrac = puzzleData && (puzzleData.puzzleType === 'fractal' || puzzleData.puzzleType === 'jigsaw');
+        fillGapsGroup.style.display = isFrac ? '' : 'none';
+    }
+    scheduleViewerUpdate();
+}
+if (cornerStyleInput) {
+    cornerStyleInput.addEventListener('change', updateCornerStyleUI);
+    updateCornerStyleUI();
+}
+if (baseCornerStyleInput) {
+    baseCornerStyleInput.addEventListener('change', updateCornerStyleUI);
+}
+// Update corner style when arc shape changes (fractal circular hides corners)
+const arcShapeSelect = document.getElementById('arc_shape');
+if (arcShapeSelect) {
+    arcShapeSelect.addEventListener('change', () => {
+        if (typeof applyInfillDefaults === 'function') applyInfillDefaults();
+        if (typeof updateCornerStyleUI === 'function') updateCornerStyleUI();
+    });
+}
+
+// Inicializar al cargar
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (document.getElementById('viewer-3d')) init3DViewer();
+        if (document.getElementById('viewer-3d-babylon')) initBabylonViewer();
+        initCollapsibles();
+        initDirectionSwitches();
+        init2DViewer();
+    }, 200);
+});
+
+// Actualización automática tras generación de puzzle
+const generateBtn = document.getElementById('generate-btn');
+if (generateBtn) {
+    generateBtn.addEventListener('click', () => {
+        // Programar refresco del visor tras generar el puzzle
+        setTimeout(scheduleViewerUpdate, 500);
+        setTimeout(render2DViewer, 600);
+    });
+}
+
+// ============================================================
+// Collapsible sections
+// ============================================================
+
+function initDirectionSwitches() {
+    document.querySelectorAll('.direction-switch-3').forEach(group => {
+        group.querySelectorAll('.dir-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                group.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-target');
+                const hidden = document.getElementById(target);
+                if (hidden) {
+                    hidden.value = btn.getAttribute('data-value');
+                    hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                updateEngraveDepthVisibility();
+                if (typeof render2DViewer === 'function') render2DViewer();
+                if (typeof scheduleInline3DUpdate === 'function') scheduleInline3DUpdate();
+                if (typeof scheduleViewerUpdate === 'function') scheduleViewerUpdate();
+            });
+        });
+    });
+    // Set initial visibility
+    updateEngraveDepthVisibility();
+}
+
+function updateEngraveDepthVisibility() {
+    const texDir = (document.getElementById('stl_texture_direction') || {}).value;
+    const imgDir = (document.getElementById('stl_image_direction') || {}).value;
+    const texGroup = document.getElementById('texture-engrave-depth-group');
+    const imgGroup = document.getElementById('image-engrave-depth-group');
+    if (texGroup) texGroup.style.display = texDir === 'inward' ? '' : 'none';
+    if (imgGroup) imgGroup.style.display = imgDir === 'inward' ? '' : 'none';
+}
+
+function initCollapsibles() {
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        // Sync initial header state with body's initial collapsed state
+        const initTargetId = header.getAttribute('data-target');
+        const initBody = initTargetId && document.getElementById(initTargetId);
+        if (initBody && initBody.classList.contains('collapsed')) {
+            header.classList.add('collapsed');
+            const initArrow = header.querySelector('.collapse-arrow');
+            if (initArrow) initArrow.textContent = '▸';
+        }
+
+        header.addEventListener('click', (e) => {
+            // Ignore clicks on the reset button
+            if (e.target.classList.contains('section-reset-btn')) return;
+            const targetId = header.getAttribute('data-target');
+            const body = document.getElementById(targetId);
+            if (!body) return;
+            const isCollapsed = body.classList.toggle('collapsed');
+            // Update arrow
+            const arrow = header.querySelector('.collapse-arrow');
+            if (arrow) {
+                if (header.classList.contains('collapsible-sub')) {
+                    arrow.textContent = isCollapsed ? '▸' : '▾';
+                } else {
+                    arrow.textContent = isCollapsed ? '▸' : '▾';
+                }
+            }
+            header.classList.toggle('collapsed', isCollapsed);
+        });
+
+        // Add reset button to each collapsible sub-section header
+        if (header.classList.contains('collapsible-sub')) {
+            const resetBtn = document.createElement('span');
+            resetBtn.className = 'section-reset-btn';
+            resetBtn.textContent = '↺';
+            resetBtn.title = 'Restablecer valores por defecto';
+            resetBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetId = header.getAttribute('data-target');
+                resetSectionDefaults(targetId);
+            });
+            header.appendChild(resetBtn);
+        }
+    });
+}
+
+function resetSectionDefaults(bodyId) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    body.querySelectorAll('input, select').forEach(el => {
+        if (el.type === 'checkbox') {
+            el.checked = el.defaultChecked;
+        } else if (el.tagName === 'SELECT') {
+            el.selectedIndex = 0;
+            for (let i = 0; i < el.options.length; i++) {
+                if (el.options[i].defaultSelected) { el.selectedIndex = i; break; }
+            }
+        } else {
+            el.value = el.defaultValue;
+        }
+        // Sync linked slider/number pairs
+        const linked = el.getAttribute('data-link');
+        if (linked) {
+            const partner = document.getElementById(linked);
+            if (partner) partner.value = el.value;
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    // Trigger viewer updates
+    if (typeof render2DViewer === 'function') render2DViewer();
+    if (typeof scheduleInline3DUpdate === 'function') scheduleInline3DUpdate();
+}
+
+// ============================================================
+// 2D Acabados Viewer
+// ============================================================
+let viewer2DCanvas = null;
+let viewer2DCtx = null;
+let patternOffsetX = 0;
+let patternOffsetY = 0;
+let isDragging2D = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragStartOffsetX = 0;
+let dragStartOffsetY = 0;
+let viewer2DScale = 1; // Current view scale (pixels per model unit)
+
+function init2DViewer() {
+    viewer2DCanvas = document.getElementById('acabados-2d-canvas');
+    if (!viewer2DCanvas) return;
+    viewer2DCtx = viewer2DCanvas.getContext('2d');
+
+    // Mouse drag for pattern offset
+    viewer2DCanvas.addEventListener('mousedown', (e) => {
+        if (!isDraggablePattern()) return;
+        isDragging2D = true;
+        const rect = viewer2DCanvas.getBoundingClientRect();
+        dragStartX = e.clientX - rect.left;
+        dragStartY = e.clientY - rect.top;
+        dragStartOffsetX = patternOffsetX;
+        dragStartOffsetY = patternOffsetY;
+        viewer2DCanvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging2D) return;
+        const rect = viewer2DCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const scaleX = viewer2DCanvas.width / rect.width;
+        const scaleY = viewer2DCanvas.height / rect.height;
+        patternOffsetX = dragStartOffsetX + (x - dragStartX) * scaleX;
+        patternOffsetY = dragStartOffsetY + (y - dragStartY) * scaleY;
+        render2DViewer();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isDragging2D) {
+            isDragging2D = false;
+            if (viewer2DCanvas) viewer2DCanvas.style.cursor = isDraggablePattern() ? 'grab' : 'default';
+            scheduleInline3DUpdate();
+        }
+    });
+
+    // Touch drag support
+    viewer2DCanvas.addEventListener('touchstart', (e) => {
+        if (!isDraggablePattern()) return;
+        if (e.touches.length === 1) {
+            isDragging2D = true;
+            const rect = viewer2DCanvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            dragStartX = touch.clientX - rect.left;
+            dragStartY = touch.clientY - rect.top;
+            dragStartOffsetX = patternOffsetX;
+            dragStartOffsetY = patternOffsetY;
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    viewer2DCanvas.addEventListener('touchmove', (e) => {
+        if (!isDragging2D || e.touches.length !== 1) return;
+        const rect = viewer2DCanvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const scaleX = viewer2DCanvas.width / rect.width;
+        const scaleY = viewer2DCanvas.height / rect.height;
+        patternOffsetX = dragStartOffsetX + (x - dragStartX) * scaleX;
+        patternOffsetY = dragStartOffsetY + (y - dragStartY) * scaleY;
+        render2DViewer();
+        e.preventDefault();
+    }, { passive: false });
+
+    viewer2DCanvas.addEventListener('touchend', () => {
+        if (isDragging2D) scheduleInline3DUpdate();
+        isDragging2D = false;
+    });
+}
+
+// Check if the current pattern allows dragging
+function hasDrawablePattern() {
+    const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
+    const val = acabadosMode ? acabadosMode.value : 'infill';
+    if (val === 'image') return false; // image drawn separately
+    if (val === 'texture') return true;
+    const it = (document.getElementById('stl_infill_type') || {}).value || 'solid';
+    return it !== 'solid' && it !== 'hollow' && it !== 'remix';
+}
+
+function isDraggablePattern() {
+    const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
+    const val = acabadosMode ? acabadosMode.value : 'infill';
+    if (val === 'image') return true; // image can be dragged
+    if (val === 'texture') {
+        const tt = (document.getElementById('stl_texture_type') || {}).value || 'grid';
+        return tt !== 'circles' && tt !== 'solid'; // circles (lego) and solid not draggable
+    }
+    // infill
+    const it = (document.getElementById('stl_infill_type') || {}).value || 'solid';
+    return it !== 'solid' && it !== 'hollow' && it !== 'circles' && it !== 'remix';
+}
+
+// Update drag hint text
+function updateDragHints() {
+    const hintDrag = document.getElementById('acabados-hint-drag');
+    const hintNoDrag = document.getElementById('acabados-hint-nodrag');
+    const hintNoPuzzle = document.getElementById('acabados-hint-nopuzzle');
+    if (!hintDrag || !hintNoDrag || !hintNoPuzzle) return;
+    const draggable = isDraggablePattern();
+    const hasPuzzle = puzzleData && puzzleData.grid;
+    // If there is no puzzle, show the 'generate puzzle' overlay and hide other hints
+    hintNoPuzzle.style.display = hasPuzzle ? 'none' : '';
+    // Only show the drag hint when a puzzle exists
+    // hintDrag.style.display = hasPuzzle ? '' : 'none';
+    // Show 'no-drag' only when puzzle exists and pattern is not draggable
+    hintNoDrag.style.display = (hasPuzzle && !draggable) ? '' : 'none';
+    const canvasEl = document.getElementById('acabados-2d-canvas');
+    if (canvasEl) canvasEl.style.cursor = (hasPuzzle && draggable) ? 'grab' : 'default';
+}
+
+// Build piece polygons from puzzleData (normal puzzles) - no tolerance applied
+function buildPiecePolygons(cubeSize) {
+    if (!puzzleData || !puzzleData.grid || !puzzleData.pieces) return [];
+    const grid = puzzleData.grid;
+    const pieces = puzzleData.pieces;
+    const result = [];
+
+    for (let pIdx = 0; pIdx < pieces.length; pIdx++) {
+        const cells = pieces[pIdx];
+        const edgeSet = new Map();
+        for (const [r, c] of cells) {
+            const x0 = c * cubeSize;
+            const y0 = r * cubeSize;
+            const x1 = x0 + cubeSize;
+            const y1 = y0 + cubeSize;
+            const edges = [
+                [x0, y0, x1, y0],
+                [x1, y0, x1, y1],
+                [x1, y1, x0, y1],
+                [x0, y1, x0, y0],
+            ];
+            for (const edge of edges) {
+                const fwd = edge.join(',');
+                const rev = [edge[2], edge[3], edge[0], edge[1]].join(',');
+                if (edgeSet.has(rev)) {
+                    edgeSet.delete(rev);
+                } else {
+                    edgeSet.set(fwd, edge);
+                }
+            }
+        }
+        const edgeList = Array.from(edgeSet.values());
+        if (edgeList.length === 0) continue;
+
+        const polygon = [];
+        const used = new Array(edgeList.length).fill(false);
+        used[0] = true;
+        polygon.push([edgeList[0][0], edgeList[0][1]]);
+        let cx = edgeList[0][2];
+        let cy = edgeList[0][3];
+        polygon.push([cx, cy]);
+
+        for (let iter = 1; iter < edgeList.length; iter++) {
+            let found = false;
+            for (let i = 0; i < edgeList.length; i++) {
+                if (used[i]) continue;
+                if (Math.abs(edgeList[i][0] - cx) < 0.001 && Math.abs(edgeList[i][1] - cy) < 0.001) {
+                    used[i] = true;
+                    cx = edgeList[i][2];
+                    cy = edgeList[i][3];
+                    polygon.push([cx, cy]);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) break;
+        }
+
+        result.push({ polygon, pieceIndex: pIdx, cells });
+    }
+    return result;
+}
+
+// Build base outline (outer rectangle including border)
+function buildBaseOutline(cubeSize, border, numCols, numRows) {
+    const totalW = numCols * cubeSize + 2 * border;
+    const totalH = numRows * cubeSize + 2 * border;
+    return {
+        x: -border,
+        y: -border,
+        width: totalW,
+        height: totalH
+    };
+}
+
+// Distinct colors for pieces
+// const PIECE_COLORS = [
+//     '#667eea', '#e6735a', '#52c0a8', '#f5b73d', '#9b6fcf',
+//     '#3db8e8', '#e8607a', '#7bc85e', '#e49c44', '#5a8fd4',
+//     '#c45fb0', '#45bfa8', '#d97c4a', '#6a9ee6', '#d65d8c'
+// ];
+
+function render2DViewer() {
+    if (!viewer2DCtx || !viewer2DCanvas) return;
+    const ctx = viewer2DCtx;
+    const W = viewer2DCanvas.width;
+    const H = viewer2DCanvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    if (!puzzleData || !puzzleData.grid) {
+        const info = document.getElementById('acabados-viewer-info');
+        if (info) info.style.display = '';
+        return;
+    }
+    const info = document.getElementById('acabados-viewer-info');
+    if (info) info.style.display = 'none';
+
+    const grid = puzzleData.grid;
+    const numRows = grid.length;
+    const numCols = grid[0].length;
+    const cubeSize = parseFloat(document.getElementById('stl_cube_size').value) || 20;
+    const border = parseFloat(document.getElementById('stl_border').value) || 3;
+    const isFractal = puzzleData.puzzleType === 'fractal' || puzzleData.puzzleType === 'jigsaw';
+
+    // Determine acabados mode
+    const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
+    const mode = acabadosMode ? acabadosMode.value : 'infill';
+    const isTexture = mode === 'texture';
+    const isImage = mode === 'image';
+
+    // Check if pattern is draggable — if not, skip pattern drawing
+    const draggable = isDraggablePattern();
+
+    if (isFractal && puzzleData.svgPaths && puzzleData.svgPaths.length > 0) {
+        // Fractal puzzle: render using SVG paths
+        const ncols = puzzleData.fractalNcols;
+        const nrows = puzzleData.fractalNrows;
+        const isJigsawType = puzzleData.puzzleType === 'jigsaw';
+        let svgW = isJigsawType ? ncols : ncols * 2;
+        let svgH = isJigsawType ? nrows : nrows * 2;
+
+        // For hex/circular jigsaw, compute actual bounding box of all piece paths
+        // to prevent overflow beyond the assumed rectangular viewport
+        const jt = puzzleData.jigsawType;
+        const isHexType = isJigsawType && (jt === 'hexagonal' || jt === 'circular');
+        let svgOX = 0, svgOY = 0;
+        if (isHexType) {
+            let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
+            for (const d of puzzleData.svgPaths) {
+                if (!d) continue;
+                const flat = parseSvgPathToPoints(d, 4);
+                for (let k = 0; k < flat.length; k += 2) {
+                    if (flat[k] < bMinX) bMinX = flat[k];
+                    if (flat[k] > bMaxX) bMaxX = flat[k];
+                    if (flat[k+1] < bMinY) bMinY = flat[k+1];
+                    if (flat[k+1] > bMaxY) bMaxY = flat[k+1];
+                }
+            }
+            if (isFinite(bMinX)) {
+                svgOX = bMinX;
+                svgOY = bMinY;
+                svgW = bMaxX - bMinX;
+                svgH = bMaxY - bMinY;
+            }
+        }
+
+        const pad = VIEWER_PARAMS.viewer2DPadPx;
+        const scaleX = (W - 2 * pad) / svgW;
+        const scaleY = (H - 2 * pad) / svgH;
+        const scale = Math.min(scaleX, scaleY);
+        // viewer2DScale: pixels-per-model-unit (SVG units)
+        viewer2DScale = scale;
+
+        const drawW = svgW * scale;
+        const drawH = svgH * scale;
+        const ox = (W - drawW) / 2;
+        const oy = (H - drawH) / 2;
+
+        ctx.save();
+        ctx.translate(ox - svgOX * scale, oy - svgOY * scale);
+        ctx.scale(scale, scale);
+
+        // Draw background
+        ctx.fillStyle = '#e8e8e8';
+        ctx.fillRect(svgOX, svgOY, svgW, svgH);
+
+        // Convert mm parameters to SVG units: fractal: 1 mm = 2/cubeSize, jigsaw: 1 mm = 1/cubeSize
+        const mmToSvg = (isJigsawType ? 1 : 2) / cubeSize;
+
+        // Build combined clip path for all pieces
+        const allPiecesPath = new Path2D();
+        const piecePaths = [];
+        for (let i = 0; i < puzzleData.svgPaths.length; i++) {
+            const d = puzzleData.svgPaths[i];
+            if (!d) { piecePaths.push(null); continue; }
+            const path = new Path2D(d);
+            piecePaths.push(path);
+            allPiecesPath.addPath(path);
+        }
+
+        // Draw all piece fills
+        for (let i = 0; i < piecePaths.length; i++) {
+            if (!piecePaths[i]) continue;
+            ctx.fillStyle = PIECE_COLORS[i % PIECE_COLORS.length] + '55';
+            ctx.fill(piecePaths[i]);
+        }
+
+        // Draw pattern/image ONCE, clipped to all pieces combined
+        if (hasDrawablePattern() || isImage) {
+            ctx.save();
+            ctx.clip(allPiecesPath);
+            const invertTex = isTexture && (document.getElementById('stl_texture_invert') || {}).checked;
+            if (invertTex) {
+                ctx.fillStyle = '#555';
+                ctx.fillRect(-10000, -10000, 20000, 20000);
+                ctx.globalCompositeOperation = 'destination-out';
+            }
+            if (isImage) {
+                drawCustomImage(ctx, svgW, svgH, scale, mmToSvg);
+            } else {
+                drawPattern(ctx, svgW, svgH, scale, isTexture, null, mmToSvg, cubeSize);
+            }
+            if (invertTex) ctx.globalCompositeOperation = 'source-over';
+            ctx.restore();
+        }
+
+        // Draw piece outlines
+        for (let i = 0; i < piecePaths.length; i++) {
+            if (!piecePaths[i]) continue;
+            ctx.strokeStyle = PIECE_COLORS[i % PIECE_COLORS.length];
+            ctx.lineWidth = 0.03;
+            ctx.stroke(piecePaths[i]);
+        }
+
+        ctx.restore();
+    } else {
+        // Normal puzzle
+        const base = buildBaseOutline(cubeSize, border, numCols, numRows);
+        const pad = 20;
+        const scaleX = (W - 2 * pad) / base.width;
+        const scaleY = (H - 2 * pad) / base.height;
+        const scale = Math.min(scaleX, scaleY);
+        viewer2DScale = scale;
+
+        const drawW = base.width * scale;
+        const drawH = base.height * scale;
+        const ox = (W - drawW) / 2 - base.x * scale;
+        const oy = (H - drawH) / 2 - base.y * scale;
+
+        ctx.save();
+        ctx.translate(ox, oy);
+        ctx.scale(scale, scale);
+
+        // Draw base rectangle
+        ctx.fillStyle = '#e8e8e8';
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1 / scale;
+        ctx.fillRect(base.x, base.y, base.width, base.height);
+        ctx.strokeRect(base.x, base.y, base.width, base.height);
+
+        // Build piece polygons (no tolerance)
+        const pieces = buildPiecePolygons(cubeSize);
+
+        // Build combined clip path and individual paths
+        const allPiecesPath = new Path2D();
+        const piecePaths = [];
+        for (let i = 0; i < pieces.length; i++) {
+            const poly = pieces[i].polygon;
+            if (poly.length < 3) { piecePaths.push(null); continue; }
+            const path = new Path2D();
+            path.moveTo(poly[0][0], poly[0][1]);
+            for (let j = 1; j < poly.length; j++) path.lineTo(poly[j][0], poly[j][1]);
+            path.closePath();
+            piecePaths.push(path);
+            allPiecesPath.addPath(path);
+        }
+
+        // Draw all piece fills
+        for (let i = 0; i < piecePaths.length; i++) {
+            if (!piecePaths[i]) continue;
+            ctx.fillStyle = PIECE_COLORS[i % PIECE_COLORS.length] + '33';
+            ctx.fill(piecePaths[i]);
+        }
+
+        // Draw pattern/image ONCE, clipped to all pieces combined (continuous across pieces)
+        if (hasDrawablePattern() || isImage) {
+            ctx.save();
+            ctx.clip(allPiecesPath);
+            const invertTex = isTexture && (document.getElementById('stl_texture_invert') || {}).checked;
+            if (invertTex) {
+                ctx.fillStyle = '#555';
+                ctx.fillRect(-10000, -10000, 20000, 20000);
+                ctx.globalCompositeOperation = 'destination-out';
+            }
+            if (isImage) {
+                drawCustomImage(ctx, numCols * cubeSize, numRows * cubeSize, scale, 1);
+            } else {
+                drawPattern(ctx, numCols * cubeSize, numRows * cubeSize, scale, isTexture, null, 1, cubeSize);
+            }
+            if (invertTex) ctx.globalCompositeOperation = 'source-over';
+            ctx.restore();
+        }
+
+        // Draw piece outlines
+        for (let i = 0; i < piecePaths.length; i++) {
+            if (!piecePaths[i]) continue;
+            ctx.strokeStyle = PIECE_COLORS[i % PIECE_COLORS.length];
+            ctx.lineWidth = 1.5 / scale;
+            ctx.stroke(piecePaths[i]);
+        }
+
+        ctx.restore();
+    }
+
+    // Update drag hints
+    updateDragHints();
+}
+
+// Draw the custom image into the 2D viewer
+// totalW/totalH: model-space dimensions; viewScale: pixels per model unit; paramScale: mm→model
+function drawCustomImage(ctx, totalW, totalH, viewScale, paramScale) {
+    if (!customTextureImage) return;
+    const zoom = parseFloat((document.getElementById('stl_texture_custom_zoom') || {}).value) || 100;
+    const zoomFactor = zoom / 100;
+    const lineThickness = parseInt((document.getElementById('stl_image_line_thickness') || {}).value) || 0;
+
+    const imgW = totalW * zoomFactor;
+    const imgH = totalH * zoomFactor;
+
+    // Convert pixel offset to model-space offset
+    const offX = patternOffsetX / viewScale;
+    const offY = patternOffsetY / viewScale;
+    const drawX = (totalW - imgW) / 2 + offX;
+    const drawY = (totalH - imgH) / 2 + offY;
+
+    // Build a version of the image with transparent whites
+    // Use an offscreen canvas to convert white→transparent, black→semi-opaque
+    const off = document.createElement('canvas');
+    off.width = customTextureImage.width;
+    off.height = customTextureImage.height;
+    const offCtx = off.getContext('2d');
+    offCtx.drawImage(customTextureImage, 0, 0);
+    const imgData = offCtx.getImageData(0, 0, off.width, off.height);
+    const d = imgData.data;
+    const w = off.width, h = off.height;
+
+    // Build binary mask: 1 = visible pixel (dark pixels)
+    const mask = new Uint8Array(w * h);
+    for (let i = 0; i < d.length; i += 4) {
+        const gray = d[i];
+        mask[i / 4] = gray < 128 ? 1 : 0;
+    }
+
+    // Apply dilation (MaxFilter equivalent) if line thickness > 0
+    let finalMask = mask;
+    if (lineThickness > 0) {
+        finalMask = new Uint8Array(w * h);
+        const r = lineThickness;
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                let found = false;
+                for (let dy = -r; dy <= r && !found; dy++) {
+                    for (let dx = -r; dx <= r && !found; dx++) {
+                        if (dx * dx + dy * dy > r * r) continue;
+                        const nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < w && ny >= 0 && ny < h && mask[ny * w + nx]) {
+                            found = true;
+                        }
+                    }
+                }
+                finalMask[y * w + x] = found ? 1 : 0;
+            }
+        }
+    }
+
+    // Apply mask to image data
+    for (let i = 0; i < finalMask.length; i++) {
+        const pi = i * 4;
+        if (finalMask[i]) {
+            d[pi] = d[pi + 1] = d[pi + 2] = 40;
+            d[pi + 3] = 200;
+        } else {
+            d[pi + 3] = 0;
+        }
+    }
+    offCtx.putImageData(imgData, 0, 0);
+
+    ctx.drawImage(off, drawX, drawY, imgW, imgH);
+}
+
+// Draw pattern overlay; totalW/totalH in model units; paramScale converts mm→model units
+// cubeSize_mm is the cube size in mm (used for Lego to calculate cell positions)
+function drawPattern(ctx, totalW, totalH, viewScale, isTexture, pieceCells, paramScale, cubeSize_mm) {
+    let patternType, fillWidth, spacing, angle, amplitude, cellSize;
+
+    if (isTexture) {
+        patternType = (document.getElementById('stl_texture_type') || {}).value || 'grid';
+        const prefix = 'stl_texture_';
+        fillWidth = parseFloat((document.getElementById(prefix + 'fill_width_' + patternType) || {}).value) || 1;
+        spacing = parseFloat((document.getElementById(prefix + 'spacing_' + patternType) || {}).value) || 4;
+        angle = parseFloat((document.getElementById(prefix + 'angle_' + patternType) || {}).value) || 0;
+        amplitude = parseFloat((document.getElementById('stl_texture_amplitude') || {}).value) || 2;
+        cellSize = parseFloat((document.getElementById('stl_texture_cell_size') || {}).value) || 5;
+    } else {
+        patternType = (document.getElementById('stl_infill_type') || {}).value || 'solid';
+        if (patternType === 'solid' || patternType === 'hollow' || patternType === 'remix') return;
+        const suffixMap = { grid: '', stripes: '_s', zigzag: '_z', honeycomb: '_h', circles: '_c' };
+        const suffix = suffixMap[patternType] || '';
+        fillWidth = parseFloat((document.getElementById('stl_infill_fill_width' + suffix) || {}).value) || 1;
+        const spacingIdMap = { grid: 'stl_infill_spacing', stripes: 'stl_infill_spacing_s', zigzag: 'stl_infill_spacing_z' };
+        spacing = parseFloat((document.getElementById(spacingIdMap[patternType] || 'stl_infill_spacing') || {}).value) || 4;
+        angle = parseFloat((document.getElementById('stl_infill_angle_' + patternType) || {}).value) || 0;
+        amplitude = parseFloat((document.getElementById('stl_infill_amplitude') || {}).value) || 2;
+        cellSize = parseFloat((document.getElementById('stl_infill_cell_size') || {}).value) || 5;
+    }
+
+    // Scale mm-based params to model units (paramScale=1 for normal, 2/cubeSize for fractal)
+    fillWidth *= paramScale;
+    spacing *= paramScale;
+    amplitude *= paramScale;
+    cellSize *= paramScale;
+
+    const patternColor = isTexture ? '#555' : '#888';
+    ctx.strokeStyle = patternColor;
+    ctx.fillStyle = patternColor;
+
+    // Compute offset: convert screen pixels to model units, counter-rotate for natural drag
+    const rad = (angle * Math.PI) / 180;
+    const rawOffX = patternOffsetX / viewScale;
+    const rawOffY = patternOffsetY / viewScale;
+    const cosA = Math.cos(-rad);
+    const sinA = Math.sin(-rad);
+    const offX = rawOffX * cosA - rawOffY * sinA;
+    const offY = rawOffX * sinA + rawOffY * cosA;
+
+    // Apply rotation around center of puzzle area
+    const cx = totalW / 2;
+    const cy = totalH / 2;
+    const ext = Math.max(totalW, totalH) * 2;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+    ctx.translate(-cx, -cy);
+    // Apply drag offset as a canvas translation (smooth movement for all patterns)
+    ctx.translate(offX, offY);
+
+    switch (patternType) {
+        case 'solid': {
+            ctx.fillStyle = patternColor;
+            ctx.fillRect(-ext, -ext, totalW + 2 * ext, totalH + 2 * ext);
+            break;
+        }
+        case 'grid': {
+            ctx.lineWidth = fillWidth;
+            ctx.beginPath();
+            for (let x = -ext; x <= totalW + ext; x += spacing) {
+                ctx.moveTo(x, -ext);
+                ctx.lineTo(x, totalH + ext);
+            }
+            for (let y = -ext; y <= totalH + ext; y += spacing) {
+                ctx.moveTo(-ext, y);
+                ctx.lineTo(totalW + ext, y);
+            }
+            ctx.stroke();
+            break;
+        }
+        case 'stripes': {
+            const step = spacing + fillWidth;
+            ctx.lineWidth = fillWidth;
+            ctx.beginPath();
+            for (let y = -ext; y <= totalH + ext; y += step) {
+                ctx.moveTo(-ext, y);
+                ctx.lineTo(totalW + ext, y);
+            }
+            ctx.stroke();
+            break;
+        }
+        case 'zigzag': {
+            const yStep = spacing * 2 + fillWidth;
+            const segLen = spacing;
+            ctx.lineWidth = fillWidth;
+            ctx.beginPath();
+            for (let y = -ext; y <= totalH + ext; y += yStep) {
+                let first = true;
+                let i = 0;
+                for (let x = -ext; x <= totalW + ext; x += segLen) {
+                    const dy = (i % 2 === 0) ? amplitude : -amplitude;
+                    if (first) { ctx.moveTo(x, y + dy); first = false; }
+                    else ctx.lineTo(x, y + dy);
+                    i++;
+                }
+            }
+            ctx.stroke();
+            break;
+        }
+        case 'honeycomb': {
+            // Continuous honeycomb matching backend: fill walls between hexagonal cells
+            // cellSize = center-to-center distance; fillWidth = wall thickness between cells
+            const hexPitch = cellSize;
+            const hexR = (cellSize - fillWidth) / Math.sqrt(3);
+            const rowH = cellSize * Math.sqrt(3) / 2;
+            // Use reduced extent for performance (canvas is clipped anyway)
+            const hExt = Math.max(totalW, totalH) * 0.6;
+            ctx.fillStyle = patternColor;
+            // Build path: outer rectangle + hex holes (evenodd → walls only)
+            ctx.beginPath();
+            ctx.rect(-hExt, -hExt, totalW + 2 * hExt, totalH + 2 * hExt);
+            const startRow = Math.floor(-hExt / rowH) - 1;
+            const endRow = Math.ceil((totalH + hExt) / rowH) + 1;
+            const startCol = Math.floor(-hExt / hexPitch) - 1;
+            const endCol = Math.ceil((totalW + hExt) / hexPitch) + 1;
+            for (let row = startRow; row <= endRow; row++) {
+                const xShift = (row % 2 !== 0) ? (hexPitch / 2) : 0;
+                for (let col = startCol; col <= endCol; col++) {
+                    const hx = col * hexPitch + xShift;
+                    const hy = row * rowH;
+                    const x0 = hx + hexR * Math.cos(Math.PI / 6);
+                    const y0 = hy + hexR * Math.sin(Math.PI / 6);
+                    ctx.moveTo(x0, y0);
+                    for (let k = 1; k <= 6; k++) {
+                        const a = Math.PI / 6 + (Math.PI / 3) * k;
+                        ctx.lineTo(hx + hexR * Math.cos(a), hy + hexR * Math.sin(a));
+                    }
+                    ctx.closePath();
+                }
+            }
+            ctx.fill('evenodd');
+            break;
+        }
+        case 'circles': {
+            // Lego pattern: one circle per grid cell
+            // Undo the offset translation (circles are tied to cell positions)
+            ctx.translate(-offX, -offY);
+            // Undo rotation
+            ctx.translate(cx, cy);
+            ctx.rotate(-rad);
+            ctx.translate(-cx, -cy);
+
+            // Determine the cell size in model units
+            const csModel = cubeSize_mm * paramScale;
+            const gridCols = Math.round(totalW / csModel);
+            const gridRows = Math.round(totalH / csModel);
+
+            // Read circle radius (% of cell) and filled option
+            const radiusPrefix = isTexture ? 'stl_texture_circle_radius' : 'stl_infill_circle_radius';
+            const filledPrefix = isTexture ? 'stl_texture_circle_filled' : 'stl_infill_circle_filled';
+            const radiusPct = parseFloat((document.getElementById(radiusPrefix) || {}).value) || 40;
+            const isFilled = (document.getElementById(filledPrefix) || {}).checked !== false;
+            const radius = csModel * (radiusPct / 100);
+
+            if (isFilled) {
+                ctx.fillStyle = patternColor;
+                ctx.beginPath();
+                for (let r = 0; r < gridRows; r++) {
+                    for (let c = 0; c < gridCols; c++) {
+                        const ccx = c * csModel + csModel / 2;
+                        const ccy = r * csModel + csModel / 2;
+                        ctx.moveTo(ccx + radius, ccy);
+                        ctx.arc(ccx, ccy, radius, 0, Math.PI * 2);
+                    }
+                }
+                ctx.fill();
+            } else {
+                ctx.strokeStyle = patternColor;
+                ctx.lineWidth = fillWidth;
+                ctx.beginPath();
+                for (let r = 0; r < gridRows; r++) {
+                    for (let c = 0; c < gridCols; c++) {
+                        const ccx = c * csModel + csModel / 2;
+                        const ccy = r * csModel + csModel / 2;
+                        ctx.moveTo(ccx + radius, ccy);
+                        ctx.arc(ccx, ccy, radius, 0, Math.PI * 2);
+                    }
+                }
+                ctx.stroke();
+            }
+            break;
+        }
+    }
+
+    ctx.restore();
+}
+
+function drawHexagon(ctx, cx, cy, r, fill) {
+    ctx.moveTo(cx + r, cy);
+    for (let i = 1; i <= 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+    }
+    if (fill) ctx.fill();
+}
+
+// ============================================================
+// Custom image texture
+// ============================================================
+let customTextureImage = null; // Processed B/W image data
+let customTextureOriginal = null; // Original uploaded image
+
+function initCustomTextureHandlers() {
+    const fileInput = document.getElementById('stl_texture_custom_file');
+    const thresholdInput = document.getElementById('stl_texture_custom_threshold');
+    const blurCheck = document.getElementById('stl_texture_custom_blur');
+    const zoomInput = document.getElementById('stl_texture_custom_zoom');
+    const editBtn = document.getElementById('texture-custom-edit-btn');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    customTextureOriginal = img;
+                    processCustomTexture();
+                    if (editBtn) editBtn.style.display = '';
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+            // update custom file button label
+            const fileBtn = document.getElementById('texture-custom-file-btn');
+            if (fileBtn) fileBtn.textContent = 'Reemplazar imagen';
+        });
+        // if we have a custom button, open file selector when clicked
+        const fileBtn = document.getElementById('texture-custom-file-btn');
+        if (fileBtn) {
+            fileBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+        }
+    }
+
+    if (thresholdInput) {
+        thresholdInput.addEventListener('input', () => {
+            if (customTextureOriginal) processCustomTexture();
+        });
+    }
+
+    if (zoomInput) {
+        zoomInput.addEventListener('input', () => {
+            render2DViewer();
+        });
+    }
+
+    if (blurCheck) {
+        blurCheck.addEventListener('change', () => {
+            if (customTextureOriginal) processCustomTexture();
+        });
+    }
+
+    // Line thickness triggers 2D re-render
+    const lineThicknessInput = document.getElementById('stl_image_line_thickness');
+    if (lineThicknessInput) {
+        lineThicknessInput.addEventListener('input', () => render2DViewer());
+    }
+
+    // "Already B&W" checkbox: disable threshold + blur when checked
+    const alreadyBWCheck = document.getElementById('stl_image_already_bw');
+    if (alreadyBWCheck) {
+        alreadyBWCheck.addEventListener('change', () => {
+            const thresholdGroup = document.getElementById('image-threshold-group');
+            const blurCheck = document.getElementById('stl_texture_custom_blur');
+            if (thresholdGroup) thresholdGroup.style.opacity = alreadyBWCheck.checked ? '0.4' : '';
+            if (thresholdGroup) thresholdGroup.style.pointerEvents = alreadyBWCheck.checked ? 'none' : '';
+            if (blurCheck) blurCheck.disabled = alreadyBWCheck.checked;
+            if (blurCheck && blurCheck.closest) {
+                const lbl = blurCheck.closest('.form-group');
+                if (lbl) { lbl.style.opacity = alreadyBWCheck.checked ? '0.4' : ''; lbl.style.pointerEvents = alreadyBWCheck.checked ? 'none' : ''; }
+            }
+            if (customTextureOriginal) processCustomTexture();
+        });
+    }
+
+    if (editBtn) {
+        editBtn.addEventListener('click', openTextureEditor);
+    }
+}
+
+function processCustomTexture() {
+    if (!customTextureOriginal) return;
+    const alreadyBW = (document.getElementById('stl_image_already_bw') || {}).checked;
+    const threshold = parseInt((document.getElementById('stl_texture_custom_threshold') || {}).value) || 128;
+    const doBlur = !alreadyBW && (document.getElementById('stl_texture_custom_blur') || {}).checked;
+
+    // Create offscreen canvas
+    const offCanvas = document.createElement('canvas');
+    const size = 512;
+    offCanvas.width = size;
+    offCanvas.height = size;
+    const offCtx = offCanvas.getContext('2d');
+
+    // Draw image scaled to fit
+    const img = customTextureOriginal;
+    const scale = Math.min(size / img.width, size / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    offCtx.fillStyle = '#fff';
+    offCtx.fillRect(0, 0, size, size);
+    offCtx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+
+    // Get image data
+    const imageData = offCtx.getImageData(0, 0, size, size);
+    const data = imageData.data;
+
+    if (alreadyBW) {
+        // Use image as-is: just convert to strict B&W from existing pixel values
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            const val = gray > 128 ? 255 : 0;
+            data[i] = data[i + 1] = data[i + 2] = val;
+            data[i + 3] = 255;
+        }
+    } else {
+        // Optional blur (simple box blur)
+        if (doBlur) {
+            const tmp = new Uint8ClampedArray(data);
+            const radius = 2;
+            for (let y = radius; y < size - radius; y++) {
+                for (let x = radius; x < size - radius; x++) {
+                    let sum = 0, count = 0;
+                    for (let dy = -radius; dy <= radius; dy++) {
+                        for (let dx = -radius; dx <= radius; dx++) {
+                            const idx = ((y + dy) * size + (x + dx)) * 4;
+                            sum += (tmp[idx] + tmp[idx + 1] + tmp[idx + 2]) / 3;
+                            count++;
+                        }
+                    }
+                    const avg = sum / count;
+                    const idx = (y * size + x) * 4;
+                    data[idx] = data[idx + 1] = data[idx + 2] = avg;
+                }
+            }
+        }
+
+        // Threshold to B/W
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            const val = gray > threshold ? 255 : 0;
+            data[i] = data[i + 1] = data[i + 2] = val;
+            data[i + 3] = 255;
+        }
+    }
+
+    offCtx.putImageData(imageData, 0, 0);
+    customTextureImage = offCanvas;
+    render2DViewer();
+    scheduleInline3DUpdate();
+}
+
+// ============================================================
+// Texture Editor (Paint Modal)
+// ============================================================
+let editorCanvas = null;
+let editorCtx = null;
+let editorPaintColor = 'black';
+let editorBrushSize = 10;
+let isEditorPainting = false;
+
+function openTextureEditor() {
+    if (!customTextureImage) return;
+    const modal = document.getElementById('texture-editor-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+
+    editorCanvas = document.getElementById('texture-editor-canvas');
+    editorCtx = editorCanvas.getContext('2d');
+    // Copy current processed image to editor
+    editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+
+    // Paint handlers
+    const handlePaint = (e) => {
+        if (!isEditorPainting) return;
+        const rect = editorCanvas.getBoundingClientRect();
+        const scaleX = 512 / rect.width;
+        const scaleY = 512 / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        editorCtx.fillStyle = editorPaintColor;
+        editorCtx.beginPath();
+        editorCtx.arc(x, y, editorBrushSize, 0, Math.PI * 2);
+        editorCtx.fill();
+    };
+
+    editorCanvas.onmousedown = (e) => { isEditorPainting = true; handlePaint(e); };
+    editorCanvas.onmousemove = handlePaint;
+    editorCanvas.onmouseup = () => { isEditorPainting = false; };
+    editorCanvas.onmouseleave = () => { isEditorPainting = false; };
+
+    // Toolbar
+    document.getElementById('tex-paint-black').onclick = () => {
+        editorPaintColor = 'black';
+        document.getElementById('tex-paint-black').classList.add('active');
+        document.getElementById('tex-paint-white').classList.remove('active');
+    };
+    document.getElementById('tex-paint-white').onclick = () => {
+        editorPaintColor = 'white';
+        document.getElementById('tex-paint-white').classList.add('active');
+        document.getElementById('tex-paint-black').classList.remove('active');
+    };
+    document.getElementById('tex-brush-size').oninput = (e) => {
+        editorBrushSize = parseInt(e.target.value);
+    };
+    document.getElementById('tex-editor-reset').onclick = () => {
+        if (customTextureImage) {
+            editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+        }
+    };
+    document.getElementById('tex-editor-cancel').onclick = closeTextureEditor;
+    document.getElementById('texture-editor-close').onclick = closeTextureEditor;
+    document.getElementById('tex-editor-apply').onclick = () => {
+        // Copy editor canvas to customTextureImage
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 512;
+        offCanvas.height = 512;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.drawImage(editorCanvas, 0, 0);
+        customTextureImage = offCanvas;
+        closeTextureEditor();
+        render2DViewer();
+    };
+}
+
+function closeTextureEditor() {
+    const modal = document.getElementById('texture-editor-modal');
+    if (modal) modal.style.display = 'none';
+    isEditorPainting = false;
+}
+
+// Initialize custom texture handlers
+initCustomTextureHandlers();
+
+// Generic slider ↔ number sync for all slider-number-group pairs
+document.querySelectorAll('.slider-number-group').forEach(group => {
+    const range = group.querySelector('input[type="range"]');
+    const num = group.querySelector('input[type="number"]');
+    if (!range || !num) return;
+    range.addEventListener('input', () => { num.value = range.value; render2DViewer(); scheduleInline3DUpdate(); });
+    num.addEventListener('input', () => { range.value = num.value; render2DViewer(); scheduleInline3DUpdate(); });
+});
+
+// Threshold range slider needs to reprocess the image (generic sync only calls render2DViewer)
+const thresholdRange = document.querySelector('input[type="range"][data-link="stl_texture_custom_threshold"]');
+if (thresholdRange) {
+    thresholdRange.addEventListener('input', () => {
+        if (customTextureOriginal) processCustomTexture();
+    });
+}
+
+// ============================================================
+// Inline 3D Viewer (acabados panel)
+// ============================================================
+let inline3DRenderer = null;
+let inline3DScene = null;
+let inline3DCamera = null;
+let inline3DGroup = null;
+let inline3DTimer = null;
+let inline3DAnimId = null;
+// Vertical offset (pixels) applied to the inline 3D canvas via CSS transform.
+// Positive values move the canvas down, negative values move it up.
+// Adjust this value to vertically center the model inside the fixed-height viewer
+// without changing the Three.js scene or camera.
+// Adjusted for VIEWER_HEIGHT=380 to avoid canvas being clipped at bottom
+// Vertical offset (pixels) applied visually to the inline 3D view.
+// Previously this was applied as a CSS transform on the canvas which also
+// moved the canvas background. Convert the desired pixel offset to a
+// world-space offset applied to the camera target so only the model moves
+// inside the canvas (background stays put).
+let inline3DVerticalOffset = -70;
+// Fixed inline viewer height (pixels). Use this single value everywhere so
+// we can convert pixel offsets into world units consistently.
+let INLINE_VIEWER_HEIGHT = 399;
+// Inline view camera angle defaults (degrees).
+// `azimuth`: rotation around Y (0 = +X front, negative = rotate towards -X).
+// `elevation`: angle above the horizontal (higher = more top-down).
+let inline3DAzimuthDeg = -90;
+let inline3DElevationDeg = 60;
+let inline3DControls = null;
+let inline3DSavedCamPos = null;
+let inline3DSavedCamTarget = null;
+
+function initInline3D() {
+    const container = document.getElementById('acabados-3d-inline');
+    if (!container || !window.THREE) return;
+
+    inline3DScene = new THREE.Scene();
+    inline3DScene.background = new THREE.Color(0xf9fafb);
+
+    const VIEWER_HEIGHT = INLINE_VIEWER_HEIGHT;
+    inline3DCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 10000);
+
+    inline3DRenderer = new THREE.WebGLRenderer({ antialias: true });
+    inline3DRenderer.setPixelRatio(window.devicePixelRatio);
+    const w = container.clientWidth || 800;
+    inline3DRenderer.setSize(w, VIEWER_HEIGHT);
+    inline3DCamera.aspect = w / VIEWER_HEIGHT;
+    inline3DCamera.updateProjectionMatrix();
+    container.appendChild(inline3DRenderer.domElement);
+    // Note: we intentionally do NOT apply a CSS transform here. Vertical
+    // adjustments are converted to a camera/look-at offset in
+    // `frameInline3DCamera()` so the canvas background doesn't move.
+
+    // Lights
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+    inline3DScene.add(ambLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(0, 1, 0);
+    inline3DScene.add(dirLight);
+
+    inline3DGroup = new THREE.Group();
+    inline3DScene.add(inline3DGroup);
+
+    // OrbitControls (disabled by default)
+    try {
+        inline3DControls = new THREE.OrbitControls(inline3DCamera, inline3DRenderer.domElement);
+        inline3DControls.enabled = false;
+        inline3DControls.enableDamping = true;
+        inline3DControls.dampingFactor = 0.1;
+        inline3DControls.addEventListener('change', renderInline3D);
+    } catch(e) { console.warn('OrbitControls not available for inline 3D'); }
+
+    // Render once
+    renderInline3D();
+
+    // Observe size changes
+    if (window.ResizeObserver) {
+        new ResizeObserver(() => {
+            const newW = container.clientWidth;
+            if (newW > 0 && inline3DRenderer) {
+                inline3DRenderer.setSize(newW, VIEWER_HEIGHT);
+                inline3DCamera.aspect = newW / VIEWER_HEIGHT;
+                inline3DCamera.updateProjectionMatrix();
+                renderInline3D();
+                // No CSS transform applied — vertical offset handled in camera framing.
+            }
+        }).observe(container);
+    }
+}
+
+function renderInline3D() {
+    if (inline3DRenderer && inline3DScene && inline3DCamera) {
+        inline3DRenderer.render(inline3DScene, inline3DCamera);
+    }
+}
+
+function frameInline3DCamera() {
+    if (!inline3DGroup || !inline3DCamera) return;
+
+    // Reset any previous Y offset on the group temporarily so bounding box
+    // calculations reflect the raw geometry positions.
+    const prevGroupY = inline3DGroup.position.y || 0;
+    inline3DGroup.position.y = 0;
+
+    const box = new THREE.Box3().setFromObject(inline3DGroup);
+    if (box.isEmpty()) {
+        inline3DGroup.position.y = prevGroupY;
+        return;
+    }
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    // Raise the look-at point slightly
+    center.y += size.y * 0.1;
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim === 0 || !isFinite(maxDim)) {
+        inline3DGroup.position.y = prevGroupY;
+        return;
+    }
+    const fov = inline3DCamera.fov * Math.PI / 180;
+    // Distance multiplier controls how 'zoomed' the model appears.
+    // Increase multiplier to move camera farther away (less zoom).
+    let dist = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * 1.2;
+
+    // Compute world-space vertical offset corresponding to the desired
+    // pixel offset `inline3DVerticalOffset`. We'll APPLY this offset to
+    // inline3DGroup.position.y so only the model moves inside the canvas
+    // while the camera and background remain fixed.
+    const worldHeightAtDist = 2 * dist * Math.tan(fov / 2);
+    const pixelToWorld = worldHeightAtDist / INLINE_VIEWER_HEIGHT;
+    const worldOffset = -inline3DVerticalOffset * pixelToWorld;
+
+    // Compute view direction from azimuth/elevation (degrees -> radians)
+    const az = (inline3DAzimuthDeg || -45) * Math.PI / 180;
+    const el = (inline3DElevationDeg || 30) * Math.PI / 180;
+    // Spherical to Cartesian: x = cos(el)*cos(az), y = sin(el), z = cos(el)*sin(az)
+    const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)).normalize();
+    const pos = center.clone().add(dir.multiplyScalar(dist));
+    inline3DCamera.position.copy(pos);
+    inline3DCamera.lookAt(center);
+    // Save default camera state for reset
+    inline3DSavedCamPos = pos.clone();
+    inline3DSavedCamTarget = center.clone();
+    if (inline3DControls) {
+        inline3DControls.target.copy(center);
+        inline3DControls.update();
+    }
+
+    // Apply the computed world offset to the group so the model is visually
+    // shifted inside the fixed canvas. This keeps the background/static
+    // canvas positioning unaffected.
+    inline3DGroup.position.y = worldOffset;
+}
+
+async function updateInline3D() {
+    if (!inline3DGroup) return;
+    // Build payload: assembled, pieces + optionally base
+    const showBase = (document.getElementById('inline3d_show_base') || {}).checked || false;
+    const mode = showBase ? 'both' : 'pieces';
+    const payload = buildSTLPayload(mode);
+    if (!payload) return;
+    payload.assembled = true; // Inline viewer always shows assembled preview
+
+    try {
+        const response = await fetch('/api/export_stl_separate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!data.success) return;
+
+        // Clear existing
+        while (inline3DGroup.children.length) inline3DGroup.remove(inline3DGroup.children[0]);
+
+        const loader = new THREE.STLLoader();
+        const pieceColorEl = document.getElementById('stl_color_pieces');
+        const baseColorEl = document.getElementById('stl_color_base');
+        const reliefColorEl = document.getElementById('stl_color_relief');
+        const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
+        const baseColor = baseColorEl ? baseColorEl.value : '#808080';
+        const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
+
+        const allMeshes = [];
+
+        if (data.pieces) {
+            const buf = Uint8Array.from(atob(data.pieces), c => c.charCodeAt(0)).buffer;
+            const geom = loader.parse(buf);
+            geom.computeVertexNormals();
+            const mat = new THREE.MeshStandardMaterial({ color: pieceColor, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.rotation.set(-Math.PI / 2, 0, 0);
+            mesh.userData.role = 'pieces';
+            allMeshes.push(mesh);
+        }
+        if (data.relief) {
+            const buf = Uint8Array.from(atob(data.relief), c => c.charCodeAt(0)).buffer;
+            const geom = loader.parse(buf);
+            geom.computeVertexNormals();
+            const mat = new THREE.MeshStandardMaterial({ color: reliefColor, roughness: 0.4, metalness: 0.15, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.rotation.set(-Math.PI / 2, 0, 0);
+            mesh.userData.role = 'relief';
+            allMeshes.push(mesh);
+        }
+        if (data.base) {
+            const buf = Uint8Array.from(atob(data.base), c => c.charCodeAt(0)).buffer;
+            const geom = loader.parse(buf);
+            geom.computeVertexNormals();
+            const mat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.rotation.set(-Math.PI / 2, 0, 0);
+            mesh.userData.role = 'base';
+            allMeshes.push(mesh);
+        }
+
+        // If both pieces and base are present, translate pieces (and relief) to overlap base
+        const baseMesh = allMeshes.find(m => m.userData.role === 'base');
+        const pieceMesh = allMeshes.find(m => m.userData.role === 'pieces');
+        const reliefMesh = allMeshes.find(m => m.userData.role === 'relief');
+
+        if (pieceMesh && baseMesh) {
+            const tempGrp = new THREE.Group();
+            allMeshes.forEach(m => tempGrp.add(m));
+            tempGrp.updateMatrixWorld(true);
+
+            const pBox = new THREE.Box3().setFromObject(pieceMesh);
+            const bBox = new THREE.Box3().setFromObject(baseMesh);
+            const pCenter = pBox.getCenter(new THREE.Vector3());
+            const bCenter = bBox.getCenter(new THREE.Vector3());
+
+            // Align XZ centers of pieces to base center
+            const dx = bCenter.x - pCenter.x;
+            const dz = bCenter.z - pCenter.z;
+            pieceMesh.position.x += dx;
+            pieceMesh.position.z += dz;
+
+            // Raise pieces above base plate (not walls)
+            const baseThickness = parseFloat((document.getElementById('stl_base_thickness') || {}).value || 1);
+            const piecesBottom = pBox.min.y;
+            const pieceRaise = bBox.min.y + baseThickness - piecesBottom;
+            pieceMesh.position.y += pieceRaise;
+
+            // Align relief to pieces
+            if (reliefMesh) {
+                reliefMesh.position.x += dx;
+                reliefMesh.position.z += dz;
+                reliefMesh.position.y += pieceRaise;
+            }
+
+            allMeshes.forEach(m => { tempGrp.remove(m); inline3DGroup.add(m); });
+        } else {
+            allMeshes.forEach(m => inline3DGroup.add(m));
+        }
+
+        frameInline3DCamera();
+        renderInline3D();
+    } catch (e) {
+        console.warn('Inline 3D update failed:', e);
+    }
+}
+
+function scheduleInline3DUpdate() {
+    if (inline3DTimer) clearTimeout(inline3DTimer);
+    inline3DTimer = setTimeout(updateInline3D, 400);
+}
+
+// Initialize inline 3D viewer
+initInline3D();
+
+// Wire inline3d_show_base toggle
+const inline3dBaseCheck = document.getElementById('inline3d_show_base');
+if (inline3dBaseCheck) {
+    inline3dBaseCheck.addEventListener('change', scheduleInline3DUpdate);
+}
+
+// Wire refresh button
+const inline3dRefreshBtn = document.getElementById('inline3d_refresh');
+if (inline3dRefreshBtn) {
+    inline3dRefreshBtn.addEventListener('click', updateInline3D);
+}
+
+// Wire inline3d_free_camera toggle
+const inline3dFreeCam = document.getElementById('inline3d_free_camera');
+if (inline3dFreeCam) {
+    inline3dFreeCam.addEventListener('change', () => {
+        if (!inline3DControls) return;
+        if (inline3dFreeCam.checked) {
+            inline3DControls.enabled = true;
+        } else {
+            inline3DControls.enabled = false;
+            // Reset camera to saved position
+            if (inline3DSavedCamPos && inline3DSavedCamTarget) {
+                inline3DCamera.position.copy(inline3DSavedCamPos);
+                inline3DCamera.lookAt(inline3DSavedCamTarget);
+                inline3DControls.target.copy(inline3DSavedCamTarget);
+                inline3DControls.update();
+                renderInline3D();
+            }
+        }
+    });
+}
+
+// ============================================================
+// Wire up acabados inputs to re-render 2D viewer + inline 3D
+// ============================================================
+const acabadosInputsForViewer = [
+    'stl_infill_type', 'stl_texture_type',
+    'stl_cube_size', 'stl_border',
+    'stl_image_direction', 'stl_texture_direction'
+];
+acabadosInputsForViewer.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('change', () => { render2DViewer(); updateDragHints(); scheduleInline3DUpdate(); });
+    }
+});
+
+// All number/range inputs inside acabados
+document.querySelectorAll('.acabados-sub-panel input[type="number"], .acabados-sub-panel input[type="range"]').forEach(el => {
+    el.addEventListener('input', () => { render2DViewer(); });
+    el.addEventListener('change', scheduleInline3DUpdate);
+});
+document.querySelectorAll('.acabados-sub-panel input[type="checkbox"]').forEach(el => {
+    el.addEventListener('change', () => { render2DViewer(); scheduleInline3DUpdate(); });
+});
+// Infill/texture/image opts are outside .acabados-sub-panel — bind them separately
+document.querySelectorAll('.infill-opts input, .texture-opts input, .image-opts input').forEach(el => {
+    if (el.type === 'number' || el.type === 'range') {
+        el.addEventListener('input', () => render2DViewer());
+        el.addEventListener('change', scheduleInline3DUpdate);
+    } else if (el.type === 'checkbox') {
+        el.addEventListener('change', () => { render2DViewer(); scheduleInline3DUpdate(); });
+    }
+});
+// Also bind <select> elements in infill/texture/image opts
+document.querySelectorAll('.infill-opts select, .texture-opts select, .image-opts select, .acabados-sub-panel select').forEach(el => {
+    el.addEventListener('change', () => { render2DViewer(); scheduleInline3DUpdate(); scheduleViewerUpdate(); });
+});
+// Re-render when mode changes
+document.querySelectorAll('input[name="acabados_mode"]').forEach(r => {
+    r.addEventListener('change', () => { render2DViewer(); scheduleInline3DUpdate(); });
+});
+
+// Gallery toggle — shows/hides entire puzzle + gallery + solutions section
+const galleryToggle = document.getElementById('gallery_toggle');
+if (galleryToggle) {
+    galleryToggle.addEventListener('change', () => {
+        const content = document.getElementById('puzzle-gallery-content');
+        if (content) content.style.display = galleryToggle.checked ? '' : 'none';
+    });
+}

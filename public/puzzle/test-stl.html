@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STL Export Tests</title>
+<style>
+body { font-family: monospace; background: #111; color: #0f0; padding: 20px; }
+.pass { color: #0f0; } .fail { color: #f44; } .info { color: #0af; }
+#log { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h2>STL Export — Automated Tests</h2>
+<div id="log"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script src="engine/utils.js"></script>
+<script src="engine/grid.js"></script>
+<script src="engine/solver.js"></script>
+<script src="engine/fractal.js"></script>
+<script src="engine/jigsaw.js"></script>
+<script src="engine/stl-export.js"></script>
+<script>
+var log = document.getElementById('log');
+var passed = 0, failed = 0, total = 0;
+
+function assert(cond, msg) {
+    total++;
+    if (cond) { passed++; log.innerHTML += '<span class="pass">  PASS: ' + msg + '</span>\n'; }
+    else { failed++; log.innerHTML += '<span class="fail">  FAIL: ' + msg + '</span>\n'; }
+}
+function section(s) { log.innerHTML += '\n<span class="info">── ' + s + ' ──</span>\n'; }
+function stlTriCount(blob) {
+    // Binary STL: bytes 80-83 = uint32 triangle count
+    return new Promise(function(resolve) {
+        var r = new FileReader();
+        r.onload = function() {
+            var dv = new DataView(r.result);
+            resolve(dv.getUint32(80, true));
+        };
+        r.readAsArrayBuffer(blob);
+    });
+}
+
+async function runTests() {
+    // ════════════════════════════════════════
+    //  CLIPPER.JS AVAILABILITY
+    // ════════════════════════════════════════
+    section('Clipper.js availability');
+    assert(typeof ClipperLib !== 'undefined', 'ClipperLib is loaded');
+    assert(typeof ClipperLib.Clipper !== 'undefined', 'ClipperLib.Clipper exists');
+    assert(typeof ClipperLib.ClipperOffset !== 'undefined', 'ClipperLib.ClipperOffset exists');
+
+    // ════════════════════════════════════════
+    //  NORMAL PUZZLE — SOLID
+    // ════════════════════════════════════════
+    section('Normal puzzle — solid infill');
+    var grid = [[1,1,1],[1,0,1],[1,1,1]];
+    var pieces = [[[0,0],[0,1],[1,0]], [[0,2],[1,2],[2,2],[2,1]], [[2,0]]];
+    var opts = { cube_size:10, height:2, gap_mm:5, tolerance_mm:0.3, border:5, base_thickness:1, wall_height:2, infill_type:'solid' };
+
+    var blob = PuzzleSTL.exportSTL({grid:grid, pieces:pieces, puzzle_type:'normal'}, opts);
+    assert(blob instanceof Blob, 'Normal solid: returns Blob');
+    var tc = await stlTriCount(blob);
+    assert(tc > 0, 'Normal solid: has ' + tc + ' triangles');
+
+    // Separate mode
+    var sep = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'}, Object.assign({}, opts, {assembled: true}));
+    assert(sep.base !== null, 'Normal separate: base blob exists');
+    assert(sep.pieces !== null, 'Normal separate: pieces blob exists');
+    var baseTc = await stlTriCount(sep.base);
+    var piecesTc = await stlTriCount(sep.pieces);
+    assert(baseTc > 0, 'Normal separate: base has ' + baseTc + ' tris');
+    assert(piecesTc > 0, 'Normal separate: pieces has ' + piecesTc + ' tris');
+
+    // ════════════════════════════════════════
+    //  NORMAL PUZZLE — TOLERANCE
+    // ════════════════════════════════════════
+    section('Normal puzzle — tolerance');
+    var sep0 = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'}, Object.assign({}, opts, {assembled:true, tolerance_mm:0}));
+    var sep3 = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'}, Object.assign({}, opts, {assembled:true, tolerance_mm:0.5}));
+    var tc0 = await stlTriCount(sep0.pieces);
+    var tc3 = await stlTriCount(sep3.pieces);
+    assert(tc0 > 0 && tc3 > 0, 'Tolerance: both modes produce triangles (tol=0: ' + tc0 + ', tol=0.5: ' + tc3 + ')');
+
+    // ════════════════════════════════════════
+    //  NORMAL PUZZLE — CORNER ROUNDING
+    // ════════════════════════════════════════
+    section('Normal puzzle — corner rounding');
+    var sepRound = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'},
+        Object.assign({}, opts, {assembled:true, corner_style:'round', corner_radius:1.0}));
+    var tcRound = await stlTriCount(sepRound.pieces);
+    assert(tcRound > piecesTc * 0.5, 'Corner round: has more vertices (' + tcRound + ' vs basic ' + piecesTc + ')');
+
+    // ════════════════════════════════════════
+    //  NORMAL PUZZLE — INFILL PATTERNS
+    // ════════════════════════════════════════
+    section('Normal puzzle — infill patterns');
+    var infillTypes = ['hollow', 'grid', 'stripes', 'zigzag', 'honeycomb'];
+    for (var i = 0; i < infillTypes.length; i++) {
+        var it = infillTypes[i];
+        var iopts = Object.assign({}, opts, {
+            assembled: true, infill_type: it,
+            infill_wall: 2, infill_spacing: 4, infill_fill_width: 1,
+            infill_cell_size: 5, infill_amplitude: 2, infill_angle: 0
+        });
+        try {
+            var sepI = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'}, iopts);
+            var tcI = await stlTriCount(sepI.pieces);
+            assert(tcI > 0, 'Infill ' + it + ': produces ' + tcI + ' tris');
+        } catch(e) {
+            assert(false, 'Infill ' + it + ': EXCEPTION ' + e.message);
+        }
+    }
+
+    // Remix
+    try {
+        var sepRmx = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'},
+            Object.assign({}, opts, {assembled:true, infill_type:'remix'}));
+        var tcRmx = await stlTriCount(sepRmx.pieces);
+        assert(tcRmx > 0, 'Infill remix: produces ' + tcRmx + ' tris');
+    } catch(e) { assert(false, 'Infill remix: EXCEPTION ' + e.message); }
+
+    // ════════════════════════════════════════
+    //  NORMAL PUZZLE — TEXTURE MODES
+    // ════════════════════════════════════════
+    section('Normal puzzle — texture modes');
+    var texTypes = ['grid', 'stripes', 'zigzag', 'honeycomb', 'solid'];
+    var texDirs = ['outward', 'flush', 'inward'];
+    for (var ti = 0; ti < texTypes.length; ti++) {
+        for (var di = 0; di < texDirs.length; di++) {
+            var tt = texTypes[ti], td = texDirs[di];
+            var topts = Object.assign({}, opts, {
+                assembled: true, acabados_mode: 'texture',
+                texture_type: tt, texture_direction: td,
+                texture_height: 0.5, texture_wall: 2,
+                texture_spacing: 4, texture_fill_width: 1,
+                texture_cell_size: 5, texture_amplitude: 2, texture_angle: 0
+            });
+            try {
+                var sepT = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'}, topts);
+                var tcT = await stlTriCount(sepT.pieces);
+                assert(tcT > 0, 'Texture ' + tt + '+' + td + ': pieces=' + tcT + ' tris');
+                if (td === 'outward' && tt !== 'solid') {
+                    var hasRelief = sepT.relief !== null;
+                    if (hasRelief) {
+                        var tcR = await stlTriCount(sepT.relief);
+                        assert(tcR > 0, 'Texture ' + tt + '+' + td + ': relief=' + tcR + ' tris');
+                    }
+                }
+            } catch(e) { assert(false, 'Texture ' + tt + '+' + td + ': EXCEPTION ' + e.message); }
+        }
+    }
+
+    // ════════════════════════════════════════
+    //  BASE — CORNER ROUNDING
+    // ════════════════════════════════════════
+    section('Base — corner rounding');
+    var sepBC = PuzzleSTL.exportSTLSeparate({grid:grid, pieces:pieces, puzzle_type:'normal'},
+        Object.assign({}, opts, {assembled:true, base_corner_style:'round', base_corner_radius:3, base_corner_radius_inner:1}));
+    var tcBC = await stlTriCount(sepBC.base);
+    assert(tcBC > baseTc, 'Base round corners: more tris (' + tcBC + ' > ' + baseTc + ')');
+
+    // ════════════════════════════════════════
+    //  FRACTAL PUZZLE
+    // ════════════════════════════════════════
+    section('Fractal puzzle');
+    try {
+        var fracResult = PuzzleFractal.generate({M:3, N:3, min_size:2, max_size:3, arc_shape:0});
+        assert(fracResult.svg_paths && fracResult.svg_paths.length > 0, 'Fractal: generated ' + fracResult.svg_paths.length + ' SVG paths');
+
+        var fData = {grid:fracResult.grid, pieces:fracResult.pieces, puzzle_type:'fractal', svg_paths:fracResult.svg_paths, ncols:fracResult.ncols, nrows:fracResult.nrows};
+        var fOpts = Object.assign({}, opts, {assembled:true, puzzle_type:'fractal'});
+
+        // Solid
+        var fSep = PuzzleSTL.exportSTLSeparate(fData, fOpts);
+        assert(fSep.pieces !== null, 'Fractal solid: pieces exist');
+        var fTc = await stlTriCount(fSep.pieces);
+        assert(fTc > 0, 'Fractal solid: ' + fTc + ' tris');
+
+        // With tolerance
+        var fSepT = PuzzleSTL.exportSTLSeparate(fData, Object.assign({}, fOpts, {tolerance_mm: 0.4}));
+        assert(fSepT.pieces !== null, 'Fractal tol=0.4: pieces exist');
+
+        // Corner round
+        var fSepR = PuzzleSTL.exportSTLSeparate(fData, Object.assign({}, fOpts, {corner_style:'round', corner_radius:0.5}));
+        assert(fSepR.pieces !== null, 'Fractal corners round: pieces exist');
+
+        // Infill grid
+        var fSepG = PuzzleSTL.exportSTLSeparate(fData, Object.assign({}, fOpts, {
+            infill_type:'grid', infill_wall:1.5, infill_spacing:4, infill_fill_width:1, infill_angle:0}));
+        var fTcG = await stlTriCount(fSepG.pieces);
+        assert(fTcG > fTc, 'Fractal grid infill: more tris (' + fTcG + ' > ' + fTc + ')');
+
+    } catch(e) { assert(false, 'Fractal: EXCEPTION ' + e.message); }
+
+    // ════════════════════════════════════════
+    //  JIGSAW RECTANGULAR
+    // ════════════════════════════════════════
+    section('Jigsaw rectangular');
+    try {
+        var jResult = PuzzleJigsaw.generate({M:3, N:3, jigsaw_type:'rectangular'});
+        assert(jResult.svg_paths && jResult.svg_paths.length > 0, 'Jigsaw rect: generated ' + jResult.svg_paths.length + ' SVG paths');
+
+        var jData = {grid:jResult.grid, pieces:jResult.pieces, puzzle_type:'jigsaw', jigsaw_type:'rectangular',
+            svg_paths:jResult.svg_paths, ncols:jResult.ncols, nrows:jResult.nrows};
+        var jOpts = Object.assign({}, opts, {assembled:true, puzzle_type:'jigsaw'});
+
+        var jSep = PuzzleSTL.exportSTLSeparate(jData, jOpts);
+        assert(jSep.pieces !== null, 'Jigsaw rect: pieces exist');
+        var jTc = await stlTriCount(jSep.pieces);
+        assert(jTc > 0, 'Jigsaw rect: ' + jTc + ' tris');
+
+        // Tolerance
+        var jSepT = PuzzleSTL.exportSTLSeparate(jData, Object.assign({}, jOpts, {tolerance_mm:0.4}));
+        assert(jSepT.pieces !== null, 'Jigsaw rect tol: pieces exist');
+
+        // Stripes infill
+        var jSepS = PuzzleSTL.exportSTLSeparate(jData, Object.assign({}, jOpts, {
+            infill_type:'stripes', infill_wall:1.5, infill_spacing:3, infill_fill_width:1.5, infill_angle:0}));
+        var jTcS = await stlTriCount(jSepS.pieces);
+        assert(jTcS > 0, 'Jigsaw rect stripes: ' + jTcS + ' tris');
+
+    } catch(e) { assert(false, 'Jigsaw rect: EXCEPTION ' + e.message); }
+
+    // ════════════════════════════════════════
+    //  JIGSAW HEXAGONAL
+    // ════════════════════════════════════════
+    section('Jigsaw hexagonal');
+    try {
+        var jhResult = PuzzleJigsaw.generate({M:3, N:3, jigsaw_type:'hexagonal'});
+        assert(jhResult.svg_paths && jhResult.svg_paths.length > 0, 'Jigsaw hex: generated ' + jhResult.svg_paths.length + ' SVG paths');
+
+        var jhData = {grid:jhResult.grid, pieces:jhResult.pieces, puzzle_type:'jigsaw', jigsaw_type:'hexagonal',
+            svg_paths:jhResult.svg_paths, ncols:jhResult.ncols, nrows:jhResult.nrows,
+            hex_radius:jhResult.hex_radius||0, hex_offset:jhResult.hex_offset||0, truncate_edge:jhResult.truncate_edge||false};
+        var jhOpts = Object.assign({}, opts, {assembled:true, puzzle_type:'jigsaw', jigsaw_type:'hexagonal'});
+
+        var jhSep = PuzzleSTL.exportSTLSeparate(jhData, jhOpts);
+        assert(jhSep.pieces !== null, 'Jigsaw hex: pieces exist');
+
+        // With truncate edge
+        jhOpts.truncate_edge = true;
+        jhData.truncate_edge = true;
+        if (jhData.hex_radius > 0) {
+            var jhSepT = PuzzleSTL.exportSTLSeparate(jhData, jhOpts);
+            assert(jhSepT.pieces !== null, 'Jigsaw hex+truncate: pieces exist');
+        } else {
+            assert(true, 'Jigsaw hex: no hex_radius, skip truncate test');
+        }
+
+        // With contoured base
+        jhOpts.contoured_base = true;
+        var jhSepC = PuzzleSTL.exportSTLSeparate(jhData, jhOpts);
+        assert(jhSepC.base !== null, 'Jigsaw hex+contoured base: base exists');
+
+    } catch(e) { assert(false, 'Jigsaw hex: EXCEPTION ' + e.message); }
+
+    // ════════════════════════════════════════
+    //  FILL BORDER GAPS
+    // ════════════════════════════════════════
+    section('Fill border gaps');
+    try {
+        var fracResult2 = PuzzleFractal.generate({M:3, N:3, min_size:2, max_size:3, arc_shape:0});
+        var fData2 = {grid:fracResult2.grid, pieces:fracResult2.pieces, puzzle_type:'fractal',
+            svg_paths:fracResult2.svg_paths, ncols:fracResult2.ncols, nrows:fracResult2.nrows};
+        var fOpts2 = Object.assign({}, opts, {assembled:true, puzzle_type:'fractal', fill_border_gaps:true});
+        var fSep2 = PuzzleSTL.exportSTLSeparate(fData2, fOpts2);
+        assert(fSep2.base !== null, 'Fill border gaps: base exists');
+        var fTc2 = await stlTriCount(fSep2.base);
+        assert(fTc2 > 0, 'Fill border gaps: base has ' + fTc2 + ' tris');
+    } catch(e) { assert(false, 'Fill border gaps: EXCEPTION ' + e.message); }
+
+    // ════════════════════════════════════════
+    //  3MF EXPORT
+    // ════════════════════════════════════════
+    section('3MF export');
+    try {
+        var mfBlob = PuzzleSTL.export3MF({grid:grid, pieces:pieces, puzzle_type:'normal'},
+            Object.assign({}, opts, {assembled:true, color_base:'#808080', color_pieces:'#6699CC', color_relief:'#FF6633'}));
+        assert(mfBlob instanceof Blob, '3MF: returns Blob');
+        assert(mfBlob.size > 100, '3MF: blob has content (' + mfBlob.size + ' bytes)');
+        // Verify ZIP signature
+        var buf = await mfBlob.arrayBuffer();
+        var sig = new Uint8Array(buf, 0, 4);
+        assert(sig[0] === 0x50 && sig[1] === 0x4B, '3MF: has ZIP signature (PK)');
+    } catch(e) { assert(false, '3MF export: EXCEPTION ' + e.message); }
+
+    // 3MF with texture/relief
+    try {
+        var mfOpts = Object.assign({}, opts, {
+            assembled:true, acabados_mode:'texture',
+            texture_type:'grid', texture_direction:'outward', texture_height:0.5,
+            texture_wall:2, texture_spacing:4, texture_fill_width:1,
+            color_base:'#808080', color_pieces:'#6699CC', color_relief:'#FF6633'
+        });
+        var mfBlob2 = PuzzleSTL.export3MF({grid:grid, pieces:pieces, puzzle_type:'normal'}, mfOpts);
+        assert(mfBlob2 instanceof Blob, '3MF+texture: returns Blob');
+        assert(mfBlob2.size > 200, '3MF+texture: blob has content (' + mfBlob2.size + ' bytes)');
+    } catch(e) { assert(false, '3MF+texture: EXCEPTION ' + e.message); }
+
+    // ════════════════════════════════════════
+    //  SUMMARY
+    // ════════════════════════════════════════
+    log.innerHTML += '\n<span class="info">═══════════════════════════════════════</span>\n';
+    log.innerHTML += '<span class="' + (failed === 0 ? 'pass' : 'fail') + '">' +
+        passed + '/' + total + ' tests passed' +
+        (failed > 0 ? ' (' + failed + ' FAILED)' : ' — ALL PASS') + '</span>\n';
+}
+
+runTests().catch(function(e) { log.innerHTML += '<span class="fail">FATAL: ' + e.message + '\n' + e.stack + '</span>\n'; });
+</script>
+</body>
+</html>

@@ -3,7 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/withBase';
 import { GUMROAD_PREMIUM_URL, GUMROAD_PRODUCT_ID, PUZZLEGEN_URL } from '../config/site';
 
-const apiBase = PUZZLEGEN_URL;
+const apiBase = PUZZLEGEN_URL;          // Render backend (fallback)
+const localPuzzle = withBase('/puzzle/index.html'); // static JS version
 ---
 
 <BaseLayout
@@ -63,6 +64,7 @@ const apiBase = PUZZLEGEN_URL;
   <section
     class="puzzle-embed"
     data-api-base={apiBase}
+    data-local-puzzle={localPuzzle}
     data-gumroad-product-id={GUMROAD_PRODUCT_ID}
     data-gumroad-url={GUMROAD_PREMIUM_URL}
   >
@@ -91,42 +93,48 @@ const apiBase = PUZZLEGEN_URL;
     ></iframe>
   </section>
 
-  <script define:vars={{ apiBase, GUMROAD_PRODUCT_ID }}>
+  <script define:vars={{ apiBase, localPuzzle, GUMROAD_PRODUCT_ID }}>
     (() => {
       const embed  = document.querySelector('.puzzle-embed');
       const iframe = document.getElementById('puzzle-iframe');
       const waitEl = document.getElementById('embed-wait');
       const statusEl = embed?.querySelector('.embed-status');
-      const base   = (apiBase || '').replace(/\/$/, '');
+      const theme  = document.documentElement.dataset.theme || 'dark';
 
-      if (!base) {
-        if (statusEl) statusEl.textContent = 'Falta configurar PUBLIC_PUZZLEGEN_URL.';
-        return;
-      }
+      /* ---- Mode selection: ?backend=render uses Render; default = local ---- */
+      const params  = new URLSearchParams(window.location.search);
+      const useRender = params.get('backend') === 'render' && apiBase;
+      const renderBase = (apiBase || '').replace(/\/$/, '');
 
-      /* ---- Health polling ---- */
+      /* ---- Health polling (Render mode only) ---- */
       const pingHealth = async () => {
         try {
           const ctrl = new AbortController();
           const t = setTimeout(() => ctrl.abort(), 8000);
-          const res = await fetch(`${base}/health`, { signal: ctrl.signal });
+          const res = await fetch(`${renderBase}/health`, { signal: ctrl.signal });
           clearTimeout(t);
           return res.ok;
         } catch { return false; }
       };
 
       const boot = async () => {
-        let ok = false;
-        while (!ok) {
-          ok = await pingHealth();
-          if (!ok) {
-            if (statusEl) statusEl.textContent = 'Esperando al backend…';
-            await new Promise(r => setTimeout(r, 3000));
+        if (useRender) {
+          /* Render mode — poll health, then load remote iframe */
+          let ok = false;
+          while (!ok) {
+            ok = await pingHealth();
+            if (!ok) {
+              if (statusEl) statusEl.textContent = 'Esperando al backend…';
+              await new Promise(r => setTimeout(r, 3000));
+            }
           }
+          if (statusEl) statusEl.textContent = 'Cargando interfaz…';
+          iframe.src = `${renderBase}/?embed=1&theme=${theme}`;
+        } else {
+          /* Local mode — load static puzzle directly, no health check */
+          waitEl?.classList.add('hide');
+          iframe.src = `${localPuzzle}?embed=1&theme=${theme}`;
         }
-        if (statusEl) statusEl.textContent = 'Cargando interfaz…';
-        const theme = document.documentElement.dataset.theme || 'dark';
-        iframe.src = `${base}/?embed=1&theme=${theme}`;
       };
 
       /* ---- Messages from iframe ---- */
