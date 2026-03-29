@@ -1,3 +1,42 @@
+/* ============================================================
+   SetupAndHold Design System — Puzzle Page
+   ============================================================ */
+
+:root {
+    color-scheme: dark;
+    --bg: #0d1017;
+    --bg-soft: rgba(255, 255, 255, 0.02);
+    --text: #e7ecf3;
+    --muted: #9ca3af;
+    --accent: #7cf2c9;
+    --accent-2: #6cb1ff;
+    --card: rgba(255, 255, 255, 0.04);
+    --border: rgba(255, 255, 255, 0.08);
+    --radius: 16px;
+    --shadow: 0 10px 50px rgba(0, 0, 0, 0.35);
+    --font: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+    --panel-title-font-size: 1rem;
+    --panel-title-weight: 600;
+    --panel-title-color: var(--text);
+    --panel-title-padding: 8px 0;
+    --panel-title-margin: 8px;
+    --panel-title-border: 1px solid var(--border);
+}
+
+:root[data-theme='light'] {
+    color-scheme: light;
+    --bg: #f7f9fc;
+    --bg-soft: rgba(0, 0, 0, 0.04);
+    --text: #0f172a;
+    --muted: #4b5563;
+    --accent: #0f9b73;
+    --accent-2: #2563eb;
+    --card: rgba(255, 255, 255, 0.9);
+    --border: rgba(0, 0, 0, 0.08);
+    --shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -9,73 +48,233 @@ html {
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: transparent;
+    font-family: var(--font);
+    color: var(--text);
+    background: radial-gradient(circle at 20% 20%, rgba(124, 242, 201, 0.08), transparent 25%),
+        radial-gradient(circle at 80% 0%, rgba(108, 177, 255, 0.1), transparent 30%),
+        linear-gradient(135deg, #0b0f16 0%, #0d1017 50%, #0b0f16 100%);
     min-height: 100vh;
-    padding: 20px;
-    animation: none;
+    padding: 0;
+    margin: 0;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+:root[data-theme='light'] body {
+    background: radial-gradient(circle at 20% 20%, rgba(15, 155, 115, 0.08), transparent 25%),
+        radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.08), transparent 30%),
+        linear-gradient(135deg, #f6f8fb 0%, #f1f5f9 50%, #eef2f7 100%);
 }
 
-.container {
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--accent); }
+
+/* ── Page shell & Navigation (mirrors BaseLayout.astro) ── */
+.page-shell {
     max-width: 1100px;
     margin: 0 auto;
     padding: 32px 20px 64px;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-    animation: none;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
+.site-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 6px);
+    backdrop-filter: blur(12px);
+    background: var(--bg-soft);
+    position: sticky;
+    top: 18px;
+    z-index: 10;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(8px, 1.4vw, 12px);
+    font-weight: 700;
+    font-size: clamp(1.05rem, 2.4vw, 1.25rem);
+    letter-spacing: -0.02em;
+    text-transform: lowercase;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.brand-logo {
+    width: clamp(24px, 3.4vw, 36px);
+    height: clamp(24px, 3.4vw, 36px);
+    display: block;
+}
+
+.nav-links {
+    display: flex;
+    gap: 16px;
+    font-size: 0.95rem;
+    color: var(--muted);
+}
+
+.nav-links a {
+    padding: 6px 10px;
+    border-radius: 10px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav-links a:hover {
+    background: var(--card);
+    color: var(--text);
+}
+
+.page { margin-top: 32px; }
+
+/* ── Footer (mirrors BaseLayout.astro) ── */
+.site-footer {
+    margin-top: 48px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.site-footer .theme-toggle { margin-left: auto; }
+.dot { opacity: 0.5; }
+
+/* Theme toggle */
+.theme-toggle {
+    position: relative;
+    width: 56px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: #4a5568;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.theme-toggle .toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle .slider-icon {
+    display: none;
+    color: #000;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.theme-toggle .slider-icon.fi {
+    width: 16px;
+    height: 16px;
+    background: #000;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+.theme-toggle .fi.fi-sc-brightness {
+    -webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/18996/18996164.png');
+    mask-image: url('https://cdn-icons-png.flaticon.com/512/18996/18996164.png');
+}
+
+.theme-toggle .fi.fi-sr-moon-stars {
+    -webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/6853/6853973.png');
+    mask-image: url('https://cdn-icons-png.flaticon.com/512/6853/6853973.png');
+}
+
+:root[data-theme='light'] .theme-toggle .slider-icon--light { display: inline-block; }
+:root[data-theme='dark'] .theme-toggle .slider-icon--dark { display: inline-block; }
+
+:root[data-theme='light'] .theme-toggle {
+    background: #e2e8f0;
+    justify-content: flex-end;
+}
+
+:root[data-theme='light'] .theme-toggle .toggle-slider {
+    left: auto;
+    right: 2px;
+    background: #fff;
+}
+
+.theme-toggle:hover { background: #5a6578; }
+:root[data-theme='light'] .theme-toggle:hover { background: #cbd5e0; }
+
+@media (max-width: 720px) {
+    .site-header {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        position: static;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .brand {
+        order: 1;
+        width: 100%;
+        justify-content: center;
+        font-size: 1.25rem;
     }
+    .brand-logo { width: 38px; height: 38px; }
+    .nav-links {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .page-shell { padding: 24px 16px 48px; }
+}
+
+/* ── Container ── */
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
 }
 
 h1 {
-    color: #333;
-    margin-bottom: 30px;
+    color: var(--text);
+    margin-bottom: 16px;
     text-align: center;
-    font-size: 2.5em;
-    animation: none;
+    font-size: clamp(2rem, 5vw, 2.5em);
+    letter-spacing: -0.03em;
 }
 
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 24px;
+    font-size: 0.95em;
+    line-height: 1.5;
 }
 
 h2 {
-    color: #555;
+    color: var(--text);
     margin-bottom: 15px;
     font-size: 1.5em;
+    letter-spacing: -0.02em;
 }
 
 h3 {
-    color: #666;
+    color: var(--text);
     margin-bottom: 10px;
+    font-size: 1.5em;
 }
 
 /* Puzzle Type Toggle */
@@ -88,33 +287,34 @@ h3 {
 
 .type-btn {
     padding: 12px 28px;
-    border: 2px solid #667eea;
-    background: white;
-    color: #667eea;
+    border: 2px solid var(--accent);
+    background: var(--card);
+    color: var(--accent);
     cursor: pointer;
     font-weight: 700;
     font-size: 1.05em;
     transition: all 0.3s;
+    font-family: var(--font);
 }
 
 .type-btn:first-child {
     border-radius: 8px 0 0 8px;
-    border-right: 1px solid #667eea;
+    border-right: 1px solid var(--accent);
 }
 
 .type-btn:last-child {
     border-radius: 0 8px 8px 0;
-    border-left: 1px solid #667eea;
+    border-left: 1px solid var(--accent);
 }
 
 .type-btn:hover {
-    background: #f0f2ff;
+    background: var(--bg-soft);
 }
 
 .type-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 5px 15px rgba(124, 242, 201, 0.3);
 }
 
 /* View Mode Controls */
@@ -127,37 +327,38 @@ h3 {
 
 .view-btn {
     padding: 8px 16px;
-    border: 2px solid #667eea;
-    background: white;
-    color: #667eea;
+    border: 2px solid var(--accent);
+    background: var(--card);
+    color: var(--accent);
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s;
+    font-family: var(--font);
 }
 
 .view-btn:hover {
-    background: #f0f2ff;
+    background: var(--bg-soft);
 }
 
 .view-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 5px 15px rgba(124, 242, 201, 0.3);
 }
 
 .panel {
-    background: #f8f9fa;
-    border-left: 5px solid #667eea;
+    background: var(--card);
+    border-left: 5px solid var(--accent);
     padding: 20px;
     margin-bottom: 20px;
     border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow);
     transition: all 0.3s;
 }
 
 .panel:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 /* ── Config panel: two-column layout ── */
@@ -202,7 +403,7 @@ h3 {
     aspect-ratio: 1 / 1;
     border-radius: 10px;
     overflow: hidden;
-    background: #f5f7fa;
+    background: var(--bg-soft);
 }
 
 .config-viewer-wrapper canvas {
@@ -226,12 +427,16 @@ h3 {
     align-items: center;
     justify-content: center;
     font-size: 1em;
-    color: #888;
-    background: rgba(245, 247, 250, 0.85);
+    color: var(--muted);
+    background: rgba(13, 16, 23, 0.85);
     border-radius: 10px;
     pointer-events: none;
     text-align: center;
     padding: 20px;
+}
+
+:root[data-theme='light'] .config-viewer-hint {
+    background: rgba(247, 249, 252, 0.85);
 }
 
 /* Stack to single column on narrow viewports */
@@ -261,10 +466,10 @@ h3 {
 }
 
 .stl-config-col {
-    background: #f7f8fa;
+    background: var(--card);
     border-radius: 8px;
     padding: 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border);
 }
 
 .stl-config-col-full {
@@ -274,7 +479,7 @@ h3 {
 .stl-config-col h4 {
     margin: 0 0 12px 0;
     font-size: 1em;
-    color: #444;
+    color: var(--text);
 }
 
 .stl-config-col .form-grid {
@@ -292,7 +497,7 @@ h3 {
     gap: 0;
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid #d0d0d0;
+    border: 1px solid var(--border);
 }
 
 .acabados-mode-label {
@@ -300,8 +505,8 @@ h3 {
     text-align: center;
     padding: 12px 12px;
     cursor: pointer;
-    background: #f5f5f5;
-    color: #333;
+    background: var(--card);
+    color: var(--text);
     transition: background 0.2s, color 0.2s;
     font-size: 1.1em;
     user-select: none;
@@ -313,13 +518,13 @@ h3 {
 }
 
 .acabados-mode-label.active {
-    background: #667eea;
-    color: #fff;
+    background: var(--accent);
+    color: var(--bg);
     font-weight: 600;
 }
 
 .acabados-mode-label:not(.active):hover {
-    background: #e8ecf4;
+    background: var(--bg-soft);
 }
 
 #acabados-infill-panel,
@@ -353,29 +558,32 @@ h3 {
 .form-group label {
     margin-bottom: 5px;
     font-weight: 600;
-    color: #333;
+    color: var(--text);
     font-size: 0.9em;
 }
 
 .form-group input,
 .form-group select {
     padding: 10px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border);
     border-radius: 5px;
     font-size: 1em;
     transition: border-color 0.3s;
+    background: var(--card);
+    color: var(--text);
+    font-family: var(--font);
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--accent);
 }
 
 .form-group input:disabled {
-    background: #f0f0f0;
-    color: #aaa;
-    border-color: #e8e8e8;
+    background: var(--bg-soft);
+    color: var(--muted);
+    border-color: var(--border);
     cursor: not-allowed;
 }
 
@@ -390,9 +598,9 @@ h3 {
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: #f7f9fc;
+    background: var(--card);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border);
 }
 
 /* Form-group spacing inside opts collapsible bodies — matches sub-panel feel */
@@ -412,7 +620,7 @@ h3 {
 
 /* No-options placeholder message */
 .no-opts-placeholder .no-opts-text {
-    color: #888;
+    color: var(--muted);
     font-size: 0.88em;
     font-style: italic;
     text-align: center;
@@ -427,22 +635,22 @@ h3 {
     gap: 10px;
     padding: 10px;
     margin-top: 8px;
-    background: #f0f4f8;
+    background: var(--bg-soft);
     border-radius: 6px;
-    border: 1px dashed #bbb;
+    border: 1px dashed var(--border);
     grid-column: 1 / -1;
 }
 
 .form-group .hint {
     font-size: 0.78em;
-    color: #888;
+    color: var(--muted);
     margin-top: 3px;
     font-weight: 400;
 }
 
 .viewer-controls-hint {
     font-size: 0.82em;
-    color: #888;
+    color: var(--muted);
     margin: 4px 0 8px 0;
     font-style: italic;
 }
@@ -484,11 +692,11 @@ h3 {
     cursor: pointer;
     padding: 6px 12px;
     border-radius: 20px;
-    border: 2px solid #d0d0d0;
-    background: #f5f5f5;
+    border: 2px solid var(--border);
+    background: var(--card);
     font-size: 0.88em;
     font-weight: 500;
-    color: #555;
+    color: var(--muted);
     user-select: none;
     transition: border-color 0.2s, background 0.2s, color 0.2s;
 }
@@ -499,9 +707,9 @@ h3 {
 
 .viewer-mode-option.active,
 .viewer-mode-option:has(input:checked) {
-    border-color: #667eea;
-    background: #667eea;
-    color: #fff;
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
 }
 
 /* Download section */
@@ -519,7 +727,7 @@ h3 {
 
 .color-picker-row input[type="color"] {
     -webkit-appearance: none;
-    border: 2px solid #ccc;
+    border: 2px solid var(--border);
     border-radius: 6px;
     width: 40px;
     height: 32px;
@@ -540,18 +748,18 @@ h3 {
 .color-hex {
     font-family: monospace;
     font-size: 0.85em;
-    color: #666;
+    color: var(--muted);
 }
 
 .stl-download-section h4 {
     margin: 0 0 2px 0;
     font-size: 1em;
-    color: #333;
+    color: var(--text);
 }
 
 .stl-download-hint {
     font-size: 0.85em;
-    color: #666;
+    color: var(--muted);
     margin-bottom: 15px;
     font-style: italic;
 }
@@ -567,20 +775,21 @@ h3 {
     flex: 1;
     min-width: 140px;
     padding: 10px 16px;
-    background: #f0f0f0;
-    border: 2px solid #d0d0d0;
+    background: var(--card);
+    border: 2px solid var(--border);
     border-radius: 8px;
     font-size: 0.9em;
     font-weight: 600;
-    color: #444;
+    color: var(--text);
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
+    font-family: var(--font);
 }
 
 .btn-t2:hover {
-    background: #e0e0e0;
-    border-color: #aaa;
-    color: #222;
+    background: var(--bg-soft);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 /* T3 — Ghost download (STL piece buttons and secondary downloads) */
@@ -588,20 +797,21 @@ h3 {
     flex: 1;
     min-width: 140px;
     padding: 10px 16px;
-    background: #f0f0f0;
-    border: 2px solid #d0d0d0;
+    background: var(--card);
+    border: 2px solid var(--border);
     border-radius: 8px;
     font-size: 0.9em;
     font-weight: 600;
-    color: #444;
+    color: var(--text);
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
+    font-family: var(--font);
 }
 
 .btn-t3:hover {
-    background: #e0e0e0;
-    border-color: #aaa;
-    color: #222;
+    background: var(--bg-soft);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 /* T1 — Primary action (generate puzzle): most prominent button on the page */
@@ -609,23 +819,24 @@ h3 {
     flex: 1;
     min-width: 140px;
     padding: 20px 16px !important;
-    background: #667eea;
-    border: 2px solid #d0d0d0;
+    background: var(--accent);
+    border: 2px solid var(--accent);
     border-radius: 8px;
-    border-color: #667eea;
     font-size: 0.9em;
     font-weight: 600;
-    color: #fff;
+    color: var(--bg);
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
     position: relative;
     overflow: hidden;
+    font-family: var(--font);
 }
 
 .btn-t1:hover {
-    background: #5568d3;
-    border-color: #5568d3;
+    background: var(--accent-2);
+    border-color: var(--accent-2);
     color: #fff;
+    box-shadow: 0 5px 20px rgba(124, 242, 201, 0.3);
 }
 
 /* Ripple effect for T1 buttons */
@@ -647,11 +858,11 @@ h3 {
 .disclaimer {
     margin-top: 8px;
     padding: 8px 12px;
-    background: #fff8e1;
-    border: 1px solid #f9a825;
+    background: rgba(124, 242, 201, 0.1);
+    border: 1px solid rgba(124, 242, 201, 0.3);
     border-radius: 6px;
     font-size: 0.82em;
-    color: #7a5800;
+    color: var(--accent);
     line-height: 1.45;
 }
 
@@ -664,17 +875,18 @@ h3 {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-family: var(--font);
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: var(--accent);
+    color: var(--bg);
     width: 100%;
 }
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 10px 20px rgba(124, 242, 201, 0.3);
 }
 
 .btn-primary:active {
@@ -682,15 +894,15 @@ h3 {
 }
 
 .btn {
-    background: #667eea;
-    color: white;
+    background: var(--accent);
+    color: var(--bg);
     margin-right: 0px;
 }
 
 .btn:hover {
-    background: #764ba2;
+    background: var(--accent-2);
     transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 15px rgba(124, 242, 201, 0.3);
 }
 
 .btn:active {
@@ -714,29 +926,29 @@ h3 {
     display: none;
     min-height: 20px;
     text-align: left;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
     transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .status.info {
     display: block;
-    background: #eaf3ff;
-    color: #1458a8;
-    border-left: 5px solid #1976d2;
+    background: rgba(108, 177, 255, 0.1);
+    color: var(--accent-2);
+    border-left: 5px solid var(--accent-2);
 }
 
 .status.success {
     display: block;
-    background: #eaf7ee;
-    color: #2f7d34;
-    border-left: 5px solid #38a169;
+    background: rgba(124, 242, 201, 0.1);
+    color: var(--accent);
+    border-left: 5px solid var(--accent);
 }
 
 .status.error {
     display: block;
-    background: #ffecef;
-    color: #b02626;
+    background: rgba(229, 62, 62, 0.1);
+    color: #f87171;
     border-left: 5px solid #e53e3e;
 }
 
@@ -748,16 +960,16 @@ h3 {
     margin-bottom: 20px;
     padding: 30px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background: var(--card);
+    box-shadow: var(--shadow);
 }
 
 .solutions-section {
     margin-top: 20px;
     padding: 20px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background: var(--card);
+    box-shadow: var(--shadow);
 }
 
 .solutions-section h3 {
@@ -767,38 +979,39 @@ h3 {
 
 .canvas-section {
     text-align: center;
-    background: white;
+    background: var(--card);
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow);
     transition: transform 0.3s, box-shadow 0.3s;
     min-width: 0;
+    border: 1px solid var(--border);
 }
 
 .canvas-section:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }
 
 .canvas-section h3 {
     margin-bottom: 15px;
-    color: #333;
+    color: var(--accent);
     font-size: 1.2em;
     text-transform: uppercase;
     letter-spacing: 1px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    background-clip: unset;
 }
 
 .canvas-section canvas {
     border: none;
     border-radius: 8px;
-    background: white;
+    background: var(--bg-soft);
     max-width: 100%;
     height: auto;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
     display: block;
     margin: 0 auto;
 }
@@ -819,9 +1032,9 @@ h3 {
 
 .solution-info {
     padding: 10px;
-    background: #e3f2fd;
+    background: rgba(108, 177, 255, 0.1);
     border-radius: 5px;
-    color: #1976d2;
+    color: var(--accent-2);
     font-weight: 600;
     text-align: center;
 }
@@ -842,7 +1055,7 @@ h3 {
 
 .sol-page-info {
     font-weight: 600;
-    color: #555;
+    color: var(--muted);
     font-size: 1em;
     min-width: 120px;
     text-align: center;
@@ -862,22 +1075,23 @@ h3 {
 }
 
 .sol-card {
-    background: white;
+    background: var(--card);
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
     padding: 12px;
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid var(--border);
 }
 
 .sol-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .sol-card-title {
     font-weight: 700;
-    color: #667eea;
+    color: var(--accent);
     margin-bottom: 8px;
     font-size: 0.95em;
 }
@@ -885,7 +1099,7 @@ h3 {
 .sol-card canvas {
     border: none;
     border-radius: 6px;
-    background: #f5f7fa;
+    background: var(--bg-soft);
     max-width: 100%;
     height: auto;
     display: block;
@@ -906,7 +1120,7 @@ h3 {
     gap: 6px;
     cursor: pointer;
     font-size: 0.95em;
-    color: #444;
+    color: var(--text);
     user-select: none;
 }
 
@@ -914,7 +1128,7 @@ h3 {
     width: auto;
     padding: 0;
     margin: 0;
-    accent-color: #667eea;
+    accent-color: var(--accent);
 }
 
 /* Improve visibility of native number input spinners */
@@ -924,14 +1138,7 @@ input[type="number"]::-webkit-inner-spin-button {
     height: 24px;
 }
 
-:root {
-    --panel-title-font-size: 1rem;
-    --panel-title-weight: 600;
-    --panel-title-color: #333;
-    --panel-title-padding: 8px 0;
-    --panel-title-margin: 8px;
-    --panel-title-border: 1px solid #e0e0e0;
-}
+/* (panel-title vars defined in main :root above) */
 
 /* Single unified rule for ALL collapsible headers (main and sub) */
 .collapsible-header,
@@ -960,7 +1167,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .collapsible-header:hover,
 .collapsible-sub:hover {
-    color: #667eea;
+    color: var(--accent);
 }
 
 .collapse-arrow {
@@ -996,7 +1203,7 @@ input[type="number"]::-webkit-inner-spin-button {
     margin-left: auto;
     margin-right: 4px;
     font-size: 1.1em;
-    color: #888;
+    color: var(--muted);
     cursor: pointer;
     padding: 0 4px;
     border-radius: 4px;
@@ -1010,7 +1217,7 @@ input[type="number"]::-webkit-inner-spin-button {
 /* 3-state direction switch */
 .direction-switch-3 {
     display: flex;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     border-radius: 6px;
     overflow: hidden;
 }
@@ -1018,23 +1225,24 @@ input[type="number"]::-webkit-inner-spin-button {
     flex: 1;
     padding: 5px 8px;
     border: none;
-    background: #f5f5f5;
-    color: #555;
+    background: var(--card);
+    color: var(--muted);
     font-size: 0.82em;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
     white-space: nowrap;
+    font-family: var(--font);
 }
 .direction-switch-3 .dir-btn + .dir-btn {
-    border-left: 1px solid #ccc;
+    border-left: 1px solid var(--border);
 }
 .direction-switch-3 .dir-btn.active {
-    background: #4a90d9;
+    background: var(--accent-2);
     color: #fff;
     font-weight: 600;
 }
 .direction-switch-3 .dir-btn:hover:not(.active) {
-    background: #e0e8f0;
+    background: var(--bg-soft);
 }
 
 
@@ -1101,10 +1309,10 @@ input[type="number"]::-webkit-inner-spin-button {
     justify-content: center;
 }
 
-/* Row 4: 4-column grid [params | common | Puzle | Base] */
+/* Row 4: 2-column grid [params | common] (piece & base moved to Advanced 3D Config) */
 .acabados-row4-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
     margin-top: 16px;
 }
@@ -1131,8 +1339,8 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .puzle-corners-container {
-    background: #f7f9fc;
-    border: 1px solid #e0e0e0;
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 10px;
     margin-top: 12px;
@@ -1172,7 +1380,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @media (max-width: 1200px) {
     .acabados-row4-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1199,9 +1407,9 @@ input[type="number"]::-webkit-inner-spin-button {
     gap: 10px;
     padding: 12px;
     /* unified panel background to match puzzle/base container */
-    background: #f7f9fc;
+    background: var(--card);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border);
 }
 
 .acabados-sub-panel .form-group {
@@ -1210,7 +1418,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .acabados-hint {
     font-size: 0.82em;
-    color: #888;
+    color: var(--muted);
 }
 
 .acabados-puzle-base-grid {
@@ -1237,9 +1445,9 @@ input[type="number"]::-webkit-inner-spin-button {
     gap: 8px;
     margin-top: 12px;
     padding: 10px;
-    background: #eef1f6;
+    background: var(--bg-soft);
     border-radius: 6px;
-    border: 1px dashed #ccd;
+    border: 1px dashed var(--border);
 }
 
 .acabados-colors-section .form-group {
@@ -1267,9 +1475,9 @@ input[type="number"]::-webkit-inner-spin-button {
     /*max-width: 500px;*/
     height: auto;
     aspect-ratio: 1;
-    border: 1px solid #d0d0d0;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--bg-soft);
     cursor: grab;
 }
 
@@ -1314,9 +1522,9 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 #acabados-3d-inline {
-    border: 1px solid #d0d0d0;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--bg-soft);
     overflow: hidden;
     height: 399;
 }
@@ -1333,7 +1541,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .acabados-viewer-info {
     font-size: 0.85em;
-    color: #999;
+    color: var(--muted);
     text-align: center;
     font-style: italic;
 }
@@ -1366,7 +1574,7 @@ input[type="number"]::-webkit-inner-spin-button {
     position: absolute;
     cursor: pointer;
     inset: 0;
-    background-color: #ccc;
+    background-color: var(--border);
     border-radius: 24px;
     transition: background-color 0.2s;
 }
@@ -1377,12 +1585,12 @@ input[type="number"]::-webkit-inner-spin-button {
     width: 18px;
     left: 3px;
     bottom: 3px;
-    background-color: #fff;
+    background-color: var(--text);
     border-radius: 50%;
     transition: transform 0.2s;
 }
 .switch-label input:checked + .switch-slider {
-    background-color: #667eea;
+    background-color: var(--accent);
 }
 .switch-label input:checked + .switch-slider::before {
     transform: translateX(20px);
@@ -1393,7 +1601,7 @@ input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     width: 100%;
     height: 6px;
-    background: #ddd;
+    background: var(--border);
     border-radius: 3px;
     outline: none;
     margin: 4px 0;
@@ -1404,36 +1612,72 @@ input[type="number"]::-webkit-inner-spin-button {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #667eea;
+    background: var(--accent);
     cursor: pointer;
-    border: 2px solid #fff;
+    border: 2px solid var(--bg);
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 
 /* Disabled state for range and text inputs */
 .range-input:disabled {
-    background: #e8e8e8;
+    background: var(--bg-soft);
     cursor: not-allowed;
     opacity: 0.6;
 }
 
 .range-input:disabled::-webkit-slider-thumb {
-    background: #999;
+    background: var(--muted);
     cursor: not-allowed;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .slider-num-input:disabled {
-    background-color: #f0f0f0;
-    color: #999;
+    background-color: var(--bg-soft);
+    color: var(--muted);
     cursor: not-allowed;
-    border-color: #ddd;
+    border-color: var(--border);
+}
+
+/* ── Custom tooltip ─────────────────────────────────────────────────────────── */
+#custom-tooltip {
+    display: none;
+    position: fixed;
+    background: rgba(20, 20, 32, 0.96);
+    color: #dde0f4;
+    padding: 6px 11px;
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 270px;
+    pointer-events: none;
+    z-index: 99999;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Dim the label text + inputs inside a form-group that has a [data-tooltip]
+   (these are incompatible / locked controls) */
+.form-group[data-tooltip] {
+    cursor: not-allowed;
+}
+.form-group[data-tooltip] > label,
+.form-group[data-tooltip] > input[type="number"],
+.form-group[data-tooltip] > span {
+    opacity: 0.42;
+    pointer-events: none;
+}
+/* Also dim the checkbox label when the form-group label wraps the checkbox */
+.form-group[data-tooltip] label {
+    opacity: 0.42;
+    cursor: not-allowed;
 }
 
 .range-value {
     font-size: 0.85em;
     font-weight: 600;
-    color: #667eea;
+    color: var(--accent);
     margin-left: 6px;
 }
 
@@ -1450,10 +1694,13 @@ input[type="number"]::-webkit-inner-spin-button {
 .slider-num-input {
     width: 64px;
     padding: 3px 5px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     border-radius: 4px;
     font-size: 0.85em;
     text-align: center;
+    background: var(--card);
+    color: var(--text);
+    font-family: var(--font);
 }
 
 .form-group .range-input {
@@ -1494,14 +1741,15 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .modal-content {
-    background: #fff;
+    background: var(--bg);
     border-radius: 12px;
     padding: 24px;
     max-width: 600px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
 }
 
 .modal-header {
@@ -1521,13 +1769,13 @@ input[type="number"]::-webkit-inner-spin-button {
     border: none;
     font-size: 1.8em;
     cursor: pointer;
-    color: #666;
+    color: var(--muted);
     padding: 0 4px;
     line-height: 1;
 }
 
 .modal-close:hover {
-    color: #333;
+    color: var(--text);
 }
 
 /* Texture editor */
@@ -1538,7 +1786,7 @@ input[type="number"]::-webkit-inner-spin-button {
     flex-wrap: wrap;
     margin-bottom: 12px;
     padding: 8px;
-    background: #f5f5f5;
+    background: var(--card);
     border-radius: 8px;
 }
 
@@ -1554,7 +1802,7 @@ input[type="number"]::-webkit-inner-spin-button {
     width: 100%;
     max-width: 512px;
     height: auto;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     border-radius: 6px;
     margin: 0 auto;
     cursor: crosshair;
@@ -1640,298 +1888,174 @@ input[type="number"]::-webkit-inner-spin-button {
     }
 }
 
-/* ============================================================
-   EMBED MODE  —  loaded inside an iframe with ?embed=1
-   ============================================================
-   When PuzzleGenerator is embedded inside SetupAndHold (or any
-   host page), body gets class "embedded" and data-theme="dark"|"light".
-   All visual overrides live HERE so that every backend UI change
-   is automatically reflected in the host without touching puzzle.astro.
-   ============================================================ */
-
-/* Ensure the html root is fully transparent in embed mode.
-   color-scheme must MATCH the host page so the browser keeps the
-   iframe canvas transparent instead of forcing an opaque background
-   (spec: mismatched color-scheme → opaque canvas).
-   height: auto prevents <html> from stretching to fill the initial
-   800px iframe viewport, which would inflate scrollHeight and cause
-   a large empty gap below the content. */
-html.embedded {
-    background: transparent !important;
-    overflow-x: hidden !important;
-    color-scheme: dark;  /* matches host default (dark) */
-    height: auto;        /* size to content, not to iframe viewport */
-}
-html.embedded[data-theme="light"] {
-    color-scheme: light; /* matches host when switched to light */
+/* ── Advanced 3D Configuration ── */
+#advanced-3d-config-panel {
+    margin-top: 16px;
 }
 
-body.embedded {
-    /* ---------- dark theme variables (default) ---------- */
-    --e-text: #e7ecf3;
-    --e-muted: #9ca3af;
-    --e-accent: #7cf2c9;
-    --e-accent-2: #6cb1ff;
-    --e-card: #141a24;
-    --e-border: rgba(255, 255, 255, 0.08);
-    --e-shadow: none;
-    --e-radius: 12px;
-    --e-font: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    --e-input-bg: #1e2535;
-    --e-panel-bg: #141a24;
-    --e-canvas-bg: #111620;
-    --e-btn-bg: linear-gradient(120deg, rgba(124, 242, 201, 0.16), rgba(108, 177, 255, 0.08));
-    --e-btn-primary-bg: linear-gradient(120deg, rgba(124, 242, 201, 0.26), rgba(108, 177, 255, 0.14));
-    --e-active-bg: linear-gradient(120deg, var(--e-accent), var(--e-accent-2));
-    --e-active-text: #0b1020;
-    --e-focus-ring: rgba(124, 242, 201, 0.35);
-    --e-status-info-bg: rgba(37, 99, 235, 0.15);
-    --e-status-info-fg: #9bbcf6;
-    --e-status-ok-bg: rgba(34, 197, 94, 0.15);
-    --e-status-ok-fg: #98e2b1;
-    --e-status-err-bg: rgba(239, 68, 68, 0.15);
-    --e-status-err-fg: #f9b0b0;
-    --e-sol-info-bg: rgba(37, 99, 235, 0.15);
-    --e-opt-bg: #1a2133;
-    --e-disclaimer-bg: rgba(255, 193, 7, 0.1);
-    --e-disclaimer-border: rgba(255, 193, 7, 0.3);
-    --e-disclaimer-fg: #f5d67b;
-    --e-disabled-bg: #1a2035;
-    --e-disabled-fg: #555;
-    --e-option-bg: #1e2433;
-
-    /* ── Button type hierarchy (mirrors SetupAndHold global.css) ──────────────────
-       T1 primary    → .btn-t1           ≈ host .button accent gradient
-       T2 secondary  → .btn-t2           ≈ host .button subtle gradient
-       T3 ghost      → .btn-t3           ≈ card background
-       ──────────────────────────────────────────────────────────────────────── */
-    --e-btn-t1-bg: var(--e-btn-primary-bg);
-    --e-btn-t1-border: var(--e-accent);
-    --e-btn-t2-bg: var(--e-btn-bg);
-    --e-btn-t2-border: var(--e-accent);
-    --e-btn-t3-bg: var(--e-card);
-    --e-btn-t3-border: var(--e-border);
-
-    /* ── Panel tier hierarchy (mirrors SetupAndHold global.css card roles) ────────
-       T1  → .panel                ≈ host .hero card       (main config block)
-       T2  → .canvas-section       ≈ inner content section (visualization)
-       T3  → .stl-config-col       ≈ host --card token     (sub-config column)
-       ──────────────────────────────────────────────────────────────────────── */
-    --e-panel-t1-bg: var(--e-panel-bg);
-    --e-panel-t2-bg: var(--e-canvas-bg);
-    --e-panel-t3-bg: var(--e-card);
-
-    background: transparent !important;
-    padding: 8px 0 !important;
-    min-height: auto !important;
-    font-family: var(--e-font) !important;
-    color: var(--e-text) !important;
+#advanced-3d-config-panel .advanced-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-/* ---------- light theme variable overrides ---------- */
-body.embedded[data-theme="light"] {
-    --e-text: #0f172a;
-    --e-muted: #4b5563;
-    --e-accent: #0f9b73;
-    --e-accent-2: #2563eb;
-    --e-card: rgba(255, 255, 255, 0.9);
-    --e-border: rgba(0, 0, 0, 0.08);
-    --e-shadow: none;
-    --e-input-bg: rgba(255, 255, 255, 0.92);
-    --e-panel-bg: rgba(255, 255, 255, 0.85);
-    --e-canvas-bg: rgba(255, 255, 255, 0.65);
-    --e-btn-bg: linear-gradient(120deg, rgba(15, 155, 115, 0.1), rgba(37, 99, 235, 0.06));
-    --e-btn-primary-bg: linear-gradient(120deg, rgba(15, 155, 115, 0.18), rgba(37, 99, 235, 0.1));
-    --e-active-bg: linear-gradient(120deg, var(--e-accent), var(--e-accent-2));
-    --e-active-text: #fff;
-    --e-focus-ring: rgba(15, 155, 115, 0.35);
-    --e-status-info-bg: rgba(37, 99, 235, 0.08);
-    --e-status-info-fg: #1a56b0;
-    --e-status-ok-bg: rgba(34, 197, 94, 0.1);
-    --e-status-ok-fg: #157a3b;
-    --e-status-err-bg: rgba(239, 68, 68, 0.1);
-    --e-status-err-fg: #b02626;
-    --e-sol-info-bg: rgba(37, 99, 235, 0.08);
-    --e-opt-bg: rgba(0, 0, 0, 0.03);
-    --e-disclaimer-bg: #fff8e1;
-    --e-disclaimer-border: #f9a825;
-    --e-disclaimer-fg: #7a5800;
-    --e-disabled-bg: rgba(0, 0, 0, 0.04);
-    --e-disabled-fg: #aaa;
-    --e-option-bg: #ffffff;
-    background: transparent !important;
+#advanced-3d-config-panel .advanced-viewer-header h2 {
+    margin: 0;
+    font-size: 1.5em;
 }
 
-/* --- container & layout --- */
-body.embedded .container {
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    max-width: 100% !important;
-    color: var(--e-text) !important;
-    font-family: var(--e-font) !important;
+#adv3d-config-content {
+    margin-top: 16px;
 }
 
-/* hide title & subtitle — the host page provides its own */
-body.embedded .container > h1:first-of-type,
-body.embedded .container > p:first-of-type {
-    display: none !important;
+.adv3d-section {
+    margin-bottom: 24px;
 }
 
-/* --- typography --- */
-body.embedded h1,
-body.embedded h2,
-body.embedded h3,
-body.embedded h4,
-body.embedded label,
-body.embedded p {
-    color: var(--e-text) !important;
+.adv3d-section h3 {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 6px;
 }
 
-body.embedded .form-group label { color: var(--e-text) !important; }
-body.embedded .form-group .hint { color: var(--e-muted) !important; }
-
-/* remove gradient-text effect on canvas section headings */
-body.embedded .canvas-section h3 {
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: var(--e-text) !important;
-    background-clip: unset !important;
+.adv3d-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+    align-items: stretch;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
 }
 
-/* ── PANEL HIERARCHY ─────────────────────────────────────────────────────────
-   T1  → .panel                ≈ host .hero card       (main config block)
-   T2  → .canvas-section       ≈ inner content section (visualization)
-   T3  → .stl-config-col       ≈ host --card token     (sub-config column)
-   ─────────────────────────────────────────────────────────────────────────── */
-
-/* T1 — Main config panel */
-body.embedded .panel {
-    background: var(--e-panel-t1-bg) !important;
-    border-left: 4px solid var(--e-border) !important;
-    box-shadow: var(--e-shadow) !important;
-    border-radius: var(--e-radius) !important;
-}
-body.embedded .panel:hover {
-    box-shadow: var(--e-shadow) !important;
+.adv3d-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
 }
 
-/* --- inputs / selects --- */
-body.embedded .form-group input,
-body.embedded .form-group select {
-    background: var(--e-input-bg) !important;
-    color: var(--e-text) !important;
-    border: 1px solid var(--e-border) !important;
-    border-radius: 10px !important;
-}
-body.embedded .form-group input:focus,
-body.embedded .form-group select:focus {
-    outline: 2px solid var(--e-focus-ring) !important;
-    outline-offset: 2px;
-    border-color: var(--e-accent) !important;
-}
-body.embedded .form-group input:disabled {
-    background: var(--e-disabled-bg) !important;
-    color: var(--e-disabled-fg) !important;
-    border-color: var(--e-border) !important;
-}
-body.embedded select option {
-    background-color: var(--e-option-bg) !important;
-    color: var(--e-text) !important;
+.adv3d-viewer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
 }
 
-/* ── BUTTON HIERARCHY ─────────────────────────────────────────────────────────
-   T1 primary    → .btn-t1          most prominent; accent gradient
-   T2 secondary  → .btn-t2          subtle gradient; 3MF / main download
-   T3 ghost      → .btn-t3          card bg; STL & other downloads
-   Utility       → .btn, .btn-primary, .btn-success, .btn-small, .btn-page
-   ─────────────────────────────────────────────────────────────────────────── */
-
-/* Utility base (navigation, solve, page buttons) */
-body.embedded .btn {
-    background: var(--e-btn-bg) !important;
-    color: var(--e-text) !important;
-    border: 1px solid var(--e-border) !important;
-    border-radius: var(--e-radius) !important;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
-}
-body.embedded .btn:hover {
-    border-color: var(--e-accent) !important;
-    color: var(--e-accent) !important;
-    transform: translateY(-1px);
-}
-body.embedded .btn-primary,
-body.embedded .btn-success {
-    background: var(--e-btn-primary-bg) !important;
+.mini-viewer-3d {
+    width: 100%;
+    flex: 1;                  /* grow to fill the .adv3d-viewer column */
+    min-height: 180px;
+    max-height: 320px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background-color: var(--bg-soft);
+    overflow: hidden;
+    position: relative;
 }
 
-/* --- puzzle type toggle --- */
-body.embedded .type-btn {
-    background: transparent !important;
-    color: var(--e-text) !important;
-    border-color: var(--e-border) !important;
-}
-body.embedded .type-btn:hover {
-    background: var(--e-card) !important;
-}
-body.embedded .type-btn.active {
-    background: var(--e-active-bg) !important;
-    color: var(--e-active-text) !important;
-    border-color: var(--e-accent) !important;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+.mini-viewer-3d canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    border-radius: 8px;
+    pointer-events: none;  /* mini-viewers are display-only */
+    cursor: default;
 }
 
-/* --- view controls --- */
-body.embedded .view-btn {
-    background: transparent !important;
-    color: var(--e-text) !important;
-    border-color: var(--e-border) !important;
-    border-radius: var(--e-radius) !important;
-    box-shadow: none !important;
-}
-body.embedded .view-btn:hover {
-    background: var(--e-card) !important;
-}
-body.embedded .view-btn.active {
-    background: var(--e-active-bg) !important;
-    color: var(--e-active-text) !important;
-    border-color: var(--e-accent) !important;
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
+/* Disabled overlay when toggle is off */
+#advanced-3d-config-panel .adv3d-settings input:disabled,
+#advanced-3d-config-panel .adv3d-settings select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-/* --- canvas area --- */
-body.embedded .puzzle-gallery-grid,
-body.embedded .solutions-section {
-    background: var(--e-canvas-bg) !important;
-    border: 1px solid var(--e-border) !important;
-    box-shadow: var(--e-shadow) !important;
-    border-radius: var(--e-radius) !important;
+/* ── Collapsible panels inside adv3d: always open, no panel background ── */
+#adv3d-config-content .puzle-corners-container {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 4px 0 0 0;
+    margin-top: 4px;
 }
-/* T2 — Visualization: canvas / puzzle preview */
-body.embedded .canvas-section {
-    background: var(--e-panel-t2-bg) !important;
-    border: 1px solid var(--e-border) !important;
-    border-radius: var(--e-radius) !important;
-    box-shadow: none !important;
+#adv3d-config-content .collapsible-header.collapsible-sub {
+    cursor: default;
+    pointer-events: none;
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0 0 6px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
 }
-body.embedded .canvas-section:hover {
-    transform: none !important;
-    box-shadow: none !important;
+#adv3d-config-content .collapsible-header.collapsible-sub:not(.collapsed) {
+    border-bottom: 1px solid var(--border);
 }
-body.embedded .canvas-section canvas {
-    background: transparent !important;
-    box-shadow: none !important;
+#adv3d-config-content .collapsible-header.collapsible-sub:hover {
+    color: var(--text-muted, #888);
+}
+#adv3d-config-content .collapsible-header.collapsible-sub .collapse-arrow {
+    display: none;
+}
+#adv3d-config-content .collapsible-body {
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
 }
 
-/* --- 3D viewer --- */
+/* Subtle dashed container for logical sub-groups inside adv3d sections */
+.adv3d-subgroup {
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.02);
+}
+.adv3d-subgroup > .form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Disabled state visual cue for inner corner opts */
+#base-inner-corner-opts input:disabled,
+#base-inner-corner-opts select:disabled,
+#sliding-base-inner-corner-opts input:disabled,
+#sliding-base-inner-corner-opts select:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+#adv3d-config-content .acabados-sub-panel {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+}
+#adv3d-config-content .section-reset-btn {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .adv3d-row {
+        grid-template-columns: 1fr;
+    }
+    .mini-viewer-3d {
+        min-height: 180px;
+        max-height: 250px;
+    }
+}
+
 /* --- 3D viewer --- */
 #viewer-3d {
     width: 100%;
     height: 500px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background-color: #f9fafb;
+    background-color: var(--bg-soft);
     margin-bottom: 16px;
     position: relative;
     overflow: hidden;
@@ -1946,208 +2070,4 @@ body.embedded .canvas-section canvas {
     display: block;
     border-radius: inherit;
     object-fit: cover;
-}
-
-body.embedded #viewer-3d {
-    border-color: var(--e-border) !important;
-    background-color: var(--e-canvas-bg) !important;
-    border-radius: var(--e-radius) !important;
-    overflow: hidden !important;
-    position: relative !important;
-}
-body.embedded .viewer-controls-hint {
-    color: var(--e-muted) !important;
-}
-
-/* --- viewer mode selector pills --- */
-body.embedded .viewer-mode-option {
-    background: transparent !important;
-    border-color: var(--e-border) !important;
-    color: var(--e-text) !important;
-}
-body.embedded .viewer-mode-option.active,
-body.embedded .viewer-mode-option:has(input:checked) {
-    background: var(--e-accent) !important;
-    border-color: var(--e-accent) !important;
-    color: var(--e-active-text) !important;
-}
-
-/* T1 — Primary action (generate puzzle): most prominent button on the page */
-body.embedded .btn-t1 {
-    background: var(--e-btn-t1-bg) !important;
-    border: 2px solid var(--e-btn-t1-border) !important;
-    color: var(--e-text) !important;
-    border-radius: var(--e-radius) !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-body.embedded .btn-t1:hover {
-    border-color: var(--e-accent) !important;
-    color: var(--e-accent) !important;
-}
-
-/* T3 — Ghost download (STL piece buttons and secondary downloads) */
-body.embedded .btn-t3 {
-    background: var(--e-btn-t3-bg) !important;
-    border: 2px solid var(--e-btn-t3-border) !important;
-    color: var(--e-text) !important;
-    border-radius: var(--e-radius) !important;
-}
-body.embedded .btn-t3:hover {
-    border-color: var(--e-accent) !important;
-    color: var(--e-accent) !important;
-}
-
-/* T2 — Secondary action (primary download: 3MF / multicolor) */
-body.embedded .btn-t2 {
-    background: var(--e-btn-t2-bg) !important;
-    border: 2px solid var(--e-btn-t2-border) !important;
-    color: var(--e-text) !important;
-    border-radius: var(--e-radius) !important;
-}
-body.embedded .btn-t2:hover {
-    border-color: var(--e-accent) !important;
-    color: var(--e-accent) !important;
-}
-
-/* T3 — Sub-config columns (STL / acabados settings) */
-body.embedded .stl-config-col {
-    background: var(--e-panel-t3-bg) !important;
-    border-color: var(--e-border) !important;
-    border-radius: var(--e-radius) !important;
-}
-body.embedded .stl-config-col h4 { color: var(--e-text) !important; }
-body.embedded .color-hex { color: var(--e-text-muted, var(--e-text)) !important; }
-body.embedded .color-picker-row input[type="color"] { border-color: var(--e-border) !important; }
-body.embedded .acabados-mode-switch { border-color: var(--e-border) !important; }
-body.embedded .acabados-mode-label { background: var(--e-card) !important; color: var(--e-text) !important; }
-body.embedded .acabados-mode-label.active { background: var(--e-active-bg) !important; color: var(--e-active-text) !important; }
-
-/* --- infill / piece option sub-panels --- */
-body.embedded .options-panel {
-    background: var(--e-opt-bg) !important;
-    border-color: var(--e-border) !important;
-    color: var(--e-text) !important;
-}
-body.embedded .status.info {
-    background: var(--e-status-info-bg) !important;
-    color: var(--e-status-info-fg) !important;
-    border-left-color: var(--e-accent-2) !important;
-}
-body.embedded .status.success {
-    background: var(--e-status-ok-bg) !important;
-    color: var(--e-status-ok-fg) !important;
-    border-left-color: var(--e-accent) !important;
-}
-body.embedded .status.error {
-    background: var(--e-status-err-bg) !important;
-    color: var(--e-status-err-fg) !important;
-}
-
-/* --- solutions --- */
-body.embedded .solution-info {
-    background: var(--e-sol-info-bg) !important;
-    color: var(--e-text) !important;
-}
-body.embedded .sol-page-info { color: var(--e-muted) !important; }
-body.embedded .sol-card {
-    background: var(--e-card) !important;
-    border: 1px solid var(--e-border) !important;
-    box-shadow: var(--e-shadow) !important;
-    border-radius: var(--e-radius) !important;
-}
-body.embedded .sol-card:hover {
-    transform: none !important;
-    box-shadow: var(--e-shadow) !important;
-}
-body.embedded .sol-card-title { color: var(--e-accent) !important; }
-body.embedded .sol-card canvas { background: transparent !important; }
-
-/* --- misc --- */
-body.embedded .disclaimer {
-    background: var(--e-disclaimer-bg) !important;
-    border-color: var(--e-disclaimer-border) !important;
-    color: var(--e-disclaimer-fg) !important;
-}
-body.embedded .stl-check-label { color: var(--e-text) !important; }
-body.embedded .stl-check-label input[type="checkbox"] { accent-color: var(--e-accent) !important; }
-body.embedded .stl-download-section h4 { color: var(--e-text) !important; }
-body.embedded .stl-download-hint { color: var(--e-muted) !important; }
-body.embedded .btn-page {
-    background: var(--e-btn-bg) !important;
-    color: var(--e-text) !important;
-    border: 1px solid var(--e-border) !important;
-}
-body.embedded .gallery-pagination .sol-page-info { color: var(--e-muted) !important; }
-
-/* --- collapsibles --- */
-body.embedded .collapsible-header {
-    color: var(--e-text) !important;
-    border-bottom-color: var(--e-border) !important;
-}
-body.embedded .collapsible-header:hover {
-    color: var(--e-accent) !important;
-}
-body.embedded .collapsible-sub {
-    color: var(--e-muted) !important;
-    border-bottom-color: var(--e-border) !important;
-}
-
-/* --- acabados panel --- */
-body.embedded .acabados-sub-panel {
-    background: var(--e-opt-bg) !important;
-    border-color: var(--e-border) !important;
-}
-body.embedded .acabados-hint { color: var(--e-muted) !important; }
-
-/* --- config panel two-column viewer --- */
-body.embedded .config-viewer-wrapper {
-    background: var(--e-canvas-bg) !important;
-}
-body.embedded .config-viewer-hint {
-    background: rgba(20, 26, 36, 0.85) !important;
-    color: var(--e-muted) !important;
-}
-body.embedded .acabados-viewer-info { color: var(--e-muted) !important; }
-body.embedded #acabados-2d-canvas {
-    border-color: var(--e-border) !important;
-    background: var(--e-canvas-bg) !important;
-}
-body.embedded #acabados-3d-inline {
-    border-color: var(--e-border) !important;
-    background: var(--e-canvas-bg) !important;
-}
-
-
-/* --- range inputs --- */
-body.embedded .range-input {
-    background: var(--e-input-bg) !important;
-}
-body.embedded .range-input::-webkit-slider-thumb {
-    background: var(--e-accent) !important;
-}
-body.embedded .range-value { color: var(--e-accent) !important; }
-
-/* --- modal --- */
-body.embedded .modal-content {
-    background: var(--e-panel-bg) !important;
-    color: var(--e-text) !important;
-}
-body.embedded .modal-close { color: var(--e-muted) !important; }
-body.embedded .modal-close:hover { color: var(--e-text) !important; }
-body.embedded .texture-editor-toolbar {
-    background: var(--e-opt-bg) !important;
-}
-body.embedded #texture-editor-canvas {
-    border-color: var(--e-border) !important;
-}
-body.embedded .btn-small {
-    background: var(--e-btn-bg) !important;
-    color: var(--e-text) !important;
-    border: 1px solid var(--e-border) !important;
-}
-body.embedded .btn-small.active {
-    background: var(--e-accent) !important;
-    color: var(--e-active-text) !important;
-    border-color: var(--e-accent) !important;
 }

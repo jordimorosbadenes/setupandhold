@@ -846,28 +846,352 @@ window.PuzzleSTL = (function () {
     }
 
     // ═══════════════════════════════════════════════════
-    //  CORNER ROUNDING
+    //  Z-AXIS CHAMFER (top/bottom edge bevels)
     // ═══════════════════════════════════════════════════
-    function applyCornerRounding(poly, cr, isJigsaw) {
-        if (isJigsaw) {
-            var jr = Math.min(cr, 0.5);
-            var origA = Math.abs(polyArea(poly));
-            var s1 = offsetPolygon(poly, -jr, 1);
-            if (s1.length < 3) return poly;
-            var s2 = offsetPolygon(s1, jr, 1);
-            if (s2.length < 3) return poly;
-            return Math.abs(polyArea(s2)) > origA * 0.85 ? s2 : poly;
+
+    // Helper: loft side walls between two same-vertex-count polygons (no caps).
+    function _loftWalls(botP, topP, zB, zT) {
+        var n = botP.length;
+        if (n !== topP.length || n < 3) return [];
+        var tris = [];
+        for (var i = 0; i < n; i++) {
+            var j = (i + 1) % n;
+            tris.push([[botP[i][0],botP[i][1],zB],[botP[j][0],botP[j][1],zB],[topP[j][0],topP[j][1],zT]]);
+            tris.push([[botP[i][0],botP[i][1],zB],[topP[j][0],topP[j][1],zT],[topP[i][0],topP[i][1],zT]]);
         }
-        var origA = Math.abs(polyArea(poly));
-        var r1 = offsetPolygon(poly, -cr, 1);
-        if (r1.length < 3) return poly;
-        r1 = offsetPolygon(r1, cr, 1);
-        if (r1.length < 3 || Math.abs(polyArea(r1)) < origA * 0.8) return poly;
-        r1 = offsetPolygon(r1, cr, 1);
-        if (r1.length < 3) return poly;
-        r1 = offsetPolygon(r1, -cr, 1);
-        if (r1.length < 3 || Math.abs(polyArea(r1)) < origA * 0.8) return poly;
-        return r1;
+        return tris;
+    }
+
+    // Helper: triangulate a single polygon face at given Z.
+    function _capFace(poly, zVal, flip) {
+        var n = poly.length; if (n < 3) return [];
+        var flat = [];
+        for (var i = 0; i < n; i++) flat.push(poly[i][0], poly[i][1]);
+        var idx = triangulate(flat);
+        var tris = [];
+        for (var i = 0; i < idx.length; i += 3) {
+            var a = poly[idx[i]], b = poly[idx[i+1]], c = poly[idx[i+2]];
+            if (flip) tris.push([[a[0],a[1],zVal],[c[0],c[1],zVal],[b[0],b[1],zVal]]);
+            else      tris.push([[a[0],a[1],zVal],[b[0],b[1],zVal],[c[0],c[1],zVal]]);
+        }
+        return tris;
+    }
+
+    // Helper: triangulate a face with holes (ring cap) at given Z.
+    function _capFaceWithHoles(outer, holes, zVal, flip) {
+        var n = outer.length;
+        var flat = [];
+        for (var i = 0; i < n; i++) flat.push(outer[i][0], outer[i][1]);
+        var holeIndices = [];
+        for (var h = 0; h < holes.length; h++) {
+            holeIndices.push(flat.length / 2);
+            var hp = holes[h];
+            for (var i = 0; i < hp.length; i++) flat.push(hp[i][0], hp[i][1]);
+        }
+        var idx = triangulate(flat, holeIndices.length > 0 ? holeIndices : undefined);
+        var allPts = [];
+        for (var i = 0; i < flat.length; i += 2) allPts.push([flat[i], flat[i+1]]);
+        var tris = [];
+        for (var i = 0; i < idx.length; i += 3) {
+            var a = allPts[idx[i]], b = allPts[idx[i+1]], c = allPts[idx[i+2]];
+            if (flip) tris.push([[a[0],a[1],zVal],[c[0],c[1],zVal],[b[0],b[1],zVal]]);
+            else      tris.push([[a[0],a[1],zVal],[b[0],b[1],zVal],[c[0],c[1],zVal]]);
+        }
+        return tris;
+    }
+
+    // Helper: create ring cap faces for a polygon set (outers + holes).
+    // Groups outers and holes, creates proper caps with holes cut out.
+    function _capsForPolygonSet(polys, zVal, flip) {
+        var outers = [], holes = [];
+        for (var i = 0; i < polys.length; i++) {
+            var p = polys[i];
+            if (!p || p.length < 3) continue;
+            if (polyArea(p) >= 0) outers.push(p); else holes.push(p);
+        }
+        var tris = [];
+        for (var oi = 0; oi < outers.length; oi++) {
+            var outer = outers[oi];
+            var myHoles = [];
+            for (var hi = 0; hi < holes.length; hi++) {
+                if (_pointInPoly(holes[hi][0], outer)) myHoles.push(holes[hi]);
+            }
+            if (myHoles.length > 0) {
+                tris.push.apply(tris, _capFaceWithHoles(outer, myHoles, zVal, flip));
+            } else {
+                tris.push.apply(tris, _capFace(outer, zVal, flip));
+            }
+        }
+        return tris;
+    }
+
+    // Helper: resample polygon to targetCount evenly-spaced vertices along perimeter.
+    function _resamplePoly(poly, targetCount) {
+        var n = poly.length;
+        if (n === targetCount || n < 3 || targetCount < 3) return poly;
+        var cumDist = [0];
+        for (var i = 0; i < n; i++) {
+            var j = (i + 1) % n;
+            var dx = poly[j][0] - poly[i][0], dy = poly[j][1] - poly[i][1];
+            cumDist.push(cumDist[i] + Math.sqrt(dx * dx + dy * dy));
+        }
+        var perimeter = cumDist[n];
+        if (perimeter < 1e-9) return poly;
+        var result = [];
+        for (var k = 0; k < targetCount; k++) {
+            var target = (k / targetCount) * perimeter;
+            var seg = 0;
+            for (var s = 1; s <= n; s++) {
+                if (cumDist[s] >= target - 1e-9) { seg = s - 1; break; }
+            }
+            var segLen = cumDist[seg + 1] - cumDist[seg];
+            var t = segLen > 1e-12 ? (target - cumDist[seg]) / segLen : 0;
+            var j = (seg + 1) % n;
+            result.push([
+                poly[seg][0] + t * (poly[j][0] - poly[seg][0]),
+                poly[seg][1] + t * (poly[j][1] - poly[seg][1])
+            ]);
+        }
+        return result;
+    }
+
+    // Resample `srcPoly` to match `targetPoly.length` and align starting vertex
+    // so vertex 0 of the result is closest to vertex 0 of targetPoly.
+    function _resampleAndAlign(srcPoly, targetPoly) {
+        var n = targetPoly.length;
+        var resampled = _resamplePoly(srcPoly, n);
+        // Find rotation index that puts the closest vertex to targetPoly[0] first
+        var best = 0, bestD = Infinity;
+        var tx = targetPoly[0][0], ty = targetPoly[0][1];
+        for (var i = 0; i < n; i++) {
+            var dx = resampled[i][0] - tx, dy = resampled[i][1] - ty;
+            var d = dx * dx + dy * dy;
+            if (d < bestD) { bestD = d; best = i; }
+        }
+        if (best > 0) resampled = resampled.slice(best).concat(resampled.slice(0, best));
+        return resampled;
+    }
+
+    // Extrude piece polygon(s) with optional Z-axis chamfer on top/bottom edges.
+    // Uses true lofted diagonal walls (not staircase) for a smooth chamfer.
+    // mainP  = outer boundary polygon (for chamfer shrink)
+    // polys  = polygon set to extrude in the main body zone (may include infill holes)
+    // chamferTop/Bot = chamfer height in mm (0 = none)
+    function extrudeWithChamfer(mainP, polys, height, zOff, chamferTop, chamferBot, joinType) {
+        chamferTop = chamferTop || 0;
+        chamferBot = chamferBot || 0;
+        joinType = joinType !== undefined ? joinType : 2;
+        if (chamferTop + chamferBot >= height) {
+            var sc = (height * 0.9) / (chamferTop + chamferBot);
+            chamferTop *= sc; chamferBot *= sc;
+        }
+        if (chamferTop <= 0 && chamferBot <= 0) {
+            return extrudePolygons(polys, height, zOff);
+        }
+        var tris = [];
+        // Bottom chamfer: truncated pyramid via loft
+        if (chamferBot > 0) {
+            var botShrunk = offsetPolygon(mainP, -chamferBot, 2, 100);
+            if (botShrunk && botShrunk.length >= 3) {
+                if (botShrunk.length !== mainP.length) botShrunk = _resampleAndAlign(botShrunk, mainP);
+                tris.push.apply(tris, _capFace(botShrunk, zOff, true));
+                tris.push.apply(tris, _loftWalls(botShrunk, mainP, zOff, zOff + chamferBot));
+            } else {
+                tris.push.apply(tris, extrudePolygon(mainP, chamferBot, zOff));
+            }
+        }
+        // Main body with infill/pattern
+        var mainH = height - chamferBot - chamferTop;
+        if (mainH > 0 && polys) {
+            tris.push.apply(tris, extrudePolygons(polys, mainH, zOff + chamferBot));
+        }
+        // Top chamfer: inverted truncated pyramid via loft
+        if (chamferTop > 0) {
+            var topZ = zOff + height - chamferTop;
+            var topShrunk = offsetPolygon(mainP, -chamferTop, 2, 100);
+            if (topShrunk && topShrunk.length >= 3) {
+                if (topShrunk.length !== mainP.length) topShrunk = _resampleAndAlign(topShrunk, mainP);
+                tris.push.apply(tris, _loftWalls(mainP, topShrunk, topZ, zOff + height));
+                tris.push.apply(tris, _capFace(topShrunk, zOff + height, false));
+            } else {
+                tris.push.apply(tris, extrudePolygon(mainP, chamferTop, topZ));
+            }
+        }
+        return tris;
+    }
+
+    // Extrude base walls with optional Z-axis chamfer on outer/inner/both edges.
+    // Supports both top and bottom chamfer.
+    function extrudeBaseWithChamfer(outerRect, innerRect, wallParts, wallH, zOff,
+                                    chamferTop, chamferBot, chamferEdges, joinType) {
+        chamferTop = chamferTop || 0;
+        chamferBot = chamferBot || 0;
+        chamferEdges = chamferEdges || 'outer';
+        joinType = joinType !== undefined ? joinType : 2;
+        if (chamferTop + chamferBot >= wallH) {
+            var sc = (wallH * 0.9) / (chamferTop + chamferBot);
+            chamferTop *= sc; chamferBot *= sc;
+        }
+        if (chamferTop <= 0 && chamferBot <= 0) {
+            return extrudePolygons(wallParts, wallH, zOff);
+        }
+        var tris = [];
+        var z = zOff;
+        var STEP = 0.05;
+        // Bottom chamfer zone
+        if (chamferBot > 0) {
+            var steps = Math.max(2, Math.round(chamferBot / STEP));
+            var stepH = chamferBot / steps;
+            for (var i = 0; i < steps; i++) {
+                var t = (i + 0.5) / steps;
+                var inset = chamferBot * (1 - t);
+                var outerShrunk = outerRect, innerExpanded = innerRect;
+                if (chamferEdges === 'outer' || chamferEdges === 'both') {
+                    var os = offsetPolygon(outerRect, -inset, joinType);
+                    if (os && os.length >= 3) outerShrunk = os;
+                }
+                if (chamferEdges === 'inner' || chamferEdges === 'both') {
+                    var ie = offsetPolygon(innerRect, inset, joinType);
+                    if (ie && ie.length >= 3) innerExpanded = ie;
+                }
+                var sliceWalls = polyDifference([outerShrunk], [innerExpanded]);
+                if (sliceWalls.length > 0) {
+                    tris.push.apply(tris, extrudePolygons(sliceWalls, stepH, z));
+                }
+                z += stepH;
+            }
+        }
+        // Main body
+        var mainH = wallH - chamferBot - chamferTop;
+        if (mainH > 0) {
+            tris.push.apply(tris, extrudePolygons(wallParts, mainH, z));
+        }
+        z += mainH;
+        // Top chamfer zone
+        if (chamferTop > 0) {
+            var steps2 = Math.max(2, Math.round(chamferTop / STEP));
+            var stepH2 = chamferTop / steps2;
+            for (var i = 0; i < steps2; i++) {
+                var t2 = (i + 0.5) / steps2;
+                var inset2 = chamferTop * t2;
+                var outerShrunk2 = outerRect, innerExpanded2 = innerRect;
+                if (chamferEdges === 'outer' || chamferEdges === 'both') {
+                    var os2 = offsetPolygon(outerRect, -inset2, joinType);
+                    if (os2 && os2.length >= 3) outerShrunk2 = os2;
+                }
+                if (chamferEdges === 'inner' || chamferEdges === 'both') {
+                    var ie2 = offsetPolygon(innerRect, inset2, joinType);
+                    if (ie2 && ie2.length >= 3) innerExpanded2 = ie2;
+                }
+                var sliceWalls2 = polyDifference([outerShrunk2], [innerExpanded2]);
+                if (sliceWalls2.length > 0) {
+                    tris.push.apply(tris, extrudePolygons(sliceWalls2, stepH2, z));
+                }
+                z += stepH2;
+            }
+        }
+        return tris;
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  CORNER ROUNDING (deterministic arc-based)
+    //  Same structure as bevel but uses true circular arcs
+    //  with more segments for a smoother appearance.
+    //  Deterministic vertex count → compatible with _loftWalls / Z chamfer.
+    // ═══════════════════════════════════════════════════
+    var ROUND_SEGS_CORNER = 8;
+    function applyCornerRounding(poly, cr, isJigsaw, alsoInner) {
+        if (cr <= 0 || !poly || poly.length < 3) return poly;
+        var sz = isJigsaw ? Math.min(cr, 0.5) : cr;
+        var n = poly.length;
+        var result = [];
+        var area = polyArea(poly);
+        for (var i = 0; i < n; i++) {
+            var prev = poly[(i + n - 1) % n];
+            var curr = poly[i];
+            var next = poly[(i + 1) % n];
+            var dx1 = curr[0] - prev[0], dy1 = curr[1] - prev[1];
+            var dx2 = next[0] - curr[0], dy2 = next[1] - curr[1];
+            var len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+            var len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+            if (len1 < 0.001 || len2 < 0.001) { result.push(curr); continue; }
+            var cross = dx1 * dy2 - dy1 * dx2;
+            var isConvex = (area >= 0) ? (cross > 0) : (cross < 0);
+            if (!isConvex && !alsoInner) { result.push(curr); continue; }
+            // Unit vectors from curr toward prev / next
+            var ux1 = -dx1 / len1, uy1 = -dy1 / len1;
+            var ux2 =  dx2 / len2, uy2 =  dy2 / len2;
+            var s = Math.min(sz, len1 * 0.45, len2 * 0.45);
+            if (s < 0.001) { result.push(curr); continue; }
+            var p1x = curr[0] + ux1 * s, p1y = curr[1] + uy1 * s;
+            var p2x = curr[0] + ux2 * s, p2y = curr[1] + uy2 * s;
+            // Angle between d1 and d2
+            var cosTheta = ux1 * ux2 + uy1 * uy2;
+            if (cosTheta > 1) cosTheta = 1; if (cosTheta < -1) cosTheta = -1;
+            var theta = Math.acos(cosTheta);
+            if (theta < 0.01 || theta > Math.PI - 0.01) { result.push(curr); continue; }
+            // Arc radius and center
+            var R = s * Math.tan(theta / 2);
+            var bx = ux1 + ux2, by = uy1 + uy2;
+            var bLen = Math.sqrt(bx * bx + by * by);
+            if (bLen < 0.001) { result.push(curr); continue; }
+            bx /= bLen; by /= bLen;
+            var cDist = s / Math.cos(theta / 2);
+            var cx = curr[0] + bx * cDist, cy = curr[1] + by * cDist;
+            // Sweep from p1 to p2 along the arc
+            var a1 = Math.atan2(p1y - cy, p1x - cx);
+            var a2 = Math.atan2(p2y - cy, p2x - cx);
+            var da = a2 - a1;
+            while (da >  Math.PI) da -= 2 * Math.PI;
+            while (da < -Math.PI) da += 2 * Math.PI;
+            var segs = isJigsaw ? 4 : ROUND_SEGS_CORNER;
+            for (var si = 0; si <= segs; si++) {
+                var ang = a1 + (si / segs) * da;
+                result.push([cx + R * Math.cos(ang), cy + R * Math.sin(ang)]);
+            }
+        }
+        return result.length >= 3 ? result : poly;
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  XY CORNER STYLES: chamfer & bevel
+    // ═══════════════════════════════════════════════════
+
+    // Chamfer: replace each convex vertex with a single flat cut
+    function applyChamferCorners(poly, size, alsoInner) {
+        if (size <= 0 || !poly || poly.length < 3) return poly;
+        var n = poly.length;
+        var result = [];
+        var area = polyArea(poly);
+        for (var i = 0; i < n; i++) {
+            var prev = poly[(i + n - 1) % n];
+            var curr = poly[i];
+            var next = poly[(i + 1) % n];
+            var dx1 = curr[0] - prev[0], dy1 = curr[1] - prev[1];
+            var dx2 = next[0] - curr[0], dy2 = next[1] - curr[1];
+            var len1 = Math.sqrt(dx1*dx1 + dy1*dy1);
+            var len2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+            if (len1 < 0.001 || len2 < 0.001) { result.push(curr); continue; }
+            var cross = dx1 * dy2 - dy1 * dx2;
+            var isConvex = (area >= 0) ? (cross > 0) : (cross < 0);
+            if (isConvex || alsoInner) {
+                var s1 = Math.min(size, len1 * 0.45);
+                var s2 = Math.min(size, len2 * 0.45);
+                result.push([curr[0] - dx1/len1 * s1, curr[1] - dy1/len1 * s1]);
+                result.push([curr[0] + dx2/len2 * s2, curr[1] + dy2/len2 * s2]);
+            } else {
+                result.push(curr);
+            }
+        }
+        return result.length >= 3 ? result : poly;
+    }
+
+    // Unified corner style application
+    function applyCornerStyle(poly, style, size, isJigsaw, alsoInner) {
+        if (!style || style === 'sharp' || size <= 0) return poly;
+        if (style === 'round') return applyCornerRounding(poly, size, isJigsaw, alsoInner);
+        if (style === 'chamfer') return applyChamferCorners(poly, size, alsoInner);
+        return poly;
     }
 
     // ═══════════════════════════════════════════════════
@@ -877,24 +1201,23 @@ window.PuzzleSTL = (function () {
         var M = grid.length, N = grid[0].length;
         var bW = N*cubeSize + 2*border, bL = M*cubeSize + 2*border;
         var bcs = String((params||{}).base_corner_style || 'sharp');
+        var bcsi = String((params||{}).base_corner_style_inner || bcs);
         var bcr = parseFloat((params||{}).base_corner_radius || 2.0);
         var bcri = parseFloat((params||{}).base_corner_radius_inner || 0.0);
+        var baseChamfTopOuter = parseFloat((params||{}).base_chamfer_top_outer || 0);
+        var baseChamfTopInner = parseFloat((params||{}).base_chamfer_top_inner || 0);
+        var baseChamfBotOuter = parseFloat((params||{}).base_chamfer_bottom_outer || 0);
+        // Clamp bottom chamfer to base plate thickness
+        if (baseChamfBotOuter > baseThk * 0.9) baseChamfBotOuter = baseThk * 0.9;
         var outerRect = boxPoly(0, 0, bW, bL);
         var innerRect = boxPoly(border, border, bW-border, bL-border);
-        if (bcs === 'round' && bcr > 0) {
-            var rr = offsetPolygon(outerRect, -bcr, 1);
-            if (rr.length >= 3) { var rr2 = offsetPolygon(rr, bcr, 1); if (rr2.length >= 3) outerRect = rr2; }
+        // Apply corner style to outer boundary
+        if (bcs !== 'sharp' && bcr > 0) {
+            outerRect = applyCornerStyle(outerRect, bcs, bcr, false);
         }
-        // Round inner pocket corners BEFORE computing wallParts (avoids
-        // destructive morphological operations on thin wall geometry).
-        if (bcs === 'round' && bcri > 0) {
-            var ir1 = offsetPolygon(innerRect, -bcri, 1);
-            if (ir1.length >= 3) {
-                var ir2 = offsetPolygon(ir1, bcri, 1);
-                if (ir2.length >= 3) innerRect = ir2;
-            }
-        }
+        // Inner pocket kept sharp — styled after polyDifference/union
         var wallParts = polyDifference([outerRect], [innerRect]);
+        // Blocked cells as sharp boxes — no individual corner rounding
         var blocked = [];
         for (var r = 0; r < M; r++)
             for (var c = 0; c < N; c++)
@@ -902,10 +1225,143 @@ window.PuzzleSTL = (function () {
                     var x = border+c*cubeSize, y = border+r*cubeSize;
                     blocked.push(boxPoly(x, y, x+cubeSize, y+cubeSize));
                 }
-        if (blocked.length > 0) wallParts = polyUnionAll(wallParts.concat(blocked));
+        if (blocked.length > 0) {
+            wallParts = polyUnionAll(wallParts.concat(blocked));
+        }
+        // Apply corner style to all hole polygons (inner pocket + blocked cells)
+        if (bcsi !== 'sharp' && bcri > 0) {
+            var rr = Math.min(bcri, cubeSize / 3);
+            for (var wi = 0; wi < wallParts.length; wi++) {
+                if (polyArea(wallParts[wi]) < 0) { // hole polygon (CW)
+                    var rounded = applyCornerStyle(wallParts[wi], bcsi, rr, false, true);
+                    if (rounded && rounded.length >= 3) {
+                        if (polyArea(rounded) > 0) rounded.reverse();
+                        wallParts[wi] = rounded;
+                    }
+                }
+            }
+        }
         var tris = [];
-        tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
-        tris.push.apply(tris, extrudePolygons(wallParts, wallH, baseThk));
+        // Base plate — apply bottom chamfer here (at z=0)
+        if (baseChamfBotOuter > 0) {
+            // Create shrunk polygon deterministically (same vertex count as outerRect)
+            var botShrunk;
+            if (bcs !== 'sharp' && bcr > 0) {
+                var sb = boxPoly(baseChamfBotOuter, baseChamfBotOuter, bW - baseChamfBotOuter, bL - baseChamfBotOuter);
+                botShrunk = applyCornerStyle(sb, bcs, Math.max(0.01, bcr - baseChamfBotOuter), false);
+            } else {
+                botShrunk = boxPoly(baseChamfBotOuter, baseChamfBotOuter, bW - baseChamfBotOuter, bL - baseChamfBotOuter);
+            }
+            tris.push.apply(tris, _capFace(botShrunk, 0, true));
+            tris.push.apply(tris, _loftWalls(botShrunk, outerRect, 0, baseChamfBotOuter));
+            if (baseThk - baseChamfBotOuter > 0.001) {
+                tris.push.apply(tris, _loftWalls(outerRect, outerRect, baseChamfBotOuter, baseThk));
+            }
+            tris.push.apply(tris, _capFace(outerRect, baseThk, false));
+        } else {
+            tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
+        }
+        // Walls — top chamfer per edge type (bottom chamfer is on the base plate)
+        if (baseChamfTopOuter > 0 || baseChamfTopInner > 0) {
+            tris.push.apply(tris, _extrudeWallsWithChamfer(wallParts, wallH, baseThk, baseChamfTopOuter, baseChamfTopInner, 0, 0));
+        } else {
+            tris.push.apply(tris, extrudePolygons(wallParts, wallH, baseThk));
+        }
+        return tris;
+    }
+
+    // Extrude wall geometry with per-polygon chamfer using true lofted diagonals.
+    // Uses ring caps (outer minus holes) instead of individual polygon caps.
+    function _extrudeWallsWithChamfer(wallParts, wallH, zOff, chamfTopOuter, chamfTopInner, chamfBotOuter, chamfBotInner, joinType) {
+        chamfTopOuter = chamfTopOuter || 0;
+        chamfTopInner = chamfTopInner || 0;
+        chamfBotOuter = chamfBotOuter || 0;
+        chamfBotInner = chamfBotInner || 0;
+        joinType = joinType !== undefined ? joinType : 2;
+        var maxChamfTop = Math.max(chamfTopOuter, chamfTopInner);
+        var maxChamfBot = Math.max(chamfBotOuter, chamfBotInner);
+        if (maxChamfTop + maxChamfBot >= wallH) {
+            var sc = (wallH * 0.9) / (maxChamfTop + maxChamfBot);
+            chamfTopOuter *= sc; chamfTopInner *= sc;
+            chamfBotOuter *= sc; chamfBotInner *= sc;
+            maxChamfTop *= sc; maxChamfBot *= sc;
+        }
+        if (maxChamfTop <= 0 && maxChamfBot <= 0) {
+            return extrudePolygons(wallParts, wallH, zOff);
+        }
+        function getChamfer(p, isTop) {
+            var isOuter = polyArea(p) >= 0;
+            return isTop ? (isOuter ? chamfTopOuter : chamfTopInner) : (isOuter ? chamfBotOuter : chamfBotInner);
+        }
+        function offsetPoly(p, inset) {
+            var isHole = polyArea(p) < 0;
+            var dir = isHole ? inset : -inset;
+            var s = offsetPolygon(p, dir, 2, 100);
+            if (!s || s.length < 3) return null;
+            if (isHole && polyArea(s) > 0) s.reverse();
+            if (!isHole && polyArea(s) < 0) s.reverse();
+            return s;
+        }
+        var tris = [];
+        var mainH = wallH - maxChamfBot - maxChamfTop;
+        // Bottom chamfer zone
+        if (maxChamfBot > 0) {
+            var zBot = zOff;
+            var botCapPolys = [];
+            for (var i = 0; i < wallParts.length; i++) {
+                var p = wallParts[i]; if (!p || p.length < 3) continue;
+                var chamf = getChamfer(p, false);
+                if (chamf > 0) {
+                    var shrunk = offsetPoly(p, chamf);
+                    if (shrunk) {
+                        if (shrunk.length !== p.length) shrunk = _resampleAndAlign(shrunk, p);
+                        tris.push.apply(tris, _loftWalls(shrunk, p, zBot, zBot + chamf));
+                        botCapPolys.push(shrunk);
+                        if (chamf < maxChamfBot) {
+                            tris.push.apply(tris, _loftWalls(p, p, zBot + chamf, zBot + maxChamfBot));
+                        }
+                    } else {
+                        tris.push.apply(tris, _loftWalls(p, p, zBot, zBot + maxChamfBot));
+                        botCapPolys.push(p);
+                    }
+                } else {
+                    tris.push.apply(tris, _loftWalls(p, p, zBot, zBot + maxChamfBot));
+                    botCapPolys.push(p);
+                }
+            }
+            tris.push.apply(tris, _capsForPolygonSet(botCapPolys, zBot, true));
+        }
+        // Main body
+        if (mainH > 0) {
+            tris.push.apply(tris, extrudePolygons(wallParts, mainH, zOff + maxChamfBot));
+        }
+        // Top chamfer zone
+        if (maxChamfTop > 0) {
+            var zTopStart = zOff + maxChamfBot + mainH;
+            var topCapPolys = [];
+            for (var i = 0; i < wallParts.length; i++) {
+                var p = wallParts[i]; if (!p || p.length < 3) continue;
+                var chamf = getChamfer(p, true);
+                if (chamf > 0) {
+                    var shrunk = offsetPoly(p, chamf);
+                    if (shrunk) {
+                        if (shrunk.length !== p.length) shrunk = _resampleAndAlign(shrunk, p);
+                        if (chamf < maxChamfTop) {
+                            tris.push.apply(tris, _loftWalls(p, p, zTopStart, zTopStart + maxChamfTop - chamf));
+                        }
+                        tris.push.apply(tris, _loftWalls(p, shrunk, zTopStart + maxChamfTop - chamf, zTopStart + maxChamfTop));
+                        topCapPolys.push(shrunk);
+                    } else {
+                        tris.push.apply(tris, _loftWalls(p, p, zTopStart, zTopStart + maxChamfTop));
+                        topCapPolys.push(p);
+                    }
+                } else {
+                    tris.push.apply(tris, _loftWalls(p, p, zTopStart, zTopStart + maxChamfTop));
+                    topCapPolys.push(p);
+                }
+            }
+            tris.push.apply(tris, _capsForPolygonSet(topCapPolys, zTopStart + maxChamfTop, false));
+        }
         return tris;
     }
 
@@ -931,13 +1387,20 @@ window.PuzzleSTL = (function () {
         var puzzleW = ncols*cubeSize, puzzleH = nrows*cubeSize;
         var bW = puzzleW+2*border, bL = puzzleH+2*border;
         var bcs = String((params||{}).base_corner_style||'sharp');
+        var bcsi = String((params||{}).base_corner_style_inner||bcs);
         var bcr = parseFloat((params||{}).base_corner_radius||2.0);
         var bcri = parseFloat((params||{}).base_corner_radius_inner||0.0);
+        var baseChamfTopOuter = parseFloat((params||{}).base_chamfer_top_outer || 0);
+        var baseChamfTopInner = parseFloat((params||{}).base_chamfer_top_inner || 0);
+        var baseChamfBotOuter = parseFloat((params||{}).base_chamfer_bottom_outer || 0);
+        // Clamp bottom chamfer to base plate thickness
+        if (baseChamfBotOuter > baseThk * 0.9) baseChamfBotOuter = baseThk * 0.9;
         var contoured = !!(params||{}).contoured_base;
         var jt = String((params||{}).jigsaw_type||'rectangular');
         var fillBG = (params||{}).fill_border_gaps !== false;
+        var isContoured = contoured && (jt === 'hexagonal' || jt === 'circular');
         var outerRect, innerRect;
-        if (contoured && (jt === 'hexagonal' || jt === 'circular')) {
+        if (isContoured) {
             var cxB = bW/2, cyB = bL/2;
             var tol = parseFloat((params||{}).tolerance_mm || 0.3);
             var cl = Math.max(tol, 0.5);
@@ -955,19 +1418,11 @@ window.PuzzleSTL = (function () {
         } else {
             outerRect = boxPoly(0, 0, bW, bL);
             innerRect = boxPoly(border, border, bW-border, bL-border);
-            if (bcs === 'round' && bcr > 0) {
-                var rr = offsetPolygon(outerRect, -bcr, 1);
-                if (rr.length >= 3) { var rr2 = offsetPolygon(rr, bcr, 1); if (rr2.length >= 3) outerRect = rr2; }
+            if (bcs !== 'sharp' && bcr > 0) {
+                outerRect = applyCornerStyle(outerRect, bcs, bcr, false);
             }
         }
-        // Round inner pocket corners BEFORE computing wallParts
-        if (bcs === 'round' && bcri > 0) {
-            var ir1 = offsetPolygon(innerRect, -bcri, 1);
-            if (ir1.length >= 3) {
-                var ir2 = offsetPolygon(ir1, bcri, 1);
-                if (ir2.length >= 3) innerRect = ir2;
-            }
-        }
+        // Inner pocket kept sharp — styled after polyDifference/union
         var wallParts = polyDifference([outerRect], [innerRect]);
         if (fillBG && svgPaths) {
             var clipMm = buildTruncClip(params, scale);
@@ -989,9 +1444,57 @@ window.PuzzleSTL = (function () {
                 if (gapA.length > 0) wallParts = polyUnionAll(wallParts.concat(gapA));
             }
         }
+        // Apply corner style to all hole polygons (inner pocket + gap fills)
+        if (bcsi !== 'sharp' && bcri > 0) {
+            for (var wi = 0; wi < wallParts.length; wi++) {
+                if (polyArea(wallParts[wi]) < 0) { // hole polygon (CW)
+                    var rounded = applyCornerStyle(wallParts[wi], bcsi, bcri, false, true);
+                    if (rounded && rounded.length >= 3) {
+                        if (polyArea(rounded) > 0) rounded.reverse();
+                        wallParts[wi] = rounded;
+                    }
+                }
+            }
+        }
         var tris = [];
-        tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
-        tris.push.apply(tris, extrudePolygons(wallParts, wallH, baseThk));
+        // Base plate — apply bottom chamfer here (at z=0)
+        if (baseChamfBotOuter > 0) {
+            // Create shrunk polygon deterministically (same vertex count as outerRect)
+            var botShrunk;
+            if (isContoured) {
+                botShrunk = offsetPolygon(outerRect, -baseChamfBotOuter, 2, 100);
+                if (botShrunk && botShrunk.length >= 3) {
+                    if (botShrunk.length !== outerRect.length) botShrunk = _resampleAndAlign(botShrunk, outerRect);
+                } else {
+                    botShrunk = null;
+                }
+            } else {
+                if (bcs !== 'sharp' && bcr > 0) {
+                    var sb = boxPoly(baseChamfBotOuter, baseChamfBotOuter, bW - baseChamfBotOuter, bL - baseChamfBotOuter);
+                    botShrunk = applyCornerStyle(sb, bcs, Math.max(0.01, bcr - baseChamfBotOuter), false);
+                } else {
+                    botShrunk = boxPoly(baseChamfBotOuter, baseChamfBotOuter, bW - baseChamfBotOuter, bL - baseChamfBotOuter);
+                }
+            }
+            if (botShrunk && botShrunk.length >= 3) {
+                tris.push.apply(tris, _capFace(botShrunk, 0, true));
+                tris.push.apply(tris, _loftWalls(botShrunk, outerRect, 0, baseChamfBotOuter));
+                if (baseThk - baseChamfBotOuter > 0.001) {
+                    tris.push.apply(tris, _loftWalls(outerRect, outerRect, baseChamfBotOuter, baseThk));
+                }
+                tris.push.apply(tris, _capFace(outerRect, baseThk, false));
+            } else {
+                tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
+            }
+        } else {
+            tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
+        }
+        // Walls — top chamfer per edge type (bottom chamfer is on the base plate)
+        if (baseChamfTopOuter > 0 || baseChamfTopInner > 0) {
+            tris.push.apply(tris, _extrudeWallsWithChamfer(wallParts, wallH, baseThk, baseChamfTopOuter, baseChamfTopInner, 0, 0));
+        } else {
+            tris.push.apply(tris, extrudePolygons(wallParts, wallH, baseThk));
+        }
         return tris;
     }
 
@@ -1085,15 +1588,11 @@ window.PuzzleSTL = (function () {
         // Compute pocket polygon for base inner corner rounding → piece clipping
         var pocketPoly = null;
         if (assembled) {
-            var bcs = String(opts.base_corner_style||'sharp');
+            var bcsi = String(opts.base_corner_style_inner||opts.base_corner_style||'sharp');
             var bcri = parseFloat(opts.base_corner_radius_inner||0);
-            if (bcs === 'round' && bcri > 0) {
+            if (bcsi !== 'sharp' && bcri > 0) {
                 var pocketRect = boxPoly(galX, galY, galX + N*cubeSize, galY + M*cubeSize);
-                var ps1 = offsetPolygon(pocketRect, -bcri, 1);
-                if (ps1.length >= 3) {
-                    var ps2 = offsetPolygon(ps1, bcri, 1);
-                    if (ps2.length >= 3) pocketPoly = ps2;
-                }
+                pocketPoly = applyCornerStyle(pocketRect, bcsi, bcri, false);
             }
         }
 
@@ -1143,9 +1642,9 @@ window.PuzzleSTL = (function () {
                     if (shrunk.length >= 3 && Math.abs(polyArea(shrunk)) > 1e-6) mainP = shrunk;
                     else continue;
                 }
-                if (opts.corner_style === 'round') {
+                if (opts.corner_style && opts.corner_style !== 'sharp') {
                     var cr = parseFloat(opts.corner_radius||1.0);
-                    mainP = applyCornerRounding(mainP, cr, false);
+                    mainP = applyCornerStyle(mainP, opts.corner_style, cr, false, !!opts.corner_inner);
                     if (mainP.length < 3) continue;
                 }
                 // Clip piece to pocket shape (for base inner corner rounding)
@@ -1158,6 +1657,18 @@ window.PuzzleSTL = (function () {
                 infP._puzzle_origin_y = assembled ? galY : (baseY-minR*cubeSize);
 
                 var acabados = opts.acabados_mode || 'infill';
+                var pChamfTop = parseFloat(opts.piece_chamfer_top||0);
+                var pChamfBot = parseFloat(opts.piece_chamfer_bottom||0);
+                // Clamp chamfer to wall margin so it doesn't protrude past the
+                // texture/infill border.
+                var wallMargin = 0;
+                if (acabados === 'texture') {
+                    wallMargin = parseFloat(opts.texture_wall || 0);
+                } else {
+                    wallMargin = parseFloat(opts.infill_wall || opts.stl_infill_wall || 0);
+                }
+                if (wallMargin > 0 && pChamfTop > wallMargin) pChamfTop = wallMargin;
+                if (wallMargin > 0 && pChamfBot > wallMargin) pChamfBot = wallMargin;
                 try {
                     if (acabados === 'texture') {
                         _applyTexture(mainP, opts, infP, cellBoxes, height, allPT, allRT, pzOff);
@@ -1172,7 +1683,11 @@ window.PuzzleSTL = (function () {
                         } else {
                             finalP = [mainP];
                         }
-                        allPT.push.apply(allPT, extrudePolygons(finalP, height, pzOff));
+                        if (pChamfTop > 0 || pChamfBot > 0) {
+                            allPT.push.apply(allPT, extrudeWithChamfer(mainP, finalP, height, pzOff, pChamfTop, pChamfBot));
+                        } else {
+                            allPT.push.apply(allPT, extrudePolygons(finalP, height, pzOff));
+                        }
                     }
                 } catch(e) { console.warn('[STL] normal piece', idx, e); }
             }
@@ -1180,26 +1695,63 @@ window.PuzzleSTL = (function () {
         return finalize(baseTris, allPT, allRT, retSep, retRaw);
     }
 
-    // Shared texture application logic
+    // Shared texture application logic — now supports piece chamfer
     function _applyTexture(mainP, opts, infP, cellGeos, height, outPT, outRT, zOff) {
         zOff = zOff || 0;
         var texType = String(opts.texture_type||'grid');
         var texDir = String(opts.texture_direction||'outward');
         var texH = parseFloat(opts.texture_height||0.5);
         var texGeo = generateTextureGeo(mainP, texType, infP, cellGeos);
+        var pChamfTop = parseFloat(opts.piece_chamfer_top || 0);
+        var pChamfBot = parseFloat(opts.piece_chamfer_bottom || 0);
+        // Clamp top chamfer to the texture wall (margin to edge) so the
+        // chamfer never protrudes into the texture-free border.
+        var texWall = parseFloat(opts.texture_wall || 0);
+        if (texWall > 0 && pChamfTop > texWall) pChamfTop = texWall;
+        var hasChamf = pChamfTop > 0 || pChamfBot > 0;
         if (texDir === 'outward') {
-            outPT.push.apply(outPT, extrudePolygon(mainP, height, zOff));
-            if (texGeo) outRT.push.apply(outRT, extrudePolygons(texGeo, texH, height + zOff));
+            // Body: both top AND bottom chamfer (top chamfer creates a bevel
+            // where the body meets the relief sitting on top).
+            if (hasChamf) {
+                outPT.push.apply(outPT, extrudeWithChamfer(mainP, [mainP], height, zOff, pChamfTop, pChamfBot));
+            } else {
+                outPT.push.apply(outPT, extrudePolygon(mainP, height, zOff));
+            }
+            // Relief on top — also apply top chamfer to the relief slab
+            if (texGeo) {
+                if (pChamfTop > 0) {
+                    outRT.push.apply(outRT, extrudeWithChamfer(mainP, texGeo, texH, height + zOff, pChamfTop, 0));
+                } else {
+                    outRT.push.apply(outRT, extrudePolygons(texGeo, texH, height + zOff));
+                }
+            }
         } else if (texDir === 'flush') {
             if (texGeo) {
                 var nonTex = polyDifference([mainP], texGeo);
-                // Base slab at (height - texH) to avoid z-fighting
-                outPT.push.apply(outPT, extrudePolygon(mainP, height - texH, zOff));
-                // Non-texture area raised to full height (piece color)
-                if (nonTex.length > 0) outPT.push.apply(outPT, extrudePolygons(nonTex, texH, height - texH + zOff));
-                // Texture area raised to full height (relief color)
-                outRT.push.apply(outRT, extrudePolygons(texGeo, texH, height - texH + zOff));
-            } else outPT.push.apply(outPT, extrudePolygon(mainP, height, zOff));
+                // Base slab: bottom chamfer
+                if (pChamfBot > 0) {
+                    outPT.push.apply(outPT, extrudeWithChamfer(mainP, [mainP], height - texH, zOff, 0, pChamfBot));
+                } else {
+                    outPT.push.apply(outPT, extrudePolygon(mainP, height - texH, zOff));
+                }
+                // Non-texture area raised to full height: top chamfer
+                if (nonTex.length > 0) {
+                    if (pChamfTop > 0) {
+                        outPT.push.apply(outPT, extrudeWithChamfer(mainP, nonTex, texH, height - texH + zOff, pChamfTop, 0));
+                    } else {
+                        outPT.push.apply(outPT, extrudePolygons(nonTex, texH, height - texH + zOff));
+                    }
+                }
+                // Texture area (relief color): top chamfer
+                if (pChamfTop > 0) {
+                    outRT.push.apply(outRT, extrudeWithChamfer(mainP, texGeo, texH, height - texH + zOff, pChamfTop, 0));
+                } else {
+                    outRT.push.apply(outRT, extrudePolygons(texGeo, texH, height - texH + zOff));
+                }
+            } else {
+                if (hasChamf) outPT.push.apply(outPT, extrudeWithChamfer(mainP, [mainP], height, zOff, pChamfTop, pChamfBot));
+                else outPT.push.apply(outPT, extrudePolygon(mainP, height, zOff));
+            }
         } else { // inward / engrave
             var engD = texH;
             var baseH = Math.max(height - engD, 0.1);
@@ -1207,14 +1759,25 @@ window.PuzzleSTL = (function () {
             var rZ = Math.max(baseH - colD, 0);
             if (texGeo) {
                 var nonCarved = polyDifference([mainP], texGeo);
-                // Bottom slab under the channel (piece color)
-                outPT.push.apply(outPT, extrudePolygon(mainP, rZ, zOff));
-                // Non-carved columns from rZ to full height (piece color)
-                if (nonCarved.length > 0) outPT.push.apply(outPT, extrudePolygons(nonCarved, height - rZ, rZ + zOff));
-                // Relief color at bottom of carved channel (rZ to baseH)
+                // Bottom slab: bottom chamfer
+                if (pChamfBot > 0) {
+                    outPT.push.apply(outPT, extrudeWithChamfer(mainP, [mainP], rZ, zOff, 0, pChamfBot));
+                } else {
+                    outPT.push.apply(outPT, extrudePolygon(mainP, rZ, zOff));
+                }
+                // Non-carved columns: top chamfer
+                if (nonCarved.length > 0) {
+                    if (pChamfTop > 0) {
+                        outPT.push.apply(outPT, extrudeWithChamfer(mainP, nonCarved, height - rZ, rZ + zOff, pChamfTop, 0));
+                    } else {
+                        outPT.push.apply(outPT, extrudePolygons(nonCarved, height - rZ, rZ + zOff));
+                    }
+                }
+                // Relief color at bottom of carved channel
                 if (baseH > rZ) outRT.push.apply(outRT, extrudePolygons(texGeo, baseH - rZ, rZ + zOff));
             } else {
-                outPT.push.apply(outPT, extrudePolygon(mainP, height, zOff));
+                if (hasChamf) outPT.push.apply(outPT, extrudeWithChamfer(mainP, [mainP], height, zOff, pChamfTop, pChamfBot));
+                else outPT.push.apply(outPT, extrudePolygon(mainP, height, zOff));
             }
         }
     }
@@ -1261,16 +1824,11 @@ window.PuzzleSTL = (function () {
         // Compute pocket polygon for jigsaw base-corner rounding → piece clipping
         var pocketPoly = null;
         if (puzzleType === 'jigsaw' && assembled) {
-            var bcs = String(opts.base_corner_style||'sharp');
+            var bcsi = String(opts.base_corner_style_inner||opts.base_corner_style||'sharp');
             var bcri = parseFloat(opts.base_corner_radius_inner||0);
-            if (bcs === 'round' && bcri > 0) {
+            if (bcsi !== 'sharp' && bcri > 0) {
                 var pocketRect = boxPoly(galX, galY, puzzleW+galX, puzzleH+galY);
-                // Opening rounds convex corners of the pocket (= the concave base wall corners)
-                var ps1 = offsetPolygon(pocketRect, -bcri, 1);
-                if (ps1.length >= 3) {
-                    var ps2 = offsetPolygon(ps1, bcri, 1);
-                    if (ps2.length >= 3) pocketPoly = ps2;
-                }
+                pocketPoly = applyCornerStyle(pocketRect, bcsi, bcri, false);
             }
         }
 
@@ -1333,9 +1891,9 @@ window.PuzzleSTL = (function () {
                     var clipped = polyIntersection([translated], [pocketPoly]);
                     if (clipped.length > 0 && clipped[0].length >= 3) translated = clipped[0];
                 }
-                if (opts.corner_style === 'round') {
+                if (opts.corner_style && opts.corner_style !== 'sharp') {
                     var cr = parseFloat(opts.corner_radius||1.0);
-                    translated = applyCornerRounding(translated, cr, puzzleType === 'jigsaw');
+                    translated = applyCornerStyle(translated, opts.corner_style, cr, puzzleType === 'jigsaw', !!opts.corner_inner);
                     if (translated.length < 3) continue;
                 }
                 // Cell geometries for circles pattern
@@ -1360,6 +1918,17 @@ window.PuzzleSTL = (function () {
                 if (assembled) { infP._puzzle_origin_x = galX; infP._puzzle_origin_y = galY; }
                 else { infP._puzzle_origin_x = bx-pMinX+tolMm/2; infP._puzzle_origin_y = by-pMinY+tolMm/2; }
 
+                var pChamfTop = parseFloat(opts.piece_chamfer_top||0);
+                var pChamfBot = parseFloat(opts.piece_chamfer_bottom||0);
+                // Clamp chamfer to wall margin
+                var wallMargin2 = 0;
+                if (acabados === 'texture') {
+                    wallMargin2 = parseFloat(opts.texture_wall || 0);
+                } else {
+                    wallMargin2 = parseFloat(opts.infill_wall || opts.stl_infill_wall || 0);
+                }
+                if (wallMargin2 > 0 && pChamfTop > wallMargin2) pChamfTop = wallMargin2;
+                if (wallMargin2 > 0 && pChamfBot > wallMargin2) pChamfBot = wallMargin2;
                 try {
                     if (acabados === 'texture') {
                         _applyTexture(translated, opts, infP, cellGeos, height, allPT, allRT, pzOff);
@@ -1374,7 +1943,11 @@ window.PuzzleSTL = (function () {
                         } else {
                             finalP = [translated];
                         }
-                        allPT.push.apply(allPT, extrudePolygons(finalP, height, pzOff));
+                        if (pChamfTop > 0 || pChamfBot > 0) {
+                            allPT.push.apply(allPT, extrudeWithChamfer(translated, finalP, height, pzOff, pChamfTop, pChamfBot));
+                        } else {
+                            allPT.push.apply(allPT, extrudePolygons(finalP, height, pzOff));
+                        }
                     }
                 } catch(e) { console.warn('[STL] svg piece', idx, e); }
             }
@@ -1383,10 +1956,406 @@ window.PuzzleSTL = (function () {
     }
 
     // ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════
+    //  EXPORT: Sliding Puzzle (print-in-place)
+    // ═══════════════════════════════════════════════════
+    // Geometry overview (cross-section, Z up):
+    //
+    //   ┌──────────────────────────────────────────┐  ← frameBorder outer
+    //   │ FRAME                                    │
+    //   │  ┌──────┐  clearance   ┌──────┐         │  ← lip (overhang)
+    //   │  │ LIP  │◄───────────►│ LIP  │         │
+    //   │  │      └──────────────┘      │         │  z = floorH + stemH + clearZ + capH
+    //   │  │       ◄─ wide channel ─►    │         │
+    //   │  │  ┌────┐  clearXY  ┌────┐   │         │  z = floorH + stemH
+    //   │  │  │    │◄────────►│    │   │         │
+    //   │  │  │    └─────────-┘    │   │         │  (piece cap zone)
+    //   │  │  │WALL │  PIECE  │ WALL│   │         │
+    //   │  │  │    ┌──────────┐    │   │         │  z = floorH
+    //   │  └──┘    │  STEM    │    └──┘         │
+    //   │          │          │                  │
+    //   └──────────┴──────────┴──────────────────┘  z = 0  (floor)
+    //
+    // Piece = stem (narrow) + cap (wider, trapped under lip)
+    // Frame = floor plate + walls with internal lip overhang
+    //
+    // Print-in-place: printed layer-by-layer. The clearance gap between
+    // piece cap and frame lip is bridged by the slicer during printing.
+
+    function exportSlidingPuzzle(puzzleData, opts) {
+        var rows    = puzzleData.sliding_rows || 3;
+        var cols    = puzzleData.sliding_cols || 3;
+        var emptyR  = puzzleData.sliding_empty_row;
+        var emptyC  = puzzleData.sliding_empty_col;
+        var grid    = puzzleData.grid;    // 2D: 0 = empty, >0 = piece id
+        var pieces  = puzzleData.pieces;  // [{id, row, col}, ...]
+
+        var incP = opts.include_pieces !== false;
+        var incB = opts.include_base !== false;
+
+        // Dimensions (mm) — symmetric diamond interlocking profile
+        //
+        //  Side profile (5 zones):
+        //    |       ← Z1: bottom flat (base position)
+        //      \     ← Z2: bevel up (base → shifted)
+        //        |   ← Z3: middle flat (shifted position = widest)
+        //      /     ← Z4: bevel down (shifted → base)
+        //    |       ← Z5: top flat (base position, acabados here)
+        //
+        var cellSize    = parseFloat(opts.sliding_cell_size) || 20;
+        var clearXY     = parseFloat(opts.sliding_clearance) || 0.3;
+        var frameBorder = parseFloat(opts.sliding_frame_border) || 4;
+        var flatH       = parseFloat(opts.sliding_stem_height) || 2.0;   // flat zone height (top & bottom, symmetric)
+        var midH        = parseFloat(opts.sliding_cap_height) || 2.0;    // middle shifted zone height
+        var shift       = parseFloat(opts.sliding_overhang) || 1.5;      // XY lateral shift
+        var pieceHeight = parseFloat(opts.sliding_piece_height) || 8.0;  // total piece height
+        var fillet      = parseFloat(opts.sliding_fillet) || 2.0;
+        var shiftDir    = String(opts.sliding_shift_direction || 'br');   // shift direction: br, bl, tr, tl
+
+        // Compute bevel zone height from total piece height
+        var bevelH = Math.max(0, (pieceHeight - 2 * flatH - midH) / 2);
+
+        // Shift direction signs
+        var sdx = (shiftDir === 'bl' || shiftDir === 'tl') ? -1 : 1;
+        var sdy = (shiftDir === 'tr' || shiftDir === 'tl') ? -1 : 1;
+
+        // Clamp shift so frame walls don't vanish
+        if (shift >= frameBorder - 0.5) shift = frameBorder - 0.5;
+
+        var retSep = opts.return_separate || false;
+        var retRaw = opts.return_raw || false;
+
+        // Corner style params (must be before lipFillet calculation)
+        var pieceCornerStyle = String(opts.sliding_corner_style || 'round');
+        var pieceCornerRadius = parseFloat(opts.sliding_corner_radius || 1.0);
+        var baseCornerStyle = String(opts.sliding_base_corner_style || 'round');
+        var baseCornerStyleInner = String(opts.sliding_base_corner_style_inner || baseCornerStyle);
+        var baseCornerRadius = parseFloat(opts.sliding_base_corner_radius || 2.0);
+        var baseCornerRadiusInner = parseFloat(opts.sliding_base_corner_radius_inner || 1.0);
+
+        // Chamfer for frame and pieces — per-edge granularity
+        var baseChamfTopOuter = parseFloat(opts.base_chamfer_top_outer || 0);
+        var baseChamfTopInner = parseFloat(opts.base_chamfer_top_inner || 0);
+        var baseChamfBotOuter = parseFloat(opts.base_chamfer_bottom_outer || 0);
+        var baseChamfBotInner = parseFloat(opts.base_chamfer_bottom_inner || 0);
+        var baseChamfTop = Math.max(baseChamfTopOuter, baseChamfTopInner);
+        var baseChamfBot = Math.max(baseChamfBotOuter, baseChamfBotInner);
+        var pChamfTop = parseFloat(opts.piece_chamfer_top || 0);
+        var pChamfBot = parseFloat(opts.piece_chamfer_bottom || 0);
+
+        // Derived dimensions
+        var pieceW    = cellSize - 2 * clearXY;        // piece side length
+        var totalH    = 2 * flatH + 2 * bevelH + midH; // symmetric: flat + bevel + mid + bevel + flat
+        // Pocket fillet: use inner corner style/radius directly
+        var lipFillet = (baseCornerStyleInner !== 'sharp' && baseCornerRadiusInner > 0) ? baseCornerRadiusInner : 0;
+        var lipCornerStyle = (baseCornerStyleInner !== 'sharp' && baseCornerRadiusInner > 0) ? baseCornerStyleInner : 'sharp';
+
+        // Z boundaries for the 5 zones
+        var z1 = 0;                                  // bottom flat start
+        var z2 = flatH;                              // bevel-up start
+        var z3 = flatH + bevelH;                     // middle flat start
+        var z4 = flatH + bevelH + midH;              // bevel-down start
+        var z5 = flatH + 2 * bevelH + midH;          // top flat start
+        // z5 + flatH = totalH                        // top
+
+        // Grid dimensions
+        var innerW = cols * cellSize + (cols + 1) * clearXY;
+        var innerH = rows * cellSize + (rows + 1) * clearXY;
+        var outerW = innerW + 2 * frameBorder;
+        var outerH = innerH + 2 * frameBorder;
+
+        // Bevel discretization (for frame staircase)
+        var bevelSteps  = (bevelH > 0.01) ? Math.max(2, Math.ceil(bevelH / 0.15)) : 0;
+        var bevelSliceH = (bevelSteps > 0) ? bevelH / bevelSteps : 0;
+
+        var baseTris = [];
+        var pieceTris = [];
+
+        // ── Deterministic rounded box (for frame boolean ops) ──
+        function roundedBoxPoly(x1, y1, x2, y2, r, style) {
+            style = style || 'round';
+            if (r <= 0 || style === 'sharp' || x2 - x1 < 0.1 || y2 - y1 < 0.1) return boxPoly(x1, y1, x2, y2);
+            var b = boxPoly(x1, y1, x2, y2);
+            var rr = Math.min(r, (x2 - x1) / 2, (y2 - y1) / 2);
+            return applyCornerStyle(b, style, rr, false);
+        }
+
+        // ── Deterministic piece rect with fixed vertex count (for lofting) ──
+        var BEVEL_SEGS = 8;
+        function roundedRectPoly(cx, cy, halfW, halfH, r, style) {
+            style = style || 'round';
+            if (r <= 0 || style === 'sharp') return [[cx-halfW,cy-halfH],[cx+halfW,cy-halfH],[cx+halfW,cy+halfH],[cx-halfW,cy+halfH]];
+            if (style === 'round') {
+                r = Math.min(r, halfW, halfH);
+                if (r < 0.01) return [[cx-halfW,cy-halfH],[cx+halfW,cy-halfH],[cx+halfW,cy+halfH],[cx-halfW,cy+halfH]];
+                var pts = [];
+                var corners = [
+                    { x: cx + halfW - r, y: cy - halfH + r, a0: -Math.PI / 2 },
+                    { x: cx + halfW - r, y: cy + halfH - r, a0: 0 },
+                    { x: cx - halfW + r, y: cy + halfH - r, a0: Math.PI / 2 },
+                    { x: cx - halfW + r, y: cy - halfH + r, a0: Math.PI }
+                ];
+                for (var ci = 0; ci < 4; ci++) {
+                    var cr = corners[ci];
+                    for (var s = 0; s <= BEVEL_SEGS; s++) {
+                        var ang = cr.a0 + (s / BEVEL_SEGS) * (Math.PI / 2);
+                        pts.push([cr.x + r * Math.cos(ang), cr.y + r * Math.sin(ang)]);
+                    }
+                }
+                return pts;
+            }
+            // chamfer / bevel
+            var box = [[cx-halfW,cy-halfH],[cx+halfW,cy-halfH],[cx+halfW,cy+halfH],[cx-halfW,cy+halfH]];
+            return applyCornerStyle(box, style, Math.min(r, halfW, halfH), false);
+        }
+
+        // ── Loft: smooth bevel connecting two same-vertex-count polygons ──
+        // Does NOT emit its own top/bottom caps — caller handles that.
+        function loftWalls(botP, topP, zB, zT) {
+            var n = botP.length;
+            if (n !== topP.length || n < 3) return [];
+            var tris = [];
+            for (var li = 0; li < n; li++) {
+                var lj = (li + 1) % n;
+                tris.push([[botP[li][0],botP[li][1],zB],[botP[lj][0],botP[lj][1],zB],[topP[lj][0],topP[lj][1],zT]]);
+                tris.push([[botP[li][0],botP[li][1],zB],[topP[lj][0],topP[lj][1],zT],[topP[li][0],topP[li][1],zT]]);
+            }
+            return tris;
+        }
+
+        // ── Cap: flat polygon face at given Z (CW = bottom, CCW = top) ──
+        function capFace(poly, zVal, flipNormal) {
+            var n = poly.length;
+            if (n < 3) return [];
+            var flat = [];
+            for (var i = 0; i < n; i++) flat.push(poly[i][0], poly[i][1]);
+            var idx = triangulate(flat);
+            var tris = [];
+            for (var i = 0; i < idx.length; i += 3) {
+                var a = poly[idx[i]], b = poly[idx[i+1]], c = poly[idx[i+2]];
+                if (flipNormal) tris.push([[a[0],a[1],zVal],[c[0],c[1],zVal],[b[0],b[1],zVal]]);
+                else            tris.push([[a[0],a[1],zVal],[b[0],b[1],zVal],[c[0],c[1],zVal]]);
+            }
+            return tris;
+        }
+
+        // ── Helper: frame pocket at a given shift fraction t (0→base, 1→shifted) ──
+        var bpX1 = frameBorder, bpY1 = frameBorder;
+        var bpX2 = frameBorder + innerW, bpY2 = frameBorder + innerH;
+        function framePocketAt(t) {
+            var dx = t * shift * sdx, dy = t * shift * sdy;
+            return roundedBoxPoly(bpX1 + dx, bpY1 + dy, bpX2 + dx, bpY2 + dy, lipFillet, lipCornerStyle);
+        }
+
+        // ══════════════════════════════════════════════════
+        //  FRAME — border walls, NO floor. Symmetric diamond pocket.
+        //  Pocket shifts (+X, +Y) in the middle, returns to base at top.
+        // ══════════════════════════════════════════════════
+        var outerRect = roundedBoxPoly(0, 0, outerW, outerH, baseCornerRadius, baseCornerStyle);
+
+        if (incB) {
+            // Compute effective zone heights: allow chamfer to extend beyond flatH
+            // by absorbing height from the bevel zones
+            var effFlat1 = flatH, effBevel1 = bevelH;
+            if (baseChamfBot > flatH && bevelH > 0) {
+                var extra = Math.min(baseChamfBot - flatH, bevelH);
+                effFlat1 = flatH + extra;
+                effBevel1 = bevelH - extra;
+            }
+            var effFlat5 = flatH, effBevel5 = bevelH;
+            if (baseChamfTop > flatH && bevelH > 0) {
+                var extra5 = Math.min(baseChamfTop - flatH, bevelH);
+                effFlat5 = flatH + extra5;
+                effBevel5 = bevelH - extra5;
+            }
+            var effZ2 = z1 + effFlat1;
+            var effZ3 = effZ2 + effBevel1;
+            var effZ4end = z5 + flatH - effFlat5;
+            var effZ4 = effZ4end - effBevel5;
+            var effBevelSteps1 = (effBevel1 > 0.01) ? Math.max(2, Math.ceil(effBevel1 / 0.15)) : 0;
+            var effBevelSlice1 = (effBevelSteps1 > 0) ? effBevel1 / effBevelSteps1 : 0;
+            var effBevelSteps5 = (effBevel5 > 0.01) ? Math.max(2, Math.ceil(effBevel5 / 0.15)) : 0;
+            var effBevelSlice5 = (effBevelSteps5 > 0) ? effBevel5 / effBevelSteps5 : 0;
+
+            // Zone 1: bottom flat (Z=z1 to effZ2) — pocket at base
+            if (effFlat1 > 0) {
+                var walls1 = polyDifference([outerRect], [framePocketAt(0)]);
+                if (walls1.length > 0) {
+                    if (baseChamfBot > 0) {
+                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls1, effFlat1, z1, 0, 0, baseChamfBotOuter, baseChamfBotInner));
+                    } else {
+                        baseTris.push.apply(baseTris, extrudePolygons(walls1, effFlat1, z1));
+                    }
+                }
+            }
+
+            // Zone 2: bevel up (Z=effZ2 to effZ3) — pocket transitions 0→1
+            for (var bi = 0; bi < effBevelSteps1; bi++) {
+                var t = (bi + 0.5) / effBevelSteps1;
+                var bwalls = polyDifference([outerRect], [framePocketAt(t)]);
+                if (bwalls.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls, effBevelSlice1, effZ2 + bi * effBevelSlice1));
+            }
+
+            // Zone 3: middle flat (Z=effZ3 to effZ4) — pocket at full shift
+            var effMidH = effZ4 - effZ3;
+            if (effMidH > 0.001) {
+                var walls3 = polyDifference([outerRect], [framePocketAt(1)]);
+                if (walls3.length > 0) baseTris.push.apply(baseTris, extrudePolygons(walls3, effMidH, effZ3));
+            }
+
+            // Zone 4: bevel down (Z=effZ4 to effZ4end) — pocket transitions 1→0
+            for (var bi2 = 0; bi2 < effBevelSteps5; bi2++) {
+                var t2 = 1 - (bi2 + 0.5) / effBevelSteps5;
+                var bwalls2 = polyDifference([outerRect], [framePocketAt(t2)]);
+                if (bwalls2.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls2, effBevelSlice5, effZ4 + bi2 * effBevelSlice5));
+            }
+
+            // Zone 5: top flat (Z=effZ4end to totalH) — pocket back at base
+            if (effFlat5 > 0) {
+                var walls5 = polyDifference([outerRect], [framePocketAt(0)]);
+                if (walls5.length > 0) {
+                    if (baseChamfTop > 0) {
+                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls5, effFlat5, totalH - effFlat5, baseChamfTopOuter, baseChamfTopInner, 0, 0));
+                    } else {
+                        baseTris.push.apply(baseTris, extrudePolygons(walls5, effFlat5, totalH - effFlat5));
+                    }
+                }
+            }
+        } // end if (incB)
+
+        // ══════════════════════════════════════════════════
+        //  PIECES — symmetric diamond profile:
+        //    Z1: bottom flat (base)     |
+        //    Z2: bevel up (base→shift)    \
+        //    Z3: middle flat (shifted)      |
+        //    Z4: bevel down (shift→base)  /
+        //    Z5: top flat (base)        |   ← acabados on top face
+        // ══════════════════════════════════════════════════
+        var reliefTris = [];
+        var acabados = opts.acabados_mode || 'infill';
+        var iType = opts.infill_type || 'solid';
+        var infP = {}; for (var ik in opts) infP[ik] = opts[ik];
+        infP._puzzle_w_mm = cols * cellSize;
+        infP._puzzle_h_mm = rows * cellSize;
+        infP._puzzle_origin_x = frameBorder + clearXY;
+        infP._puzzle_origin_y = frameBorder + clearXY;
+
+        if (incP) {
+        var hw = pieceW / 2;
+        var fil = Math.min(pieceCornerRadius, hw);
+
+        for (var pi = 0; pi < pieces.length; pi++) {
+            var p = pieces[pi];
+            var pr = p.row, pc = p.col;
+
+            // Piece center in grid coordinate space
+            var px = frameBorder + clearXY + pc * cellSize + pc * clearXY + cellSize / 2;
+            var py = frameBorder + clearXY + pr * cellSize + pr * clearXY + cellSize / 2;
+
+            // Base polygon (original position)
+            var basePoly = roundedRectPoly(px, py, hw, hw, fil, pieceCornerStyle);
+            // Shifted polygon (middle, +X +Y)
+            var shiftPoly = roundedRectPoly(px + shift * sdx, py + shift * sdy, hw, hw, fil, pieceCornerStyle);
+
+            // Zone 1: bottom flat (Z=z1 to z2)
+            var effectiveChamfBot = (pChamfBot > 0 && pChamfBot < flatH) ? pChamfBot : 0;
+            if (effectiveChamfBot > 0) {
+                // Chamfered bottom: loft from smaller poly to basePoly
+                var cSteps = Math.max(2, Math.round(effectiveChamfBot / 0.05));
+                var cStepH = effectiveChamfBot / cSteps;
+                var prevCP = null;
+                for (var cs = 0; cs <= cSteps; cs++) {
+                    var ct = cs / cSteps;
+                    var cInset = effectiveChamfBot * (1 - ct);
+                    var cPoly = roundedRectPoly(px, py, hw - cInset, hw - cInset, Math.max(0.01, fil - cInset), pieceCornerStyle);
+                    if (cs === 0) pieceTris.push.apply(pieceTris, capFace(cPoly, z1, true));
+                    if (prevCP) pieceTris.push.apply(pieceTris, loftWalls(prevCP, cPoly, z1 + (cs - 1) * cStepH, z1 + cs * cStepH));
+                    prevCP = cPoly;
+                }
+                var remFlat = flatH - effectiveChamfBot;
+                if (remFlat > 0.001) {
+                    pieceTris.push.apply(pieceTris, loftWalls(basePoly, basePoly, z1 + effectiveChamfBot, z2));
+                }
+            } else {
+                pieceTris.push.apply(pieceTris, capFace(basePoly, z1, true)); // bottom face
+                if (flatH > 0) {
+                    pieceTris.push.apply(pieceTris, loftWalls(basePoly, basePoly, z1, z2)); // straight walls
+                }
+            }
+
+            // Zone 2: bevel up (Z=z2 to z3) — loft base → shifted
+            if (bevelH > 0.01) {
+                pieceTris.push.apply(pieceTris, loftWalls(basePoly, shiftPoly, z2, z3));
+            }
+
+            // Zone 3: middle flat (Z=z3 to z4)
+            if (midH > 0) {
+                pieceTris.push.apply(pieceTris, loftWalls(shiftPoly, shiftPoly, z3, z4)); // straight walls
+            }
+
+            // Zone 4: bevel down (Z=z4 to z5) — loft shifted → base
+            if (bevelH > 0.01) {
+                pieceTris.push.apply(pieceTris, loftWalls(shiftPoly, basePoly, z4, z5));
+            }
+
+            // Zone 5: top flat with acabados (Z=z5 to totalH)
+            // The top surface is back at base position
+            var capZ = z5;
+            var baseClip = roundedBoxPoly(px - hw, py - hw, px + hw, py + hw, pieceCornerRadius, pieceCornerStyle);
+            var capCellGeos = [baseClip];
+            var effectiveChamfTop = (pChamfTop > 0 && pChamfTop < flatH) ? pChamfTop : 0;
+            try {
+                if (acabados === 'texture') {
+                    // Walls for zone 5 (texture handles its own chamfer via opts)
+                    if (flatH > 0) pieceTris.push.apply(pieceTris, loftWalls(basePoly, basePoly, z5, totalH));
+                    pieceTris.push.apply(pieceTris, capFace(basePoly, totalH, false));
+                    _applyTexture(baseClip, opts, infP, capCellGeos, flatH, pieceTris, reliefTris, capZ);
+                } else if (iType !== 'solid') {
+                    var capFinal = applyInfillPattern(baseClip, iType, infP, capCellGeos);
+                    if (effectiveChamfTop > 0) {
+                        pieceTris.push.apply(pieceTris, extrudeWithChamfer(baseClip, capFinal, flatH, capZ, effectiveChamfTop, 0));
+                    } else {
+                        pieceTris.push.apply(pieceTris, extrudePolygons(capFinal, flatH, capZ));
+                    }
+                } else {
+                    // Solid: apply top chamfer via lofting
+                    if (effectiveChamfTop > 0) {
+                        var remFlat5 = flatH - effectiveChamfTop;
+                        if (remFlat5 > 0.001) {
+                            pieceTris.push.apply(pieceTris, loftWalls(basePoly, basePoly, z5, z5 + remFlat5));
+                        }
+                        var cSteps5 = Math.max(2, Math.round(effectiveChamfTop / 0.05));
+                        var cStepH5 = effectiveChamfTop / cSteps5;
+                        var prevCP5 = basePoly;
+                        var z5c = z5 + remFlat5;
+                        for (var cs5 = 0; cs5 < cSteps5; cs5++) {
+                            var ct5 = (cs5 + 1) / cSteps5;
+                            var cInset5 = effectiveChamfTop * ct5;
+                            var cPoly5 = roundedRectPoly(px, py, hw - cInset5, hw - cInset5, Math.max(0.01, fil - cInset5), pieceCornerStyle);
+                            pieceTris.push.apply(pieceTris, loftWalls(prevCP5, cPoly5, z5c + cs5 * cStepH5, z5c + (cs5 + 1) * cStepH5));
+                            if (cs5 === cSteps5 - 1) pieceTris.push.apply(pieceTris, capFace(cPoly5, totalH, false));
+                            prevCP5 = cPoly5;
+                        }
+                    } else {
+                        if (flatH > 0) pieceTris.push.apply(pieceTris, loftWalls(basePoly, basePoly, z5, totalH));
+                        pieceTris.push.apply(pieceTris, capFace(basePoly, totalH, false));
+                    }
+                }
+            } catch(e) {
+                if (flatH > 0) pieceTris.push.apply(pieceTris, loftWalls(basePoly, basePoly, z5, totalH));
+                pieceTris.push.apply(pieceTris, capFace(basePoly, totalH, false));
+            }
+        }
+        } // end if (incP)
+
+        return finalize(baseTris, pieceTris, reliefTris, retSep, retRaw);
+    }
+
     //  PUBLIC API
     // ═══════════════════════════════════════════════════
     function exportSTL(puzzleData, opts) {
         var pt = puzzleData.puzzle_type || 'normal';
+        if (pt === 'sliding') return exportSlidingPuzzle(puzzleData, opts);
         if (pt === 'fractal' || pt === 'jigsaw') return exportSvgPuzzle(puzzleData, opts);
         return exportNormalPuzzle(puzzleData.grid, puzzleData.pieces, opts);
     }
@@ -1395,6 +2364,7 @@ window.PuzzleSTL = (function () {
         opts = {}; for (var k in arguments[1]) opts[k] = arguments[1][k];
         opts.return_separate = true;
         var pt = puzzleData.puzzle_type || 'normal';
+        if (pt === 'sliding') return exportSlidingPuzzle(puzzleData, opts);
         if (pt === 'fractal' || pt === 'jigsaw') return exportSvgPuzzle(puzzleData, opts);
         return exportNormalPuzzle(puzzleData.grid, puzzleData.pieces, opts);
     }
@@ -1404,7 +2374,8 @@ window.PuzzleSTL = (function () {
         o.return_raw = true;
         var pt = puzzleData.puzzle_type || 'normal';
         var raw;
-        if (pt === 'fractal' || pt === 'jigsaw') raw = exportSvgPuzzle(puzzleData, o);
+        if (pt === 'sliding') raw = exportSlidingPuzzle(puzzleData, o);
+        else if (pt === 'fractal' || pt === 'jigsaw') raw = exportSvgPuzzle(puzzleData, o);
         else raw = exportNormalPuzzle(puzzleData.grid, puzzleData.pieces, o);
 
         // Gather parts
