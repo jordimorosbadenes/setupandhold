@@ -3,143 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puzzle Generator Web</title>
-    <!-- Immediate embed transparency — runs before external CSS loads -->
-    <script>
-    (function(){
-        if (new URLSearchParams(window.location.search).get('embed') === '1') {
-            document.documentElement.classList.add('embedded');
-            document.documentElement.style.setProperty('background','transparent','important');
-        }
-    })();
-    </script>
-    <!-- Extra embed safety CSS: force transparency on common elements to beat later styles -->
-    <style>
-    html.embedded, body.embedded, .container, .panel, .canvas-section, #viewer-3d, canvas, .sol-card canvas {
-        background: transparent !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
-    }
-    html.embedded { overflow-x: hidden !important; }
-    </style>
+    <title>PuzzleStudio3D — Setup &amp; Hold</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script>
+        // Detect saved theme preference (mirrors BaseLayout.astro logic)
+        const storageKey = 'theme';
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        const saved = localStorage.getItem(storageKey);
+        const theme = saved || (prefersLight ? 'light' : 'dark');
+        document.documentElement.dataset.theme = theme;
+    </script>
 </head>
 <body>
-    <!-- Embed mode detection — must run before any content renders -->
-    <script>
-    (function() {
-        var params = new URLSearchParams(window.location.search);
-        if (params.get('embed') !== '1') return;
+    <div class="page-shell">
+        <!-- Navigation bar matching SetupAndHold -->
+        <header class="site-header">
+            <a class="brand" href="../">
+                <img class="brand-logo" src="../favicon.svg" alt="setupandhold" width="24" height="24">
+                <span>setupandhold</span>
+            </a>
+            <nav class="nav-links">
+                <a href="../">Inicio</a>
+                <a href="../puzzle">Puzzle</a>
+            </nav>
+        </header>
 
-        var theme = params.get('theme') || 'dark';
-        document.body.classList.add('embedded');
-        document.body.setAttribute('data-theme', theme);
-        document.documentElement.classList.add('embedded');
-        document.documentElement.setAttribute('data-theme', theme);
-
-        // Force transparency via inline styles (highest specificity — nothing can override).
-        // color-scheme must match the host page's color-scheme so the browser does NOT
-        // force an opaque canvas on the iframe (CSS spec: mismatched color-scheme → opaque).
-        function forceTransparency() {
-            var cs = (document.documentElement.getAttribute('data-theme') || 'dark') === 'light' ? 'light' : 'dark';
-            document.documentElement.style.setProperty('background', 'transparent', 'important');
-            document.documentElement.style.setProperty('background-color', 'transparent', 'important');
-            document.documentElement.style.setProperty('color-scheme', cs);
-            document.body.style.setProperty('background', 'transparent', 'important');
-            document.body.style.setProperty('background-color', 'transparent', 'important');
-        }
-        forceTransparency();
-
-        // Load Space Grotesk font for the host's design language
-        var pc = document.createElement('link');
-        pc.rel = 'preconnect'; pc.href = 'https://fonts.googleapis.com';
-        document.head.appendChild(pc);
-        var pc2 = document.createElement('link');
-        pc2.rel = 'preconnect'; pc2.href = 'https://fonts.gstatic.com'; pc2.crossOrigin = 'anonymous';
-        document.head.appendChild(pc2);
-        var fl = document.createElement('link');
-        fl.rel = 'stylesheet';
-        fl.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap';
-        document.head.appendChild(fl);
-
-        // Listen for messages from the host page
-        window.addEventListener('message', function(e) {
-            var d = e.data;
-            if (!d || typeof d !== 'object') return;
-
-            // Theme sync
-            if (d.type === 'theme-change') {
-                var t = d.theme || 'dark';
-                document.body.setAttribute('data-theme', t);
-                document.documentElement.setAttribute('data-theme', t);
-                forceTransparency(); // re-assert after theme swap
-            }
-
-            // Premium lock: blur/unblur the puzzle canvas
-            if (d.type === 'premium-status') {
-                var unlocked = !!d.unlocked;
-                var blur = unlocked ? '' : 'blur(8px) grayscale(1)';
-                var pe   = unlocked ? '' : 'none';
-                var canvas  = document.getElementById('puzzle-canvas');
-                var fractal = document.getElementById('fractal-puzzle-svg');
-                if (canvas)  { canvas.style.filter = blur; canvas.style.pointerEvents = pe; }
-                if (fractal) { fractal.style.filter = blur; fractal.style.pointerEvents = pe; }
-            }
-
-            // Debug / host probes: reply with height and computed bg for troubleshooting
-            if (d.type === 'identify') {
-                try {
-                    var h = document.documentElement.scrollHeight;
-                    var bg = window.getComputedStyle(document.body).backgroundColor || '';
-                    var t = document.body.getAttribute('data-theme') || document.documentElement.getAttribute('data-theme') || '';
-                    window.parent.postMessage({ type: 'identify-response', height: h, bg: bg, theme: t }, '*');
-                } catch (err) { /* ignore */ }
-            }
-
-            // Allow host to request re-applying transparency (in case CSS overrides occurred)
-            if (d.type === 'force-transparency') {
-                try { forceTransparency(); } catch (err) { /* ignore */ }
-            }
-        });
-
-        // Report document height to host for seamless iframe sizing.
-        // IMPORTANT: use body only — documentElement.scrollHeight is always
-        // >= the iframe viewport height, so including it causes a feedback
-        // loop: iframe grows 4 px → scrollHeight grows 4 px → sends +4 → …
-        // body.embedded has min-height:auto so its height == content height.
-        var lastH = 0;
-        function calcHeight() {
-            var b = document.body;
-            return Math.ceil(Math.max(b.scrollHeight || 0, b.offsetHeight || 0));
-        }
-        function reportHeight() {
-            try {
-                var h = calcHeight();
-                if (h !== lastH) {
-                    lastH = h;
-                    window.parent.postMessage({ type: 'puzzle-resize', height: h }, '*');
-                }
-            } catch (err) { /* ignore */ }
-        }
-        if (window.ResizeObserver) {
-            var ro = new ResizeObserver(reportHeight);
-            try { ro.observe(document.documentElement); } catch (e) {}
-            try { ro.observe(document.body); } catch (e) {}
-        }
-        // periodic fallback
-        setInterval(reportHeight, 350);
-
-        // Notify host when fully loaded
-        window.addEventListener('load', function() {
-            window.parent.postMessage({ type: 'puzzle-loaded' }, '*');
-            reportHeight();
-        });
-    })();
-    </script>
+        <main class="page">
     <div class="container">
-        <h1>🧩 Puzzle Generator Web</h1>
-        <p style="text-align: center; color: #666; margin-bottom: 20px; font-size: 0.95em;">
-            Crea puzzles 3D con visualización espectacular e imprime en tu impresora 3D
+        <h1>🧩 PuzzleStudio3D</h1>
+        <p class="subtitle">
+            Genera y personaliza puzzles 3D: elige el tipo, personaliza texturas, y exporta a STL/3MF listo para impresión.
         </p>
         
         <!-- Configuration Panel – two-column layout -->
@@ -155,6 +52,7 @@
                             <button class="type-btn active" id="btn-type-normal" onclick="switchPuzzleType('normal')">🧩 Normal</button>
                             <button class="type-btn" id="btn-type-fractal" onclick="switchPuzzleType('fractal')">🔀 Fractal</button>
                             <button class="type-btn" id="btn-type-jigsaw" onclick="switchPuzzleType('jigsaw')">🧩 Jigsaw</button>
+                            <button class="type-btn" id="btn-type-sliding" onclick="switchPuzzleType('sliding')">🔲 Sliding</button>
                         </div>
                     </div>
                     <div class="config-left-scroll">
@@ -173,6 +71,15 @@
                                 <option value="rectangular" selected>Rectangular</option>
                                 <option value="hexagonal">Hexagonal</option>
                                 <option value="circular">Circular</option>
+                            </select>
+                        </div>
+                        <div class="form-group sliding-only" style="display:none;">
+                            <label>Esquina vacía:</label>
+                            <select id="sliding_empty_corner">
+                                <option value="br" selected>↘ Abajo-Derecha</option>
+                                <option value="bl">↙ Abajo-Izquierda</option>
+                                <option value="tr">↗ Arriba-Derecha</option>
+                                <option value="tl">↖ Arriba-Izquierda</option>
                             </select>
                         </div>
                         <div class="form-grid">
@@ -903,122 +810,8 @@
                         <span class="no-opts-text">ℹ️ Este tipo de relleno no tiene ajustes adicionales</span>
                     </div>
                 </div>
-                <!-- Col 3: Puzle -->
-                <div class="acabados-sub-panel options-panel">
-                    <div class="collapsible-header collapsible-sub" data-target="section-puzle"><span class="collapse-arrow">▾</span> 🧩 Ajustes piezas</div>
-                    <div class="collapsible-body" id="section-puzle">
-                        <div class="puzle-color-corners-grid">
-                            <div class="puzle-colors-row">
-                                <div class="form-group">
-                                    <label>🎨 Color piezas:</label>
-                                    <div class="color-picker-row">
-                                        <input type="color" id="stl_color_pieces" value="#00998A">
-                                        <span class="color-hex" id="stl_color_pieces_hex">#00998A</span>
-                                    </div>
-                                </div>
-                                <div class="form-group" id="relief-color-group">
-                                    <label>🎨 Color relieve:</label>
-                                    <div class="color-picker-row">
-                                        <input type="color" id="stl_color_relief" value="#C1B399">
-                                        <span class="color-hex" id="stl_color_relief_hex">#C1B399</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="puzle-dims-grid">
-                            <div class="form-group">
-                                <label>Tamaño (mm):</label>
-                                <input type="number" id="stl_cube_size" value="10" step="0.5">
-                            </div>
-                            <div class="form-group">
-                                <label>Altura (mm):</label>
-                                <input type="number" id="stl_height" value="3" step="0.5">
-                            </div>
-                            <div class="form-group">
-                                <label>Tolerancia:</label>
-                                <input type="number" id="stl_tolerance" value="0.3" step="0.1">
-                            </div>
-                        </div>
-
-                        <!-- Corners moved to bottom with its own visual container -->
-                        <div class="puzle-corners-container options-panel" id="piece-opts-corners">
-                            <!-- Shown when corner controls are not available (jigsaw / fractal-circular) -->
-                            <div id="corner-no-adjust-msg" class="no-opts-placeholder" style="display:none;">
-                                <span class="no-opts-text">ℹ️ Este tipo de puzzle no permite ajustes de esquinas en las piezas</span>
-                            </div>
-                            <!-- Normal corner controls -->
-                            <div id="corner-controls-wrap">
-                                <div class="collapsible-header collapsible-sub" data-target="section-piece-corners"><span class="collapse-arrow">▾</span> 📐🔘 Esquinas</div>
-                                <div class="collapsible-body collapsed" id="section-piece-corners">
-                                    <div class="form-group">
-                                        <label>Tipo:</label>
-                                        <select id="stl_corner_style">
-                                            <option value="sharp">📐 Rectas</option>
-                                            <option value="round" selected>🔘 Redondeadas</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" id="corner-radius-group">
-                                        <label>Radio (mm):</label>
-                                        <input type="number" id="stl_corner_radius" value="1.0" step="0.1" min="0.1" max="10">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Col 4: Base -->
-                <div class="acabados-sub-panel options-panel">
-                    <div class="collapsible-header collapsible-sub" data-target="section-base"><span class="collapse-arrow">▾</span> 📐 Ajustes base</div>
-                    <div class="collapsible-body" id="section-base">
-                        <div class="puzle-color-corners-grid">
-                            <div class="puzle-colors-row">
-                                <div class="form-group">
-                                    <label>🎨 Color base:</label>
-                                    <div class="color-picker-row">
-                                        <input type="color" id="stl_color_base" value="#808080">
-                                        <span class="color-hex" id="stl_color_base_hex">#808080</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="puzle-dims-grid">
-                            <div class="form-group">
-                                <label>Borde (mm):</label>
-                                <input type="number" id="stl_border" value="5" step="0.5">
-                            </div>
-                            <div class="form-group">
-                                <label>Espesor (mm):</label>
-                                <input type="number" id="stl_base_thickness" value="1" step="0.5">
-                            </div>
-                            <div class="form-group">
-                                <label>Paredes (mm):</label>
-                                <input type="number" id="stl_wall_height" value="3" step="0.5">
-                            </div>
-                        </div>
-                        <div class="puzle-corners-container options-panel">
-                            <div id="base-opts-corners">
-                                <div class="collapsible-header collapsible-sub" data-target="section-base-corners"><span class="collapse-arrow">▾</span> 📐🔘 Esquinas</div>
-                                <div class="collapsible-body collapsed" id="section-base-corners">
-                                    <div class="form-group">
-                                        <label>Tipo:</label>
-                                        <select id="stl_base_corner_style">
-                                            <option value="sharp">📐 Rectas</option>
-                                            <option value="round" selected>🔘 Redondeadas</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" id="base-corner-radius-group">
-                                        <label>Radio ext. (mm):</label>
-                                        <input type="number" id="stl_base_corner_radius" value="2.5" step="0.1" min="0" max="20">
-                                    </div>
-                                    <div class="form-group" id="base-corner-radius-inner-group">
-                                        <label>Radio int. (mm):</label>
-                                        <input type="number" id="stl_base_corner_radius_inner" value="1.0" step="0.1" min="0" max="20">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- (Piece & Base settings moved to "Configuración 3D Avanzada" panel below) -->
+                <!-- (Sliding piece & base settings also moved to "Configuración 3D Avanzada" panel below) -->
             </div>
             <!-- Image Editor Modal (scoped to acabados panel) -->
             <div class="modal-overlay" id="texture-editor-modal" style="display: none;">
@@ -1039,6 +832,433 @@
                         <button class="btn btn-primary" id="tex-editor-apply">✅ Aplicar</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             Advanced 3D Configuration Panel (pieces + base settings)
+             Disabled by default, toggleable via switch.
+             Uses stock geometry mini-viewers for live preview.
+             ═══════════════════════════════════════════════════════════ -->
+        <div class="panel" id="advanced-3d-config-panel">
+            <div class="advanced-viewer-header">
+                <h2>⚙️ Configuración 3D Avanzada</h2>
+                <label class="switch-label">
+                    <input type="checkbox" id="adv3d_config_toggle">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div id="adv3d-config-content" style="display:none;">
+
+                <!-- ── Row 1: Piece Settings (non-sliding) ── -->
+                <div class="adv3d-section non-sliding">
+                    <h3>🧩 Ajustes piezas</h3>
+
+                    <!-- General piece settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-piece-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-piece-general">
+                                <div class="puzle-color-corners-grid">
+                                    <div class="puzle-colors-row">
+                                        <div class="form-group">
+                                            <label>🎨 Color piezas:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="stl_color_pieces" value="#00998A">
+                                                <span class="color-hex" id="stl_color_pieces_hex">#00998A</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" id="relief-color-group">
+                                            <label>🎨 Color relieve:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="stl_color_relief" value="#C1B399">
+                                                <span class="color-hex" id="stl_color_relief_hex">#C1B399</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Tamaño (mm):</label>
+                                        <input type="number" id="stl_cube_size" value="10" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Altura (mm):</label>
+                                        <input type="number" id="stl_height" value="3" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Tolerancia:</label>
+                                        <input type="number" id="stl_tolerance" value="0.3" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-piece-general" data-focus="piece-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Piece edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel" id="piece-opts-corners">
+                                <div id="corner-no-adjust-msg" class="no-opts-placeholder" style="display:none;">
+                                    <span class="no-opts-text">ℹ️ Este tipo de puzzle no permite ajustes de esquinas en las piezas</span>
+                                </div>
+                                <div id="corner-controls-wrap">
+                                    <div class="collapsible-header collapsible-sub" data-target="section-piece-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                    <div class="collapsible-body" id="section-piece-edges">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <div class="form-group">
+                                                <label>Tipo:</label>
+                                                <select id="stl_corner_style">
+                                                    <option value="sharp">📐 Rectas</option>
+                                                    <option value="round" selected>🔘 Redondeadas</option>
+                                                    <option value="chamfer">◇ Chaflán</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group corner-size-group" id="corner-radius-group">
+                                                <label>Radio (mm):</label>
+                                                <input type="number" id="stl_corner_radius" value="1.0" step="0.1" min="0.1" max="10">
+                                            </div>
+                                        </div>
+                                        <div class="form-group" id="corner-inner-group">
+                                            <label><input type="checkbox" id="stl_corner_inner"> Aplicar también a esquinas interiores</label>
+                                        </div>
+                                        <div class="puzle-dims-grid">
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="piece_chamfer_top_on"> Superior (mm):</label>
+                                                <input type="number" id="piece_chamfer_top" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="piece_chamfer_bottom_on"> Inferior (mm):</label>
+                                                <input type="number" id="piece_chamfer_bottom" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-piece-edges" data-focus="piece-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 2: Base Settings (non-sliding) ── -->
+                <div class="adv3d-section non-sliding">
+                    <h3>📐 Ajustes base</h3>
+
+                    <!-- General base settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-base-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-base-general">
+                                <div class="puzle-color-corners-grid">
+                                    <div class="puzle-colors-row">
+                                        <div class="form-group">
+                                            <label>🎨 Color base:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="stl_color_base" value="#808080">
+                                                <span class="color-hex" id="stl_color_base_hex">#808080</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Borde (mm):</label>
+                                        <input type="number" id="stl_border" value="5" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Espesor (mm):</label>
+                                        <input type="number" id="stl_base_thickness" value="1" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Paredes (mm):</label>
+                                        <input type="number" id="stl_wall_height" value="3" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-base-general" data-focus="base-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Base edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel">
+                                <div id="base-opts-corners">
+                                    <div class="collapsible-header collapsible-sub" data-target="section-base-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                    <div class="collapsible-body" id="section-base-edges">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <!-- Interior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Interior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label><input type="checkbox" id="base_inner_same_as_piece" checked> Igual que piezas</label>
+                                                </div>
+                                                <div id="base-inner-corner-opts">
+                                                    <div class="form-group">
+                                                        <label>Tipo:</label>
+                                                        <select id="stl_base_corner_style_inner">
+                                                            <option value="sharp">📐 Rectas</option>
+                                                            <option value="round" selected>🔘 Redondeadas</option>
+                                                            <option value="chamfer">◇ Chaflán</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group base-corner-size-group" id="base-corner-radius-inner-group">
+                                                        <label>Tamaño (mm):</label>
+                                                        <input type="number" id="stl_base_corner_radius_inner" value="1.0" step="0.1" min="0" max="20">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Exterior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Exterior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Tipo:</label>
+                                                    <select id="stl_base_corner_style">
+                                                        <option value="sharp">📐 Rectas</option>
+                                                        <option value="round" selected>🔘 Redondeadas</option>
+                                                        <option value="chamfer">◇ Chaflán</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group base-corner-size-group" id="base-corner-radius-group">
+                                                    <label>Tamaño (mm):</label>
+                                                    <input type="number" id="stl_base_corner_radius" value="2.5" step="0.1" min="0" max="20">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="puzle-dims-grid">
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="base_chamfer_top_outer_on"> Sup. exterior (mm):</label>
+                                                <input type="number" id="base_chamfer_top_outer" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="base_chamfer_top_inner_on"> Sup. interior (mm):</label>
+                                                <input type="number" id="base_chamfer_top_inner" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="base_chamfer_bottom_outer_on"> Inf. exterior (mm):</label>
+                                                <input type="number" id="base_chamfer_bottom_outer" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-base-edges" data-focus="base-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 3: Sliding Piece Settings ── -->
+                <div class="adv3d-section sliding-only" style="display:none;">
+                    <h3>🧩 Ajustes piezas (Sliding)</h3>
+
+                    <!-- General sliding piece settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-sliding-piece-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-sliding-piece-general">
+                                <p class="disclaimer" style="margin-top:0;margin-bottom:8px;">
+                                    ℹ️ <b>Print-in-place:</b> Sin suelo. Piezas con perfil de encaje simétrico. Ajusta holguras según tu impresora.
+                                </p>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Celda (mm):</label>
+                                        <input type="number" id="sliding_cell_size" value="20" step="1" min="10" max="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Holgura XY (mm):</label>
+                                        <input type="number" id="sliding_clearance" value="0.3" step="0.05" min="0.1" max="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Altura pieza (mm):</label>
+                                        <input type="number" id="sliding_piece_height" value="8.0" step="0.5" min="2" max="30">
+                                    </div>
+                                </div>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Plano (mm):</label>
+                                        <input type="number" id="sliding_stem_height" value="1.0" step="0.5" min="0" max="8">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Zona encaje (mm):</label>
+                                        <input type="number" id="sliding_cap_height" value="1.0" step="0.5" min="0" max="8">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Desplaz. encaje (mm):</label>
+                                        <input type="number" id="sliding_overhang" value="3.0" step="0.25" min="0.5" max="5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Dir. encaje:</label>
+                                        <select id="sliding_shift_direction">
+                                            <option value="br" selected>↘ Abajo-Derecha</option>
+                                            <option value="bl">↙ Abajo-Izquierda</option>
+                                            <option value="tr">↗ Arriba-Derecha</option>
+                                            <option value="tl">↖ Arriba-Izquierda</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-piece-general" data-focus="piece-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sliding piece edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel">
+                                <div class="collapsible-header collapsible-sub" data-target="section-sliding-piece-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                <div class="collapsible-body" id="section-sliding-piece-edges">
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                        <div class="form-group">
+                                            <label>Tipo:</label>
+                                            <select id="sliding_corner_style">
+                                                <option value="sharp">📐 Rectas</option>
+                                                <option value="round" selected>🔘 Redondeadas</option>
+                                                <option value="chamfer">◇ Chaflán</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" id="sliding-corner-radius-group">
+                                            <label>Radio (mm):</label>
+                                            <input type="number" id="sliding_corner_radius" value="1.0" step="0.1" min="0" max="10">
+                                        </div>
+                                    </div>
+                                    <div class="puzle-dims-grid">
+                                        <div class="form-group">
+                                            <label><input type="checkbox" id="sliding_piece_chamfer_top_on"> Superior (mm):</label>
+                                            <input type="number" id="sliding_piece_chamfer_top" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                        </div>
+                                        <div class="form-group">
+                                            <label><input type="checkbox" id="sliding_piece_chamfer_bottom_on"> Inferior (mm):</label>
+                                            <input type="number" id="sliding_piece_chamfer_bottom" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-piece-edges" data-focus="piece-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 4: Sliding Base Settings ── -->
+                <div class="adv3d-section sliding-only" style="display:none;">
+                    <h3>📐 Ajustes base (Sliding)</h3>
+
+                    <!-- General sliding base settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-sliding-base-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-sliding-base-general">
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Marco (mm):</label>
+                                        <input type="number" id="sliding_frame_border" value="5" step="0.5" min="2" max="15">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="display:none">
+                                    <label>Suelo (mm):</label>
+                                    <input type="number" id="sliding_floor_height" value="1.0" step="0.5" min="0.5" max="5">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-base-general" data-focus="base-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sliding base edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel">
+                                <div id="base-opts-corners-sliding">
+                                    <div class="collapsible-header collapsible-sub" data-target="section-sliding-base-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                    <div class="collapsible-body" id="section-sliding-base-edges">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <!-- Interior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Interior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label><input type="checkbox" id="sliding_base_inner_same_as_piece" checked> Igual que piezas</label>
+                                                </div>
+                                                <div id="sliding-base-inner-corner-opts">
+                                                    <div class="form-group">
+                                                        <label>Tipo:</label>
+                                                        <select id="sliding_base_corner_style_inner">
+                                                            <option value="sharp">📐 Rectas</option>
+                                                            <option value="round" selected>🔘 Redondeadas</option>
+                                                            <option value="chamfer">◇ Chaflán</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group" id="sliding-base-corner-radius-inner-group">
+                                                        <label>Tamaño (mm):</label>
+                                                        <input type="number" id="sliding_base_corner_radius_inner" value="1.0" step="0.1" min="0" max="20">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Exterior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Exterior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Tipo:</label>
+                                                    <select id="sliding_base_corner_style">
+                                                        <option value="sharp">📐 Rectas</option>
+                                                        <option value="round" selected>🔘 Redondeadas</option>
+                                                        <option value="chamfer">◇ Chaflán</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group" id="sliding-base-corner-radius-group">
+                                                    <label>Tamaño (mm):</label>
+                                                    <input type="number" id="sliding_base_corner_radius" value="2.0" step="0.1" min="0" max="20">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="puzle-dims-grid">
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_top_outer_on"> Sup. exterior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_top_outer" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_top_inner_on"> Sup. interior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_top_inner" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_bottom_outer_on"> Inf. exterior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_bottom_outer" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_bottom_inner_on"> Inf. interior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_bottom_inner" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-base-edges" data-focus="base-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -1102,11 +1322,50 @@
             <div id="status-download" class="status"></div>
         </div>
     </div>
+        </main>
+
+        <footer class="site-footer">
+            <span>&copy; 2026 setupandhold</span>
+            <span class="dot">&middot;</span>
+            <a href="../about">Contacto</a>
+            <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
+                <span class="toggle-slider">
+                    <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i>
+                    <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i>
+                </span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Theme toggle logic (mirrors BaseLayout.astro) -->
+    <script>
+    (() => {
+        const key = 'theme';
+        const apply = (value) => {
+            document.documentElement.dataset.theme = value;
+            localStorage.setItem(key, value);
+            const btn = document.querySelector('[data-theme-toggle]');
+            if (btn) btn.setAttribute('aria-pressed', value === 'light' ? 'true' : 'false');
+        };
+        const saved = localStorage.getItem(key);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        apply(saved || (prefersLight ? 'light' : 'dark'));
+        const btn = document.querySelector('[data-theme-toggle]');
+        if (btn) btn.addEventListener('click', () => {
+            const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+            apply(current === 'light' ? 'dark' : 'light');
+        });
+    })();
+    </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- STL Loader -->
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Line2 / fat lines for edge highlight -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineSegmentsGeometry.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineMaterial.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineSegments2.js"></script>
     <!-- earcut for polygon triangulation (STL export) -->
     <script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/src/earcut.min.js"></script>
     <!-- clipper-lib for polygon boolean operations (tolerance, infill, corners) -->
@@ -1119,6 +1378,7 @@
     <script src="engine/solver.js"></script>
     <script src="engine/fractal.js"></script>
     <script src="engine/jigsaw.js"></script>
+    <script src="engine/sliding.js"></script>
     <script src="engine/stl-export.js"></script>
     <!-- API bridge — intercepts fetch('/api/*') and routes to engine -->
     <script src="api-bridge.js"></script>

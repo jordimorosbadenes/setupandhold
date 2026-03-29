@@ -111,6 +111,26 @@
         }
     }
 
+    function handleGenerateSliding(data) {
+        try {
+            const result = window.PuzzleSliding.generate(data);
+            puzzleState.grid = result.grid;
+            puzzleState.pieces = result.pieces;
+            puzzleState.solutions = [];
+            puzzleState.puzzle_type = 'sliding';
+            puzzleState.svg_paths = null;
+            puzzleState.arcs_data = null;
+            puzzleState.sliding_rows = result.rows;
+            puzzleState.sliding_cols = result.cols;
+            puzzleState.sliding_empty_row = result.empty_row;
+            puzzleState.sliding_empty_col = result.empty_col;
+            puzzleState.sliding_empty_corner = result.empty_corner;
+            return jsonResponse(result);
+        } catch (e) {
+            return errorResponse(e.message);
+        }
+    }
+
     function handleFindSolutions(data) {
         try {
             if (!puzzleState.grid || !puzzleState.pieces) {
@@ -136,6 +156,13 @@
             if (!puzzleState.grid && !puzzleState.svg_paths) {
                 return errorResponse('No puzzle generated');
             }
+            // Pass sliding state for sliding puzzles
+            if (puzzleState.puzzle_type === 'sliding') {
+                data.sliding_rows = puzzleState.sliding_rows;
+                data.sliding_cols = puzzleState.sliding_cols;
+                data.sliding_empty_row = puzzleState.sliding_empty_row;
+                data.sliding_empty_col = puzzleState.sliding_empty_col;
+            }
             const blob = window.PuzzleSTL.exportSTL(puzzleState, data);
             return blobResponse(blob, 'puzzle_project.stl');
         } catch (e) {
@@ -148,6 +175,12 @@
             if (!puzzleState.grid && !puzzleState.svg_paths) {
                 return errorResponse('No puzzle generated');
             }
+            if (puzzleState.puzzle_type === 'sliding') {
+                data.sliding_rows = puzzleState.sliding_rows;
+                data.sliding_cols = puzzleState.sliding_cols;
+                data.sliding_empty_row = puzzleState.sliding_empty_row;
+                data.sliding_empty_col = puzzleState.sliding_empty_col;
+            }
             const blob = window.PuzzleSTL.export3MF(puzzleState, data);
             return blobResponse(blob, 'puzzle_multicolor.3mf');
         } catch (e) {
@@ -159,6 +192,12 @@
         try {
             if (!puzzleState.grid && !puzzleState.svg_paths) {
                 return errorResponse('No puzzle generated');
+            }
+            if (puzzleState.puzzle_type === 'sliding') {
+                data.sliding_rows = puzzleState.sliding_rows;
+                data.sliding_cols = puzzleState.sliding_cols;
+                data.sliding_empty_row = puzzleState.sliding_empty_row;
+                data.sliding_empty_col = puzzleState.sliding_empty_col;
             }
             const result = window.PuzzleSTL.exportSTLSeparate(puzzleState, data);
             const resp = { success: true };
@@ -196,6 +235,7 @@
         '/api/generate':          handleGenerate,
         '/api/generate_fractal':  handleGenerateFractal,
         '/api/generate_jigsaw':   handleGenerateJigsaw,
+        '/api/generate_sliding':  handleGenerateSliding,
         '/api/find_solutions':    handleFindSolutions,
         '/api/export_stl':        handleExportSTL,
         '/api/export_3mf':        handleExport3MF,

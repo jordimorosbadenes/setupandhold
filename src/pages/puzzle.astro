@@ -1,10 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/withBase';
-import { GUMROAD_PREMIUM_URL, GUMROAD_PRODUCT_ID, PUZZLEGEN_URL } from '../config/site';
+import { GUMROAD_PREMIUM_URL, GUMROAD_PRODUCT_ID } from '../config/site';
 
-const apiBase = PUZZLEGEN_URL;          // Render backend (fallback)
-const localPuzzle = withBase('/puzzle/index.html'); // static JS version
+const puzzlePage = withBase('/puzzle/index.html');
 ---
 
 <BaseLayout
@@ -18,6 +17,7 @@ const localPuzzle = withBase('/puzzle/index.html'); // static JS version
         Genera y personaliza puzzles 3D: elige el tipo de puzzle, personaliza en el editor de texturas, y exporta de manera flexible a STL/3MF listo para impresión.
       </p>
       <div class="hero-actions">
+        <a class="button" href={puzzlePage}>Abrir Puzzle Studio</a>
         <a class="button" href={withBase('/')}>Ir al inicio</a>
       </div>
     </div>
@@ -60,121 +60,8 @@ const localPuzzle = withBase('/puzzle/index.html'); // static JS version
     </div>
   </section>
 
-  <!-- Puzzle embed — seamless, no visible container -->
-  <section
-    class="puzzle-embed"
-    data-api-base={apiBase}
-    data-local-puzzle={localPuzzle}
-    data-gumroad-product-id={GUMROAD_PRODUCT_ID}
-    data-gumroad-url={GUMROAD_PREMIUM_URL}
-  >
-    <!-- Wait overlay while backend cold-starts -->
-    <div id="embed-wait" class="embed-wait" aria-live="polite">
-      <div class="embed-loader" aria-hidden="true">🧩</div>
-      <div class="embed-msg">
-        <strong>Arrancando backend…</strong>
-        <span class="embed-note">Render se está despertando. Puede tardar ~1 minuto la primera vez.</span>
-        <span class="embed-status" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <!-- The entire PuzzleGenerator UI lives inside this iframe.
-         No HTML duplication, no CSS overrides — the backend serves
-         its own page with ?embed=1 to activate the embed theme.
-         Transparent background with iframes: https://fvsch.com/transparent-iframes -->
-    <iframe
-      id="puzzle-iframe"
-      class="puzzle-iframe"
-      title="Puzzle Generator"
-      scrolling="no"
-      allowtransparency="true"
-      style="background: transparent;"
-      allowfullscreen
-    ></iframe>
-  </section>
-
-  <script define:vars={{ apiBase, localPuzzle, GUMROAD_PRODUCT_ID }}>
+  <script define:vars={{ GUMROAD_PRODUCT_ID }}>
     (() => {
-      const embed  = document.querySelector('.puzzle-embed');
-      const iframe = document.getElementById('puzzle-iframe');
-      const waitEl = document.getElementById('embed-wait');
-      const statusEl = embed?.querySelector('.embed-status');
-      const theme  = document.documentElement.dataset.theme || 'dark';
-
-      /* ---- Mode selection: ?backend=render uses Render; default = local ---- */
-      const params  = new URLSearchParams(window.location.search);
-      const useRender = params.get('backend') === 'render' && apiBase;
-      const renderBase = (apiBase || '').replace(/\/$/, '');
-
-      /* ---- Health polling (Render mode only) ---- */
-      const pingHealth = async () => {
-        try {
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 8000);
-          const res = await fetch(`${renderBase}/health`, { signal: ctrl.signal });
-          clearTimeout(t);
-          return res.ok;
-        } catch { return false; }
-      };
-
-      const boot = async () => {
-        if (useRender) {
-          /* Render mode — poll health, then load remote iframe */
-          let ok = false;
-          while (!ok) {
-            ok = await pingHealth();
-            if (!ok) {
-              if (statusEl) statusEl.textContent = 'Esperando al backend…';
-              await new Promise(r => setTimeout(r, 3000));
-            }
-          }
-          if (statusEl) statusEl.textContent = 'Cargando interfaz…';
-          iframe.src = `${renderBase}/?embed=1&theme=${theme}`;
-        } else {
-          /* Local mode — load static puzzle directly, no health check */
-          waitEl?.classList.add('hide');
-          iframe.src = `${localPuzzle}?embed=1&theme=${theme}`;
-        }
-      };
-
-      /* ---- Messages from iframe ---- */
-      let iframeLoaded = false;
-
-      window.addEventListener('message', (e) => {
-        const d = e.data;
-        if (!d || typeof d !== 'object') return;
-
-        if (d.type === 'puzzle-loaded') {
-          iframeLoaded = true;
-          waitEl?.classList.add('hide');
-          iframe.classList.add('loaded');
-        }
-
-        if (d.type === 'puzzle-resize' && typeof d.height === 'number') {
-          iframe.style.height = d.height + 'px';
-        }
-      });
-
-      // Fallback: use iframe load event if postMessage doesn't fire
-      iframe.addEventListener('load', () => {
-        if (!iframeLoaded) {
-          setTimeout(() => {
-            iframeLoaded = true;
-            waitEl?.classList.add('hide');
-            iframe.classList.add('loaded');
-          }, 500);
-        }
-      });
-
-      /* ---- Theme bridge ---- */
-      const syncTheme = () => {
-        const theme = document.documentElement.dataset.theme || 'dark';
-        try { iframe.contentWindow?.postMessage({ type: 'theme-change', theme }, '*'); } catch {}
-      };
-
-      new MutationObserver(() => syncTheme())
-        .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
       /* ---- Premium lock ---- */
       const premiumSection = document.getElementById('premium-bar');
       const premiumToggle  = document.getElementById('premium-toggle');
@@ -182,11 +69,6 @@ const localPuzzle = withBase('/puzzle/index.html'); // static JS version
       const premiumKey     = document.getElementById('premium-key');
       const premiumBtn     = document.getElementById('premium-unlock');
       const premiumError   = document.getElementById('premium-error');
-
-      const setPremium = (unlocked) => {
-        try { iframe.contentWindow?.postMessage({ type: 'premium-status', unlocked }, '*'); } catch {}
-        if (unlocked && premiumSection) premiumSection.classList.add('unlocked');
-      };
 
       premiumToggle?.addEventListener('click', () => {
         const hidden = premiumGate.style.display === 'none';
@@ -231,7 +113,7 @@ const localPuzzle = withBase('/puzzle/index.html'); // static JS version
             showPremiumError('Esta compra no está activa (reembolso o disputa).');
             return;
           }
-          setPremium(true);
+          if (premiumSection) premiumSection.classList.add('unlocked');
         } catch {
           showPremiumError('No se pudo verificar la clave. Inténtalo de nuevo.');
         } finally {
@@ -248,84 +130,11 @@ const localPuzzle = withBase('/puzzle/index.html'); // static JS version
 
       premiumBtn?.addEventListener('click', verifyKey);
       premiumKey?.addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyKey(); });
-
-      /* ---- Start ---- */
-      boot();
     })();
   </script>
 </BaseLayout>
 
 <style is:global>
-  /* ============================================================
-     Puzzle embed wrapper — only layout & host-side UI styles.
-     NO backend CSS overrides here; those live in the backend's
-     style.css under the "EMBED MODE" section.
-     ============================================================ */
-
-  .puzzle-embed {
-    position: relative;
-    margin: 0 auto;
-    max-width: 1100px;
-    background: transparent;
-    padding: 0;
-    min-height: 300px;
-  }
-
-  .puzzle-iframe {
-    display: block;
-    width: 100%;
-    min-height: 300px;
-    height: 800px;
-    border: none;
-    overflow: hidden;
-    opacity: 0;
-    transition: opacity 200ms ease;
-  }
-  .puzzle-iframe.loaded {
-    opacity: 1;
-  }
-
-  /* --- Wait overlay --- */
-  .embed-wait {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    z-index: 20;
-    transition: opacity 220ms ease, visibility 220ms ease;
-  }
-  .embed-wait.hide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  .embed-loader {
-    font-size: 32px;
-    animation: embed-spin 1s linear infinite;
-  }
-  @keyframes embed-spin { to { transform: rotate(360deg); } }
-
-  .embed-msg {
-    display: grid;
-    gap: 4px;
-    color: var(--text);
-    font-weight: 600;
-  }
-  .embed-msg .embed-note {
-    color: var(--muted);
-    font-weight: 500;
-  }
-  .embed-msg .embed-status {
-    color: var(--muted);
-    font-weight: 400;
-    font-style: italic;
-  }
-
   /* --- Premium section (standalone card) --- */
   .premium-section {
     margin: 20px auto;
@@ -457,7 +266,6 @@ const localPuzzle = withBase('/puzzle/index.html'); // static JS version
   }
 
   @media (max-width: 900px) {
-    .puzzle-embed { margin: 0 12px; }
     .premium-section { margin: 20px 12px; padding: 14px; }
   }
 </style>

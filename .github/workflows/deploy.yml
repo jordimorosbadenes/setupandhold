@@ -32,7 +32,6 @@ jobs:
           # Astro solo expone al cliente variables con prefijo PUBLIC_.
           # En GitHub Pages el build ocurre en Actions, así que hay que inyectarlas aquí.
           PUBLIC_CONTACT_EMAIL: ${{ vars.PUBLIC_CONTACT_EMAIL }}
-          PUBLIC_PUZZLEGEN_URL: ${{ vars.PUBLIC_PUZZLEGEN_URL }}
           PUBLIC_GUMROAD_PREMIUM_URL: ${{ vars.PUBLIC_GUMROAD_PREMIUM_URL }}
           PUBLIC_GUMROAD_PRODUCT_ID: ${{ vars.PUBLIC_GUMROAD_PRODUCT_ID }}
           PUBLIC_LEADERBOARD_URL: ${{ vars.PUBLIC_LEADERBOARD_URL }}

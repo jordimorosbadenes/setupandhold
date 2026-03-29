@@ -15,11 +15,6 @@ export const DEFAULT_AVATAR_URL = withBase('/img/jordi.jpg');
 const avatarFromEnv = import.meta.env.PUBLIC_PROFILE_PHOTO_URL;
 export const AVATAR_URL = avatarFromEnv && avatarFromEnv.trim() ? avatarFromEnv : DEFAULT_AVATAR_URL;
 
-const puzzlegenFromEnv = import.meta.env.PUBLIC_PUZZLEGEN_URL;
-export const PUZZLEGEN_URL = puzzlegenFromEnv && puzzlegenFromEnv.trim()
-	? puzzlegenFromEnv
-	: '';
-
 // Premium (Gumroad)
 const gumroadPremiumFromEnv = import.meta.env.PUBLIC_GUMROAD_PREMIUM_URL;
 export const GUMROAD_PREMIUM_URL = gumroadPremiumFromEnv && gumroadPremiumFromEnv.trim()

@@ -46,8 +46,6 @@ npm run dev
 
 El servidor quedará en `http://localhost:4321`.
 
-Copia `.env.example` a `.env` (o `.env.production` para Pages) y apunta `PUBLIC_PUZZLEGEN_URL` al backend (Render o local). Esta variable es obligatoria para que `/puzzle` funcione.
-
 ## Scripts principales
 
 - `npm run dev`: modo desarrollo con recarga en caliente.
@@ -96,13 +94,12 @@ Contenido en Markdown...
 - `src/components/PostCard.astro`: tarjetas de resumen para listados.
 - `src/content/blog`: posts en Markdown.
 - `src/styles/global.css`: estilos base (colores, tipografía, layout).
-- `src/pages/puzzle.astro`: página que carga el Puzzle Generator servido por el backend en Render usando `PUBLIC_PUZZLEGEN_URL`.
+- `src/pages/puzzle.astro`: página de presentación del Puzzle Generator. El puzzle funciona como app estática local en `public/puzzle/index.html`.
 
 ## Integración Puzzle Generator
 
-- La página `/puzzle` se alimenta de la URL definida en `PUBLIC_PUZZLEGEN_URL` (Render).
-- No hay valor por defecto hardcodeado: define `PUBLIC_PUZZLEGEN_URL` en local y en GitHub (Variables) para el deploy.
-- En Render define `ALLOWED_ORIGINS` con tu dominio de GitHub Pages para habilitar CORS.
+- La página `/puzzle` enlaza directamente a la app estática del puzzle en `public/puzzle/index.html`.
+- No requiere backend externo: todo el motor de generación, resolución y exportación funciona en el navegador.
 
 ## Personalización
 
