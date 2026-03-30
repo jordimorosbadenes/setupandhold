@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PuzzleStudio3D — Setup &amp; Hold</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Detect saved theme preference (mirrors BaseLayout.astro logic)
+        const storageKey = 'theme';
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        const saved = localStorage.getItem(storageKey);
+        const theme = saved || (prefersLight ? 'light' : 'dark');
+        document.documentElement.dataset.theme = theme;
+    </script>
+</head>
+<body>
+    <div class="page-shell">
+        <!-- Navigation bar matching SetupAndHold -->
+        <header class="site-header">
+            <a class="brand" href="../">
+                <img class="brand-logo" src="../favicon.svg" alt="setupandhold" width="24" height="24">
+                <span>setupandhold</span>
+            </a>
+            <nav class="nav-links">
+                <a href="../">Inicio</a>
+                <a href="../puzzle">Puzzle</a>
+            </nav>
+        </header>
+
+        <main class="page">
+    <div class="container">
+        <h1>🧩 PuzzleStudio3D</h1>
+        <p class="subtitle">
+            Genera y personaliza puzzles 3D: elige el tipo, personaliza texturas, y exporta a STL/3MF listo para impresión.
+        </p>
+        
+        <!-- Configuration Panel – two-column layout -->
+        <div class="panel config-panel">
+            <h2>⚙️ Configuración del Puzzle</h2>
+            <div class="config-two-col">
+
+                <!-- ── Col izquierda: controles ── -->
+                <div class="config-col-left">
+                    <div class="config-left-top">
+                        <!-- Puzzle Type Toggle -->
+                        <div class="puzzle-type-toggle">
+                            <button class="type-btn active" id="btn-type-normal" onclick="switchPuzzleType('normal')">🧩 Normal</button>
+                            <button class="type-btn" id="btn-type-fractal" onclick="switchPuzzleType('fractal')">🔀 Fractal</button>
+                            <button class="type-btn" id="btn-type-jigsaw" onclick="switchPuzzleType('jigsaw')">🧩 Jigsaw</button>
+                            <button class="type-btn" id="btn-type-sliding" onclick="switchPuzzleType('sliding')">🔲 Sliding</button>
+                        </div>
+                    </div>
+                    <div class="config-left-scroll">
+                        <!-- Full-width type selectors (before two-column grid) -->
+                        <div class="form-group fractal-only" style="display:none;">
+                            <label>Forma de pieza:</label>
+                            <select id="arc_shape">
+                                <option value="0" selected>Circular</option>
+                                <option value="2">Octagonal</option>
+                                <option value="1">Cuadrada</option>
+                            </select>
+                        </div>
+                        <div class="form-group jigsaw-only" style="display:none;">
+                            <label>Tipo jigsaw:</label>
+                            <select id="jigsaw_type" onchange="onJigsawTypeChange()">
+                                <option value="rectangular" selected>Rectangular</option>
+                                <option value="hexagonal">Hexagonal</option>
+                                <option value="circular">Circular</option>
+                            </select>
+                        </div>
+                        <div class="form-group sliding-only" style="display:none;">
+                            <label>Esquina vacía:</label>
+                            <select id="sliding_empty_corner">
+                                <option value="br" selected>↘ Abajo-Derecha</option>
+                                <option value="bl">↙ Abajo-Izquierda</option>
+                                <option value="tr">↗ Arriba-Derecha</option>
+                                <option value="tl">↖ Arriba-Izquierda</option>
+                            </select>
+                        </div>
+                        <div class="form-grid">
+                        <div class="form-group">
+                            <label>Filas (M):</label>
+                            <input type="number" id="M" value="6" min="2" max="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Columnas (N):</label>
+                            <input type="number" id="N" value="7" min="2" max="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Tamaño mínimo (celdas):</label>
+                            <input type="number" id="min_size" value="3" min="1" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label>Tamaño máximo (celdas):</label>
+                            <input type="number" id="max_size" value="4" min="1" max="10">
+                        </div>
+                        <div class="form-group normal-only">
+                            <label>Bordes bloqueados:</label>
+                            <select id="border_prob">
+                                <option value="0" selected>0%</option>
+                                <option value="25">25%</option>
+                                <option value="50">50%</option>
+                                <option value="75">75%</option>
+                            </select>
+                        </div>
+                        <div class="form-group normal-only">
+                            <label>Celdas aire:</label>
+                            <select id="air_prob">
+                                <option value="0" selected>0%</option>
+                                <option value="5">5%</option>
+                                <option value="10">10%</option>
+                                <option value="15">15%</option>
+                            </select>
+                        </div>
+                        <div class="form-group normal-only">
+                            <label>Soluciones objetivo:</label>
+                            <select id="target_solutions" onchange="onTargetSolutionsChange(this.value)">
+                                <option value="1">Exactamente 1 (única)</option>
+                                <option value="5">Al menos 5</option>
+                                <option value="10">Al menos 10</option>
+                                <option value="0" selected>Sin restricción</option>
+                            </select>
+                            <div id="target-disclaimer" class="disclaimer" style="display:none;">
+                                ⚠️ <strong>Aviso:</strong> Encontrar un puzzle con solución única puede tardar mucho o no lograrse nunca si el puzzle es grande (6×6 o más). Se realizarán hasta 50 intentos.
+                            </div>
+                        </div>
+                        <div class="form-group jigsaw-only jigsaw-hex-only" style="display:none;">
+                            <label>Anillos:</label>
+                            <input type="number" id="jigsaw_rings" value="4" min="1" max="20">
+                        </div>
+                        <div class="form-group jigsaw-only" style="display:none;">
+                            <label>Tab size (%):</label>
+                            <input type="number" id="jigsaw_tab_size" value="25" step="1" min="10" max="30">
+                        </div>
+                        <div class="form-group jigsaw-only" style="display:none;">
+                            <label>Jitter (%):</label>
+                            <input type="number" id="jigsaw_jitter" value="0" step="1" min="0" max="15">
+                        </div>
+                        <div class="form-group jigsaw-only jigsaw-hex-only" style="display:none;">
+                            <label>
+                                <input type="checkbox" id="jigsaw_truncate_edge" checked>
+                                Truncar borde
+                            </label>
+                        </div>
+                        <div class="form-group jigsaw-only jigsaw-hex-only" style="display:none;">
+                            <label>
+                                <input type="checkbox" id="jigsaw_contoured_base" checked>
+                                Base contorneada
+                            </label>
+                        </div>
+                        </div>
+                    </div>
+                    <div class="generate-area">
+                        <button id="generate-btn" class="btn btn-t1">▶ Generar Puzzle</button>
+                        <div id="status-generate" class="status"></div>
+                    </div>
+                </div>
+
+                <!-- ── Col derecha: visor de previsualización ── -->
+                <div class="config-col-right">
+                    <div class="view-controls">
+                        <button class="view-btn active" id="btn-isometric" onclick="switchView(event, 'isometric')">Isométrico</button>
+                        <button class="view-btn" id="btn-flat" onclick="switchView(event, 'flat')">Plano</button>
+                    </div>
+                    <div class="config-viewer-wrapper">
+                        <canvas id="puzzle-canvas" width="600" height="600"></canvas>
+                        <div id="fractal-puzzle-svg" style="display:none;"></div>
+                        <div class="acabados-nodrag-overlay" id="config-viewer-hint">🧩 Genera un puzzle para ver la previsualización</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- =================================================================
+             SECCIÓN: Puzzle y Piezas  (DESACTIVADA — actualmente no se usa)
+             -----------------------------------------------------------------
+             Contenía: visor del puzzle principal, galería de piezas y
+             buscador de soluciones.
+             puzzle-canvas y fractal-puzzle-svg se movieron a la columna
+             derecha del panel de configuración (arriba).
+             Para REACTIVAR: eliminar el style="display:none" de este div
+             y valorar devolver puzzle-canvas/fractal-puzzle-svg aquí.
+             ================================================================= -->
+        <div class="panel puzzle-gallery-panel" id="puzzle-gallery-panel" style="display:none;">
+            <div class="advanced-viewer-header">
+                <h2>🧩 Puzzle y Piezas</h2>
+                <label class="switch-label">
+                    <input type="checkbox" id="gallery_toggle">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div id="puzzle-gallery-content" style="display:none;">
+                <!-- puzzle-canvas / fractal-puzzle-svg: movidos al panel config (col. derecha) -->
+                <!-- Galería de Piezas -->
+                <div class="puzzle-gallery-grid">
+                    <div class="canvas-section" id="gallery-section">
+                        <h3>🎨 Galería de Piezas</h3>
+                        <div id="gallery-content">
+                            <div class="gallery-pagination">
+                                <button class="btn btn-page" id="gallery-prev" onclick="galleryPrevPage()">◀ Anterior</button>
+                                <span id="gallery-page-info" class="sol-page-info">Página 1 / 1</span>
+                                <button class="btn btn-page" id="gallery-next" onclick="galleryNextPage()">Siguiente ▶</button>
+                            </div>
+                            <!-- gallery-canvas sigue aquí para que el JS no falle -->
+                            <canvas id="gallery-canvas" width="500" height="600"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Buscador de Soluciones -->
+                <div class="solutions-section" id="solutions-panel">
+                    <h3>🔍 Buscar Soluciones</h3>
+                    <div class="solution-controls">
+                        <button id="solve-10-btn" class="btn">Buscar 10 soluciones</button>
+                        <button id="solve-50-btn" class="btn">Buscar 50 soluciones</button>
+                    </div>
+                    <div id="status-solutions" class="status"></div>
+                    <div id="solution-info" class="solution-info">Soluciones encontradas: 0</div>
+                    <div id="solutions-preview" class="solutions-preview" style="display: none;">
+                        <div class="solutions-pagination">
+                            <button id="sol-prev-page" class="btn btn-page">◀ Anterior</button>
+                            <span id="sol-page-info" class="sol-page-info">Página 1 / 1</span>
+                            <button id="sol-next-page" class="btn btn-page">Siguiente ▶</button>
+                        </div>
+                        <div id="solutions-grid" class="solutions-grid">
+                            <div class="sol-card">
+                                <div class="sol-card-title" id="sol-title-0">Solución 1</div>
+                                <canvas id="sol-canvas-0" width="300" height="300"></canvas>
+                            </div>
+                            <div class="sol-card">
+                                <div class="sol-card-title" id="sol-title-1">Solución 2</div>
+                                <canvas id="sol-canvas-1" width="300" height="300"></canvas>
+                            </div>
+                            <div class="sol-card">
+                                <div class="sol-card-title" id="sol-title-2">Solución 3</div>
+                                <canvas id="sol-canvas-2" width="300" height="300"></canvas>
+                            </div>
+                            <div class="sol-card">
+                                <div class="sol-card-title" id="sol-title-3">Solución 4</div>
+                                <canvas id="sol-canvas-3" width="300" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- end puzzle-gallery-panel (DESACTIVADO) -->
+
+        <!-- Acabados Panel (separate section) -->
+        <div class="panel acabados-panel">
+            <h2>🏗️ Diseño 3D</h2>
+
+            <!-- Row 1: Mode switch (full width) -->
+            <div class="acabados-mode-switch">
+                <label class="acabados-mode-label active" id="acabados-mode-label-infill">
+                    <input type="radio" name="acabados_mode" id="acabados_mode_infill" value="infill" checked>
+                    <span>🔲 Relleno</span>
+                </label>
+                <label class="acabados-mode-label" id="acabados-mode-label-texture">
+                    <input type="radio" name="acabados_mode" id="acabados_mode_texture" value="texture">
+                    <span>🏔️ Textura</span>
+                </label>
+                <label class="acabados-mode-label" id="acabados-mode-label-image">
+                    <input type="radio" name="acabados_mode" id="acabados_mode_image" value="image">
+                    <span>🖼️ Imagen</span>
+                </label>
+            </div>
+
+            <!-- Row 2: 2-col [2D viewer | compact mode controls] -->
+            <div class="acabados-row2">
+                <!-- Left: 2D viewer -->
+                <div class="acabados-viewer">
+                    <div class="acabados-canvas-wrapper">
+                        <canvas id="acabados-2d-canvas" width="500" height="500"></canvas>
+                        <div class="acabados-nodrag-overlay" id="acabados-hint-nodrag" style="display:none;">ℹ️ Este patrón no admite desplazamiento</div>
+                        <div class="acabados-nodrag-overlay" id="acabados-hint-nopuzzle">🧩 Genera un puzzle para ver la previsualización</div>
+                    </div>
+                    <p id="acabados-hint-drag">🖱️ Arrastra en el visor para mover el patrón</p>
+                </div>
+                <!-- Right: compact mode-specific controls -->
+                <div class="acabados-controls-compact">
+                    <!-- ===== RELLENO (infill) options ===== -->
+                    <div id="acabados-infill-panel" class="acabados-sub-panel options-panel">
+                        <div class="form-group">
+                            <label>Tipo de relleno:</label>
+                            <select id="stl_infill_type">
+                                <option value="solid">Sólido</option>
+                                <option value="hollow">Hueco</option>
+                                <option value="grid">Rejilla</option>
+                                <option value="stripes">Rayas</option>
+                                <option value="zigzag">Zigzag</option>
+                                <option value="honeycomb">Panal</option>
+                                <option value="circles">Lego</option>
+                                <option value="remix">Remix</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- ===== TEXTURA options ===== -->
+                    <div id="acabados-texture-panel" class="acabados-sub-panel options-panel" style="display: none;">
+                        <div class="acabados-texture-inline-row">
+                            <div class="form-group">
+                                <label>Dirección:</label>
+                                <select id="stl_texture_direction">
+                                    <option value="inward">↓ Grabado</option>
+                                    <option value="flush">─ A ras</option>
+                                    <option value="outward" selected>↑ Relieve</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Patrón:</label>
+                                <select id="stl_texture_type">
+                                    <option value="solid">Sólido</option>
+                                    <option value="grid">Rejilla</option>
+                                    <option value="stripes">Rayas</option>
+                                    <option value="zigzag">Zigzag</option>
+                                    <option value="honeycomb">Panal</option>
+                                    <option value="circles">Lego</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="stl-check-label">
+                                    <input type="checkbox" id="stl_texture_invert">
+                                    Invertir
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ===== IMAGEN (custom image) options ===== -->
+                    <div id="acabados-image-panel" class="acabados-sub-panel options-panel" style="display: none;">
+                        <div class="acabados-texture-inline-row">
+                            <div class="form-group">
+                                <label>Dirección:</label>
+                                <select id="stl_image_direction">
+                                    <option value="inward">↓ Grabado</option>
+                                    <option value="flush">─ A ras</option>
+                                    <option value="outward" selected>↑ Relieve</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Cargar imagen:</label>
+                                <input type="file" id="stl_texture_custom_file" accept="image/*" style="display:none">
+                                <button type="button" class="btn btn-small" id="texture-custom-file-btn">Cargar imagen</button>
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-small" id="texture-custom-edit-btn" style="display:none">🖌️ Editar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Inline 3D viewer -->
+                    <div id="acabados-3d-inline" style="width:100%; margin-top:12px;"></div>
+                    <div class="acabados-inline3d-controls">
+                        <label class="inline3d-switch-label">
+                            📐 Mostrar base
+                            <label class="switch-label switch-small">
+                                <input type="checkbox" id="inline3d_show_base" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </label>
+                        <label class="inline3d-switch-label">
+                            🔓 Liberar visor
+                            <label class="switch-label switch-small">
+                                <input type="checkbox" id="inline3d_free_camera">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </label>
+                        <button type="button" id="inline3d_refresh" class="btn-compact" title="Actualizar visor 3D">🔄</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Row 3: 4-col [params | common | Puzle | Base] -->
+            <div class="acabados-row4-grid">
+                <!-- Col 1: Type-specific params -->
+                <div class="acabados-col-params">
+                    <!-- Infill type params -->
+                    <div class="infill-opts options-panel" id="infill-opts-grid">
+                        <div class="collapsible-header collapsible-sub" data-target="infill-grid-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="infill-grid-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1" data-link="stl_infill_fill_width">
+                                    <input type="number" id="stl_infill_fill_width" value="1" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="20" step="0.5" value="4" data-link="stl_infill_spacing">
+                                    <input type="number" id="stl_infill_spacing" value="4" step="0.5" min="1" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_infill_angle_grid">
+                                    <input type="number" id="stl_infill_angle_grid" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="infill-opts options-panel" id="infill-opts-stripes">
+                        <div class="collapsible-header collapsible-sub" data-target="infill-stripes-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="infill-stripes-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1.5" data-link="stl_infill_fill_width_s">
+                                    <input type="number" id="stl_infill_fill_width_s" value="1.5" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="20" step="0.5" value="3" data-link="stl_infill_spacing_s">
+                                    <input type="number" id="stl_infill_spacing_s" value="3" step="0.5" min="1" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_infill_angle_stripes">
+                                    <input type="number" id="stl_infill_angle_stripes" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="infill-opts options-panel" id="infill-opts-zigzag">
+                        <div class="collapsible-header collapsible-sub" data-target="infill-zigzag-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="infill-zigzag-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1" data-link="stl_infill_fill_width_z">
+                                    <input type="number" id="stl_infill_fill_width_z" value="1" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="20" step="0.5" value="3" data-link="stl_infill_spacing_z">
+                                    <input type="number" id="stl_infill_spacing_z" value="3" step="0.5" min="1" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Amplitud (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.5" max="10" step="0.5" value="2" data-link="stl_infill_amplitude">
+                                    <input type="number" id="stl_infill_amplitude" value="2" step="0.5" min="0.5" max="10" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_infill_angle_zigzag">
+                                    <input type="number" id="stl_infill_angle_zigzag" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="infill-opts options-panel" id="infill-opts-honeycomb">
+                        <div class="collapsible-header collapsible-sub" data-target="infill-honeycomb-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="infill-honeycomb-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1" data-link="stl_infill_fill_width_h">
+                                    <input type="number" id="stl_infill_fill_width_h" value="1" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="2" max="20" step="0.5" value="5" data-link="stl_infill_cell_size">
+                                    <input type="number" id="stl_infill_cell_size" value="5" step="0.5" min="2" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_infill_angle_honeycomb">
+                                    <input type="number" id="stl_infill_angle_honeycomb" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="infill-opts options-panel" id="infill-opts-circles">
+                        <div class="collapsible-header collapsible-sub" data-target="infill-circles-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="infill-circles-body">
+                            <div class="form-group">
+                                <label>Radio (%):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="10" max="48" value="40" data-link="stl_infill_circle_radius">
+                                    <input type="number" id="stl_infill_circle_radius" min="10" max="48" value="40" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Grosor borde (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="2" data-link="stl_infill_fill_width_c">
+                                    <input type="number" id="stl_infill_fill_width_c" value="2" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="stl-check-label">
+                                    <input type="checkbox" id="stl_infill_circle_filled" checked>
+                                    Círculo relleno (sin borde)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Texture type params -->
+                    <div class="texture-opts options-panel" id="texture-opts-grid">
+                        <div class="collapsible-header collapsible-sub" data-target="texture-grid-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="texture-grid-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1" data-link="stl_texture_fill_width_grid">
+                                    <input type="number" id="stl_texture_fill_width_grid" value="1" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="20" step="0.5" value="4" data-link="stl_texture_spacing_grid">
+                                    <input type="number" id="stl_texture_spacing_grid" value="4" step="0.5" min="1" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_texture_angle_grid">
+                                    <input type="number" id="stl_texture_angle_grid" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="texture-opts options-panel" id="texture-opts-stripes">
+                        <div class="collapsible-header collapsible-sub" data-target="texture-stripes-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="texture-stripes-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1.5" data-link="stl_texture_fill_width_stripes">
+                                    <input type="number" id="stl_texture_fill_width_stripes" value="1.5" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="20" step="0.5" value="3" data-link="stl_texture_spacing_stripes">
+                                    <input type="number" id="stl_texture_spacing_stripes" value="3" step="0.5" min="1" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_texture_angle_stripes">
+                                    <input type="number" id="stl_texture_angle_stripes" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="texture-opts options-panel" id="texture-opts-zigzag">
+                        <div class="collapsible-header collapsible-sub" data-target="texture-zigzag-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="texture-zigzag-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1" data-link="stl_texture_fill_width_zigzag">
+                                    <input type="number" id="stl_texture_fill_width_zigzag" value="1" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="20" step="0.5" value="3" data-link="stl_texture_spacing_zigzag">
+                                    <input type="number" id="stl_texture_spacing_zigzag" value="3" step="0.5" min="1" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Amplitud (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.5" max="10" step="0.5" value="2" data-link="stl_texture_amplitude">
+                                    <input type="number" id="stl_texture_amplitude" value="2" step="0.5" min="0.5" max="10" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_texture_angle_zigzag">
+                                    <input type="number" id="stl_texture_angle_zigzag" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="texture-opts options-panel" id="texture-opts-honeycomb">
+                        <div class="collapsible-header collapsible-sub" data-target="texture-honeycomb-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="texture-honeycomb-body">
+                            <div class="form-group">
+                                <label>Grosor línea (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="1" data-link="stl_texture_fill_width_honeycomb">
+                                    <input type="number" id="stl_texture_fill_width_honeycomb" value="1" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Espaciado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="2" max="20" step="0.5" value="5" data-link="stl_texture_cell_size">
+                                    <input type="number" id="stl_texture_cell_size" value="5" step="0.5" min="2" max="20" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ángulo (°):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="360" step="5" value="0" data-link="stl_texture_angle_honeycomb">
+                                    <input type="number" id="stl_texture_angle_honeycomb" value="0" step="5" min="0" max="360" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Solid texture: no pattern params (placeholder shown) -->
+                    <div class="texture-opts no-opts-placeholder options-panel" id="texture-opts-solid">
+                        <span class="no-opts-text">ℹ️ El patrón sólido no tiene parámetros de patrón</span>
+                    </div>
+                    <div class="texture-opts options-panel" id="texture-opts-circles">
+                        <div class="collapsible-header collapsible-sub" data-target="texture-circles-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Parámetros del patrón
+                        </div>
+                        <div class="collapsible-body" id="texture-circles-body">
+                            <div class="form-group">
+                                <label>Radio (%):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="10" max="48" value="40" data-link="stl_texture_circle_radius">
+                                    <input type="number" id="stl_texture_circle_radius" min="10" max="48" value="40" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Grosor borde (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.4" max="5" step="0.2" value="2" data-link="stl_texture_fill_width_circles">
+                                    <input type="number" id="stl_texture_fill_width_circles" value="2" step="0.2" min="0.4" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="stl-check-label">
+                                    <input type="checkbox" id="stl_texture_circle_filled" checked>
+                                    Círculo relleno (sin borde)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Image: Ajustes 3D -->
+                    <div class="image-opts acabados-sub-panel options-panel" id="image-opts-ajustes">
+                        <div class="collapsible-header collapsible-sub" data-target="section-image-3d"><span class="collapse-arrow">▾</span> 🔧 Ajustes de imagen</div>
+                        <div class="collapsible-body" id="section-image-3d">
+                        <div class="form-group">
+                            <label>Zoom imagen:</label>
+                            <div class="slider-number-group">
+                                <input type="range" class="range-input" min="10" max="500" value="100" data-link="stl_texture_custom_zoom">
+                                <input type="number" id="stl_texture_custom_zoom" min="10" max="500" value="100" class="slider-num-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="stl-check-label">
+                                <input type="checkbox" id="stl_image_already_bw">
+                                Mi imagen ya está en blanco y negro
+                            </label>
+                        </div>
+                        <div class="form-group" id="image-threshold-group">
+                            <label>Umbral blanco/negro:</label>
+                            <div class="slider-number-group">
+                                <input type="range" class="range-input" min="0" max="255" value="128" data-link="stl_texture_custom_threshold">
+                                <input type="number" id="stl_texture_custom_threshold" min="0" max="255" value="128" class="slider-num-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Grosor de línea (px):</label>
+                            <div class="slider-number-group">
+                                <input type="range" class="range-input" min="0" max="10" step="1" value="0" data-link="stl_image_line_thickness">
+                                <input type="number" id="stl_image_line_thickness" min="0" max="10" step="1" value="0" class="slider-num-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="stl-check-label">
+                                <input type="checkbox" id="stl_texture_custom_blur" checked>
+                                Suavizar antes de umbralizar
+                            </label>
+                        </div>
+                        </div>
+                    </div>
+                    <!-- No-params placeholder: shown for solid/hollow/remix types -->
+                    <div class="infill-opts no-opts-placeholder options-panel" id="no-opts-params">
+                        <span class="no-opts-text">ℹ️ Este tipo de relleno no tiene parámetros de patrón</span>
+                    </div>
+                </div>
+                <!-- Col 2: Common opts / Procesado -->
+                <div class="acabados-col-common">
+                    <!-- Infill common opts -->
+                    <div class="infill-opts options-panel" id="infill-opts-common">
+                        <div class="collapsible-header collapsible-sub" data-target="infill-common-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Ajustes del relleno
+                        </div>
+                        <div class="collapsible-body" id="infill-common-body">
+                            <div class="form-group">
+                                <label>Grosor pared pieza (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.5" max="10" step="0.5" value="2" data-link="stl_infill_wall">
+                                    <input type="number" id="stl_infill_wall" value="2" step="0.5" min="0.5" max="10" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Texture common opts -->
+                    <div class="texture-opts active options-panel" id="texture-opts-common">
+                        <div class="collapsible-header collapsible-sub" data-target="texture-common-body">
+                            <span class="collapse-arrow">▾</span> ⚙️ Ajustes de textura
+                        </div>
+                        <div class="collapsible-body" id="texture-common-body">
+                            <div class="form-group">
+                                <label>Altura textura (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.1" max="5" step="0.1" value="0.6" data-link="stl_texture_height">
+                                    <input type="number" id="stl_texture_height" value="0.6" step="0.1" min="0.1" max="5" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Margen hasta el borde (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.5" data-link="stl_texture_wall">
+                                    <input type="number" id="stl_texture_wall" value="0.5" step="0.1" min="0" max="10" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="stl-check-label">
+                                    <input type="checkbox" id="stl_texture_no_border">
+                                    Imagen hasta el borde (sin margen)
+                                </label>
+                            </div>
+                            <div class="form-group" id="texture-engrave-depth-group" style="display:none;">
+                                <label>Profundidad color grabado (mm):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0.1" max="3" step="0.1" value="0.4" data-link="stl_texture_engrave_depth">
+                                    <input type="number" id="stl_texture_engrave_depth" value="0.4" step="0.1" min="0.1" max="3" class="slider-num-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Image: Procesado -->
+                    <div class="image-opts acabados-sub-panel options-panel" id="image-opts-procesado">
+                        <div class="collapsible-header collapsible-sub" data-target="section-image-processing"><span class="collapse-arrow">▾</span> ⚙️ Ajustes de textura</div>
+                        <div class="collapsible-body" id="section-image-processing">
+                        <div class="form-group">
+                            <label>Altura textura (mm):</label>
+                            <div class="slider-number-group">
+                                <input type="range" class="range-input" min="0.1" max="5" step="0.1" value="0.6" data-link="stl_image_height">
+                                <input type="number" id="stl_image_height" value="0.6" step="0.1" min="0.1" max="5" class="slider-num-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Margen hasta el borde (mm):</label>
+                            <div class="slider-number-group">
+                                <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.5" data-link="stl_image_wall">
+                                <input type="number" id="stl_image_wall" value="0.5" step="0.1" min="0" max="10" class="slider-num-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="stl-check-label">
+                                <input type="checkbox" id="stl_image_no_border">
+                                Imagen hasta el borde (sin margen)
+                            </label>
+                        </div>
+                        <div class="form-group" id="image-engrave-depth-group" style="display:none;">
+                            <label>Profundidad color grabado (mm):</label>
+                            <div class="slider-number-group">
+                                <input type="range" class="range-input" min="0.1" max="3" step="0.1" value="0.4" data-link="stl_image_engrave_depth">
+                                <input type="number" id="stl_image_engrave_depth" value="0.4" step="0.1" min="0.1" max="3" class="slider-num-input">
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    <!-- No-common placeholder: shown for solid/remix types -->
+                    <div class="infill-opts no-opts-placeholder options-panel" id="no-opts-common">
+                        <span class="no-opts-text">ℹ️ Este tipo de relleno no tiene ajustes adicionales</span>
+                    </div>
+                </div>
+                <!-- (Piece & Base settings moved to "Configuración 3D Avanzada" panel below) -->
+                <!-- (Sliding piece & base settings also moved to "Configuración 3D Avanzada" panel below) -->
+            </div>
+            <!-- Image Editor Modal (scoped to acabados panel) -->
+            <div class="modal-overlay" id="texture-editor-modal" style="display: none;">
+                <div class="modal-content texture-editor-content">
+                    <div class="modal-header">
+                        <h3>🖌️ Editor de Textura</h3>
+                        <button class="modal-close" id="texture-editor-close">&times;</button>
+                    </div>
+                    <div class="texture-editor-toolbar">
+                        <button class="btn btn-small active" id="tex-paint-black">⬛ Pintar negro</button>
+                        <button class="btn btn-small" id="tex-paint-white">⬜ Pintar blanco</button>
+                        <label>Tamaño pincel: <input type="range" id="tex-brush-size" min="1" max="50" value="10"></label>
+                        <button class="btn btn-small" id="tex-editor-reset">↩️ Reiniciar</button>
+                    </div>
+                    <canvas id="texture-editor-canvas" width="512" height="512"></canvas>
+                    <div class="texture-editor-actions">
+                        <button class="btn" id="tex-editor-cancel">Cancelar</button>
+                        <button class="btn btn-primary" id="tex-editor-apply">✅ Aplicar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             Advanced 3D Configuration Panel (pieces + base settings)
+             Disabled by default, toggleable via switch.
+             Uses stock geometry mini-viewers for live preview.
+             ═══════════════════════════════════════════════════════════ -->
+        <div class="panel" id="advanced-3d-config-panel">
+            <div class="advanced-viewer-header">
+                <h2>⚙️ Configuración 3D Avanzada</h2>
+                <label class="switch-label">
+                    <input type="checkbox" id="adv3d_config_toggle">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div id="adv3d-config-content" style="display:none;">
+
+                <!-- ── Row 1: Piece Settings (non-sliding) ── -->
+                <div class="adv3d-section non-sliding">
+                    <h3>🧩 Ajustes piezas</h3>
+
+                    <!-- General piece settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-piece-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-piece-general">
+                                <div class="puzle-color-corners-grid">
+                                    <div class="puzle-colors-row">
+                                        <div class="form-group">
+                                            <label>🎨 Color piezas:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="stl_color_pieces" value="#00998A">
+                                                <span class="color-hex" id="stl_color_pieces_hex">#00998A</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" id="relief-color-group">
+                                            <label>🎨 Color relieve:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="stl_color_relief" value="#C1B399">
+                                                <span class="color-hex" id="stl_color_relief_hex">#C1B399</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Tamaño (mm):</label>
+                                        <input type="number" id="stl_cube_size" value="10" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Altura (mm):</label>
+                                        <input type="number" id="stl_height" value="3" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Tolerancia:</label>
+                                        <input type="number" id="stl_tolerance" value="0.3" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-piece-general" data-focus="piece-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Piece edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel" id="piece-opts-corners">
+                                <div id="corner-no-adjust-msg" class="no-opts-placeholder" style="display:none;">
+                                    <span class="no-opts-text">ℹ️ Este tipo de puzzle no permite ajustes de esquinas en las piezas</span>
+                                </div>
+                                <div id="corner-controls-wrap">
+                                    <div class="collapsible-header collapsible-sub" data-target="section-piece-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                    <div class="collapsible-body" id="section-piece-edges">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <div class="form-group">
+                                                <label>Tipo:</label>
+                                                <select id="stl_corner_style">
+                                                    <option value="sharp">📐 Rectas</option>
+                                                    <option value="round" selected>🔘 Redondeadas</option>
+                                                    <option value="chamfer">◇ Chaflán</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group corner-size-group" id="corner-radius-group">
+                                                <label>Radio (mm):</label>
+                                                <input type="number" id="stl_corner_radius" value="1.0" step="0.1" min="0.1" max="10">
+                                            </div>
+                                        </div>
+                                        <div class="form-group" id="corner-inner-group">
+                                            <label><input type="checkbox" id="stl_corner_inner"> Aplicar también a esquinas interiores</label>
+                                        </div>
+                                        <div class="puzle-dims-grid">
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="piece_chamfer_top_on"> Superior (mm):</label>
+                                                <input type="number" id="piece_chamfer_top" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="piece_chamfer_bottom_on"> Inferior (mm):</label>
+                                                <input type="number" id="piece_chamfer_bottom" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-piece-edges" data-focus="piece-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 2: Base Settings (non-sliding) ── -->
+                <div class="adv3d-section non-sliding">
+                    <h3>📐 Ajustes base</h3>
+
+                    <!-- General base settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-base-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-base-general">
+                                <div class="puzle-color-corners-grid">
+                                    <div class="puzle-colors-row">
+                                        <div class="form-group">
+                                            <label>🎨 Color base:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="stl_color_base" value="#808080">
+                                                <span class="color-hex" id="stl_color_base_hex">#808080</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Borde (mm):</label>
+                                        <input type="number" id="stl_border" value="5" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Espesor (mm):</label>
+                                        <input type="number" id="stl_base_thickness" value="1" step="0.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Paredes (mm):</label>
+                                        <input type="number" id="stl_wall_height" value="3" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-base-general" data-focus="base-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Base edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel">
+                                <div id="base-opts-corners">
+                                    <div class="collapsible-header collapsible-sub" data-target="section-base-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                    <div class="collapsible-body" id="section-base-edges">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <!-- Interior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Interior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label><input type="checkbox" id="base_inner_same_as_piece" checked> Igual que piezas</label>
+                                                </div>
+                                                <div id="base-inner-corner-opts">
+                                                    <div class="form-group">
+                                                        <label>Tipo:</label>
+                                                        <select id="stl_base_corner_style_inner">
+                                                            <option value="sharp">📐 Rectas</option>
+                                                            <option value="round" selected>🔘 Redondeadas</option>
+                                                            <option value="chamfer">◇ Chaflán</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group base-corner-size-group" id="base-corner-radius-inner-group">
+                                                        <label>Tamaño (mm):</label>
+                                                        <input type="number" id="stl_base_corner_radius_inner" value="1.0" step="0.1" min="0" max="20">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Exterior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Exterior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Tipo:</label>
+                                                    <select id="stl_base_corner_style">
+                                                        <option value="sharp">📐 Rectas</option>
+                                                        <option value="round" selected>🔘 Redondeadas</option>
+                                                        <option value="chamfer">◇ Chaflán</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group base-corner-size-group" id="base-corner-radius-group">
+                                                    <label>Tamaño (mm):</label>
+                                                    <input type="number" id="stl_base_corner_radius" value="2.5" step="0.1" min="0" max="20">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="puzle-dims-grid">
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="base_chamfer_top_outer_on"> Sup. exterior (mm):</label>
+                                                <input type="number" id="base_chamfer_top_outer" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="base_chamfer_top_inner_on"> Sup. interior (mm):</label>
+                                                <input type="number" id="base_chamfer_top_inner" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="base_chamfer_bottom_outer_on"> Inf. exterior (mm):</label>
+                                                <input type="number" id="base_chamfer_bottom_outer" value="0.5" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-base-edges" data-focus="base-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 3: Sliding Piece Settings ── -->
+                <div class="adv3d-section sliding-only" style="display:none;">
+                    <h3>🧩 Ajustes piezas (Sliding)</h3>
+
+                    <!-- General sliding piece settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-sliding-piece-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-sliding-piece-general">
+                                <p class="disclaimer" style="margin-top:0;margin-bottom:8px;">
+                                    ℹ️ <b>Print-in-place:</b> Sin suelo. Piezas con perfil de encaje simétrico. Ajusta holguras según tu impresora.
+                                </p>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Celda (mm):</label>
+                                        <input type="number" id="sliding_cell_size" value="20" step="1" min="10" max="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Holgura XY (mm):</label>
+                                        <input type="number" id="sliding_clearance" value="0.3" step="0.05" min="0.1" max="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Altura pieza (mm):</label>
+                                        <input type="number" id="sliding_piece_height" value="8.0" step="0.5" min="2" max="30">
+                                    </div>
+                                </div>
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Plano (mm):</label>
+                                        <input type="number" id="sliding_stem_height" value="1.0" step="0.5" min="0" max="8">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Zona encaje (mm):</label>
+                                        <input type="number" id="sliding_cap_height" value="1.0" step="0.5" min="0" max="8">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Desplaz. encaje (mm):</label>
+                                        <input type="number" id="sliding_overhang" value="3.0" step="0.25" min="0.5" max="5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Dir. encaje:</label>
+                                        <select id="sliding_shift_direction">
+                                            <option value="br" selected>↘ Abajo-Derecha</option>
+                                            <option value="bl">↙ Abajo-Izquierda</option>
+                                            <option value="tr">↗ Arriba-Derecha</option>
+                                            <option value="tl">↖ Arriba-Izquierda</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-piece-general" data-focus="piece-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sliding piece edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel">
+                                <div class="collapsible-header collapsible-sub" data-target="section-sliding-piece-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                <div class="collapsible-body" id="section-sliding-piece-edges">
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                        <div class="form-group">
+                                            <label>Tipo:</label>
+                                            <select id="sliding_corner_style">
+                                                <option value="sharp">📐 Rectas</option>
+                                                <option value="round" selected>🔘 Redondeadas</option>
+                                                <option value="chamfer">◇ Chaflán</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" id="sliding-corner-radius-group">
+                                            <label>Radio (mm):</label>
+                                            <input type="number" id="sliding_corner_radius" value="1.0" step="0.1" min="0" max="10">
+                                        </div>
+                                    </div>
+                                    <div class="puzle-dims-grid">
+                                        <div class="form-group">
+                                            <label><input type="checkbox" id="sliding_piece_chamfer_top_on"> Superior (mm):</label>
+                                            <input type="number" id="sliding_piece_chamfer_top" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                        </div>
+                                        <div class="form-group">
+                                            <label><input type="checkbox" id="sliding_piece_chamfer_bottom_on"> Inferior (mm):</label>
+                                            <input type="number" id="sliding_piece_chamfer_bottom" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-piece-edges" data-focus="piece-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 4: Sliding Base Settings ── -->
+                <div class="adv3d-section sliding-only" style="display:none;">
+                    <h3>📐 Ajustes base (Sliding)</h3>
+
+                    <!-- General sliding base settings + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="collapsible-header collapsible-sub" data-target="section-sliding-base-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
+                            <div class="collapsible-body" id="section-sliding-base-general">
+                                <div class="puzle-dims-grid">
+                                    <div class="form-group">
+                                        <label>Marco (mm):</label>
+                                        <input type="number" id="sliding_frame_border" value="5" step="0.5" min="2" max="15">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="display:none">
+                                    <label>Suelo (mm):</label>
+                                    <input type="number" id="sliding_floor_height" value="1.0" step="0.5" min="0.5" max="5">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-base-general" data-focus="base-general"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sliding base edges (corners + chamfer Z) + mini viewer -->
+                    <div class="adv3d-row">
+                        <div class="adv3d-settings">
+                            <div class="puzle-corners-container options-panel">
+                                <div id="base-opts-corners-sliding">
+                                    <div class="collapsible-header collapsible-sub" data-target="section-sliding-base-edges"><span class="collapse-arrow">▾</span> 📐 Esquinas y bordes</div>
+                                    <div class="collapsible-body" id="section-sliding-base-edges">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <!-- Interior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Interior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label><input type="checkbox" id="sliding_base_inner_same_as_piece" checked> Igual que piezas</label>
+                                                </div>
+                                                <div id="sliding-base-inner-corner-opts">
+                                                    <div class="form-group">
+                                                        <label>Tipo:</label>
+                                                        <select id="sliding_base_corner_style_inner">
+                                                            <option value="sharp">📐 Rectas</option>
+                                                            <option value="round" selected>🔘 Redondeadas</option>
+                                                            <option value="chamfer">◇ Chaflán</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group" id="sliding-base-corner-radius-inner-group">
+                                                        <label>Tamaño (mm):</label>
+                                                        <input type="number" id="sliding_base_corner_radius_inner" value="1.0" step="0.1" min="0" max="20">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Exterior column -->
+                                            <div class="adv3d-subgroup">
+                                                <div class="form-group">
+                                                    <label><strong>Exterior:</strong></label>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Tipo:</label>
+                                                    <select id="sliding_base_corner_style">
+                                                        <option value="sharp">📐 Rectas</option>
+                                                        <option value="round" selected>🔘 Redondeadas</option>
+                                                        <option value="chamfer">◇ Chaflán</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group" id="sliding-base-corner-radius-group">
+                                                    <label>Tamaño (mm):</label>
+                                                    <input type="number" id="sliding_base_corner_radius" value="2.0" step="0.1" min="0" max="20">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="puzle-dims-grid">
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_top_outer_on"> Sup. exterior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_top_outer" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_top_inner_on"> Sup. interior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_top_inner" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_bottom_outer_on"> Inf. exterior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_bottom_outer" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                            <div class="form-group">
+                                                <label><input type="checkbox" id="sliding_base_chamfer_bottom_inner_on"> Inf. interior (mm):</label>
+                                                <input type="number" id="sliding_base_chamfer_bottom_inner" value="0.3" step="0.1" min="0.1" max="5" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adv3d-viewer">
+                            <div class="mini-viewer-3d" id="mini-viewer-sliding-base-edges" data-focus="base-edges"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 3D Viewer Panel -->
+        <div class="panel viewer-panel">
+            <div class="advanced-viewer-header">
+                <h2>📦 Vista Previa 3D Avanzada</h2>
+                <label class="switch-label">
+                    <input type="checkbox" id="advanced_viewer_toggle">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div id="advanced-viewer-content" style="display:none;">
+                <div class="viewer-toolbar">
+                    <span class="viewer-controls-hint">🖱️ Arrastrar = rotar &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; Clic derecho / Shift+arrastrar = desplazar</span>
+                    <div class="viewer-mode-selector">
+                        <label class="viewer-mode-option">
+                            <input type="checkbox" name="viewer_mode" id="viewer_mode_pieces" value="pieces">
+                            <span>🧩 Solo piezas</span>
+                        </label>
+                        <label class="viewer-mode-option">
+                            <input type="checkbox" name="viewer_mode" id="viewer_mode_base" value="base">
+                            <span>📐 Solo base</span>
+                        </label>
+                        <label class="viewer-mode-option active" id="viewer_mode_both_label">
+                            <input type="checkbox" name="viewer_mode" id="viewer_mode_both" value="both" checked>
+                            <span>🧩+📐 Piezas y base</span>
+                        </label>
+                    </div>
+                    <div class="viewer-update-controls">
+                        <button class="btn btn-small" id="viewer-reload-btn">🔃 Recargar visor</button>
+                        <label class="inline3d-switch-label">
+                            🧩 Piezas ensambladas
+                            <label class="switch-label switch-small">
+                                <input type="checkbox" id="stl_assembled">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+                </div>
+                <div id="viewer-3d"></div>
+                <div id="status-viewer" class="status"></div>
+            </div>
+        </div>
+
+        <!-- Export Panel (download buttons) -->
+        <div class="panel download-panel">
+            <h2>📥 Exportar</h2>
+            <p class="stl-download-hint">💡 Configura las opciones de diseño y descarga tu puzzle.</p>
+            <p class="stl-download-hint">📦 El archivo 3MF incluye los colores seleccionados para piezas y base. Compatible con Orca Slicer, Bambu Studio y otros.</p>
+
+            <div class="stl-download-buttons">
+                <button id="export-stl-pieces-btn" class="btn btn-t3">⬇️ Solo piezas (STL)</button>
+                <button id="export-stl-base-btn" class="btn btn-t3">⬇️ Solo base (STL)</button>
+                <button id="export-stl-both-single-btn" class="btn btn-t3">⬇️ Piezas + Base (1 STL)</button>
+                <button id="export-stl-both-separate-btn" class="btn btn-t3">⬇️ Piezas + Base (2 STLs)</button>
+            </div>
+            <div class="stl-download-buttons" style="margin-top: 15px; margin-bottom: 15px;">
+                <button id="export-3mf-btn" class="btn btn-t1">⬇️ 🎨 Descargar 3MF Multi-Color</button>
+            </div>
+            <div id="status-download" class="status"></div>
+        </div>
+    </div>
+        </main>
+
+        <footer class="site-footer">
+            <span>&copy; 2026 setupandhold</span>
+            <span class="dot">&middot;</span>
+            <a href="../about">Contacto</a>
+            <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema">
+                <span class="toggle-slider">
+                    <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i>
+                    <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i>
+                </span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Theme toggle logic (mirrors BaseLayout.astro) -->
+    <script>
+    (() => {
+        const key = 'theme';
+        const apply = (value) => {
+            document.documentElement.dataset.theme = value;
+            localStorage.setItem(key, value);
+            const btn = document.querySelector('[data-theme-toggle]');
+            if (btn) btn.setAttribute('aria-pressed', value === 'light' ? 'true' : 'false');
+        };
+        const saved = localStorage.getItem(key);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        apply(saved || (prefersLight ? 'light' : 'dark'));
+        const btn = document.querySelector('[data-theme-toggle]');
+        if (btn) btn.addEventListener('click', () => {
+            const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+            apply(current === 'light' ? 'dark' : 'light');
+        });
+    })();
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- STL Loader -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Line2 / fat lines for edge highlight -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineSegmentsGeometry.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineMaterial.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineSegments2.js"></script>
+    <!-- earcut for polygon triangulation (STL export) -->
+    <script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/src/earcut.min.js"></script>
+    <!-- clipper-lib for polygon boolean operations (tolerance, infill, corners) -->
+    <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+    <!-- fflate for ZIP creation (3MF export) -->
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+    <!-- Puzzle engine (local JS — replaces Python backend) -->
+    <script src="engine/utils.js"></script>
+    <script src="engine/grid.js"></script>
+    <script src="engine/solver.js"></script>
+    <script src="engine/fractal.js"></script>
+    <script src="engine/jigsaw.js"></script>
+    <script src="engine/sliding.js"></script>
+    <script src="engine/stl-export.js"></script>
+    <!-- API bridge — intercepts fetch('/api/*') and routes to engine -->
+    <script src="api-bridge.js"></script>
+    <!-- Original frontend (unmodified) -->
+    <script src="app.js"></script>
+</body>
+</html>
