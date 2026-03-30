@@ -308,6 +308,91 @@ window.PuzzleSTL = (function () {
         return tris;
     }
 
+    // Like _extrudeWithHoles but emits bottom cap + sides only (no top cap).
+    // Used when the top boundary is shared with an adjacent geometry zone.
+    function _extrudeWithHolesNoTopCap(outer, holePolys, height, zOff) {
+        zOff = zOff || 0;
+        var poly = outer.slice();
+        if (poly.length > 1 && poly[0][0] === poly[poly.length-1][0] && poly[0][1] === poly[poly.length-1][1])
+            poly = poly.slice(0, -1);
+        if (poly.length < 3) return [];
+        var flat = [], holeIndices = [], allRings = [poly];
+        for (var i = 0; i < poly.length; i++) flat.push(poly[i][0], poly[i][1]);
+        for (var hi = 0; hi < holePolys.length; hi++) {
+            var h = holePolys[hi].slice();
+            if (h.length > 1 && h[0][0] === h[h.length-1][0] && h[0][1] === h[h.length-1][1])
+                h = h.slice(0, -1);
+            if (h.length < 3) continue;
+            holeIndices.push(flat.length / 2);
+            for (var i = 0; i < h.length; i++) flat.push(h[i][0], h[i][1]);
+            allRings.push(h);
+        }
+        var idx = triangulate(flat, holeIndices.length > 0 ? holeIndices : undefined);
+        function getP(fi) { return [flat[fi*2], flat[fi*2+1]]; }
+        var tris = [];
+        var z0 = zOff, z1 = zOff + height;
+        // Bottom face only
+        for (var i = 0; i < idx.length; i += 3) {
+            var a = getP(idx[i]), b = getP(idx[i+1]), c = getP(idx[i+2]);
+            tris.push([[a[0],a[1],z0],[c[0],c[1],z0],[b[0],b[1],z0]]);
+        }
+        // Side faces
+        for (var ri = 0; ri < allRings.length; ri++) {
+            var ring = allRings[ri], n = ring.length;
+            for (var i = 0; i < n; i++) {
+                var j = (i+1)%n, a = ring[i], b = ring[j];
+                tris.push([[a[0],a[1],z0],[b[0],b[1],z0],[b[0],b[1],z1]]);
+                tris.push([[a[0],a[1],z0],[b[0],b[1],z1],[a[0],a[1],z1]]);
+            }
+        }
+        return tris;
+    }
+
+    // Like extrudePolygons but emits bottom cap + sides only (no top cap).
+    function _extrudePolygonsNoTopCap(polys, height, zOff) {
+        if (!polys || polys.length === 0) return [];
+        var outers = [], holes = [];
+        for (var i = 0; i < polys.length; i++) {
+            var p = polys[i]; if (!p || p.length < 3) continue;
+            if (polyArea(p) >= 0) outers.push(p); else holes.push(p);
+        }
+        if (outers.length === 0 && holes.length === 0) return [];
+        if (holes.length === 0) {
+            // No holes: bottom cap + sides for each outer
+            var all = [];
+            for (var i = 0; i < outers.length; i++) {
+                var poly = outers[i];
+                var flat2 = []; for (var k = 0; k < poly.length; k++) flat2.push(poly[k][0], poly[k][1]);
+                var idx2 = triangulate(flat2);
+                var z0 = zOff, z1 = zOff + height;
+                for (var k = 0; k < idx2.length; k += 3) {
+                    var a = poly[idx2[k]], b = poly[idx2[k+1]], c = poly[idx2[k+2]];
+                    all.push([[a[0],a[1],z0],[c[0],c[1],z0],[b[0],b[1],z0]]);
+                }
+                for (var k = 0; k < poly.length; k++) {
+                    var j2 = (k+1)%poly.length, aa = poly[k], bb = poly[j2];
+                    all.push([[aa[0],aa[1],z0],[bb[0],bb[1],z0],[bb[0],bb[1],z1]]);
+                    all.push([[aa[0],aa[1],z0],[bb[0],bb[1],z1],[aa[0],aa[1],z1]]);
+                }
+            }
+            return all;
+        }
+        var outerHoles = outers.map(function() { return []; });
+        for (var hi = 0; hi < holes.length; hi++) {
+            var hp = holes[hi][0];
+            var assigned = false;
+            for (var oi = 0; oi < outers.length; oi++) {
+                if (_pointInPoly(hp, outers[oi])) { outerHoles[oi].push(holes[hi]); assigned = true; break; }
+            }
+            if (!assigned && outers.length > 0) outerHoles[0].push(holes[hi]);
+        }
+        var all = [];
+        for (var oi = 0; oi < outers.length; oi++) {
+            all.push.apply(all, _extrudeWithHolesNoTopCap(outers[oi], outerHoles[oi], height, zOff));
+        }
+        return all;
+    }
+
     function extrudePolygons(polys, height, zOff) {
         // Group polygons into outers and holes based on signed area.
         // Clipper returns CCW outers (positive area) and CW holes (negative area).
@@ -2219,53 +2304,47 @@ window.PuzzleSTL = (function () {
             var effBevelSteps5 = (effBevel5 > 0.01) ? Math.max(2, Math.ceil(effBevel5 / 0.15)) : 0;
             var effBevelSlice5 = (effBevelSteps5 > 0) ? effBevel5 / effBevelSteps5 : 0;
 
-            // Zone 1: bottom flat (Z=z1 to effZ2) — bottom cap + sides only (no top cap = no seam with zone 2)
+            // Zone 1: bottom flat (Z=z1 to effZ2)
             if (effFlat1 > 0) {
                 var walls1 = polyDifference([outerRect], [framePocketAt(0)]);
                 if (walls1.length > 0) {
                     if (baseChamfBot > 0) {
                         baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls1, effFlat1, z1, 0, 0, baseChamfBotOuter, baseChamfBotInner));
                     } else {
-                        baseTris.push.apply(baseTris, _capsForPolygonSet(walls1, z1, true)); // bottom face
-                        for (var w1i = 0; w1i < walls1.length; w1i++) {
-                            baseTris.push.apply(baseTris, _loftWalls(walls1[w1i], walls1[w1i], z1, effZ2));
-                        }
+                        baseTris.push.apply(baseTris, extrudePolygons(walls1, effFlat1, z1));
                     }
                 }
             }
 
-            // Zone 2: bevel up (Z=effZ2 to effZ3) — single smooth loft, no staircase seams
-            if (effBevel1 > 0.001) {
-                baseTris.push.apply(baseTris, _loftWalls(outerRect, outerRect, effZ2, effZ3));                    // outer side (constant)
-                baseTris.push.apply(baseTris, loftWalls(framePocketAt(0), framePocketAt(1), effZ2, effZ3));      // inner side (smooth diagonal)
+            // Zone 2: bevel up (Z=effZ2 to effZ3)
+            for (var bi = 0; bi < effBevelSteps1; bi++) {
+                var t = (bi + 0.5) / effBevelSteps1;
+                var bwalls = polyDifference([outerRect], [framePocketAt(t)]);
+                if (bwalls.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls, effBevelSlice1, effZ2 + bi * effBevelSlice1));
             }
 
-            // Zone 3: middle flat (Z=effZ3 to effZ4) — sides only, no caps (no seam with zones 2 or 4)
+            // Zone 3: middle flat (Z=effZ3 to effZ4)
             var effMidH = effZ4 - effZ3;
             if (effMidH > 0.001) {
                 var walls3 = polyDifference([outerRect], [framePocketAt(1)]);
-                for (var w3i = 0; w3i < walls3.length; w3i++) {
-                    baseTris.push.apply(baseTris, _loftWalls(walls3[w3i], walls3[w3i], effZ3, effZ4));
-                }
+                if (walls3.length > 0) baseTris.push.apply(baseTris, extrudePolygons(walls3, effMidH, effZ3));
             }
 
-            // Zone 4: bevel down (Z=effZ4 to effZ4end) — single smooth loft, no staircase seams
-            if (effBevel5 > 0.001) {
-                baseTris.push.apply(baseTris, _loftWalls(outerRect, outerRect, effZ4, effZ4end));                // outer side (constant)
-                baseTris.push.apply(baseTris, loftWalls(framePocketAt(1), framePocketAt(0), effZ4, effZ4end)); // inner side (smooth diagonal)
+            // Zone 4: bevel down (Z=effZ4 to effZ4end)
+            for (var bi2 = 0; bi2 < effBevelSteps5; bi2++) {
+                var t2 = 1 - (bi2 + 0.5) / effBevelSteps5;
+                var bwalls2 = polyDifference([outerRect], [framePocketAt(t2)]);
+                if (bwalls2.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls2, effBevelSlice5, effZ4 + bi2 * effBevelSlice5));
             }
 
-            // Zone 5: top flat (Z=effZ4end to totalH) — sides only + top cap (no bottom cap = no seam with zone 4)
+            // Zone 5: top flat (Z=effZ4end to totalH)
             if (effFlat5 > 0) {
                 var walls5 = polyDifference([outerRect], [framePocketAt(0)]);
                 if (walls5.length > 0) {
                     if (baseChamfTop > 0) {
-                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls5, effFlat5, totalH - effFlat5, baseChamfTopOuter, baseChamfTopInner, 0, 0, 2, true));
+                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls5, effFlat5, totalH - effFlat5, baseChamfTopOuter, baseChamfTopInner, 0, 0));
                     } else {
-                        for (var w5i = 0; w5i < walls5.length; w5i++) {
-                            baseTris.push.apply(baseTris, _loftWalls(walls5[w5i], walls5[w5i], effZ4end, totalH));
-                        }
-                        baseTris.push.apply(baseTris, _capsForPolygonSet(walls5, totalH, false)); // top face
+                        baseTris.push.apply(baseTris, extrudePolygons(walls5, effFlat5, totalH - effFlat5));
                     }
                 }
             }

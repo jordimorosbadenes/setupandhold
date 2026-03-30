@@ -5769,6 +5769,10 @@ if (galleryToggle) {
         renderer.setSize(w, h);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
+        // Make canvas absolutely positioned so its pixel dimensions don't
+        // influence the container's layout height (avoids flex/grid conflicts)
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.inset = '0';
         container.appendChild(renderer.domElement);
 
         const ambientLight = new THREE.AmbientLight(0xffffff, viewerCfg.ambientIntensity);
@@ -6110,6 +6114,32 @@ if (galleryToggle) {
         });
     }
 
+    // Force recalc of all mini-viewer canvas sizes (used when layout changes)
+    function recalcMiniViewerSizes() {
+        const doResize = () => {
+            // Force a synchronous layout flush so clientWidth/clientHeight
+            // reflect the current visibility state of all sections
+            void document.body.offsetHeight;
+            for (const [id, v] of Object.entries(viewers)) {
+                if (!v || !v.renderer || !v.camera) continue;
+                const container = document.getElementById(id);
+                if (!container) continue;
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                if (w > 0 && h > 0) {
+                    v.renderer.setSize(w, h);
+                    v.camera.aspect = w / h;
+                    v.camera.updateProjectionMatrix();
+                    v.renderer.render(v.scene, v.camera);
+                }
+            }
+        };
+        // Run immediately (display changes are already applied synchronously)
+        doResize();
+        // Follow-up to catch any remaining layout/transition settling
+        setTimeout(doResize, 60);
+    }
+
     // Puzzle type change → regenerate stock puzzle + update mini-viewers
     window.onPuzzleTypeChangeMiniViewers = function (type) {
         if (currentStockType !== type) {
@@ -6118,6 +6148,8 @@ if (galleryToggle) {
             // Reset hasModel so cameras re-frame for the new geometry
             for (const v of Object.values(viewers)) v.hasModel = false;
         }
+        // Force recalc of canvas sizes after display properties change
+        recalcMiniViewerSizes();
         scheduleMiniViewerUpdate();
     };
 
