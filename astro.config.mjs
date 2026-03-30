@@ -12,19 +12,8 @@ const site = siteFromEnv || defaultSite;
 // - Dominio propio / user pages: https://dominio.tld -> base = '/'
 const isProjectPages = Boolean(isGithub && repo && site.includes('github.io') && site.includes(`/${repo}`));
 
-const resolvedBase = (() => {
-  if (isProjectPages) return `/${repo}`;
-  try {
-    let p = new URL(site).pathname || '/';
-    if (p.endsWith('/') && p !== '/') p = p.slice(0, -1);
-    return p || '/';
-  } catch {
-    return '/';
-  }
-})();
-
 export default defineConfig({
   site,
-  base: resolvedBase,
+  base: isProjectPages ? `/${repo}` : '/',
   integrations: [],
 });
