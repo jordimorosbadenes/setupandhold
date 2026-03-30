@@ -1242,7 +1242,8 @@ window.PuzzleSTL = (function () {
             }
         }
         var tris = [];
-        // Base plate — apply bottom chamfer here (at z=0)
+        // Base plate — bottom cap + outer sides only (NO face at z=baseThk over wall area
+        // — pocket floors emitted separately to avoid coincident faces with wall bottom caps)
         if (baseChamfBotOuter > 0) {
             // Create shrunk polygon deterministically (same vertex count as outerRect)
             var botShrunk;
@@ -1257,15 +1258,25 @@ window.PuzzleSTL = (function () {
             if (baseThk - baseChamfBotOuter > 0.001) {
                 tris.push.apply(tris, _loftWalls(outerRect, outerRect, baseChamfBotOuter, baseThk));
             }
-            tris.push.apply(tris, _capFace(outerRect, baseThk, false));
+            // No top cap here — pocket floors emitted below
         } else {
-            tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
+            tris.push.apply(tris, _capFace(outerRect, 0, true));                    // bottom face
+            tris.push.apply(tris, _loftWalls(outerRect, outerRect, 0, baseThk));    // outer sides
         }
-        // Walls — top chamfer per edge type (bottom chamfer is on the base plate)
+        // Pocket floor(s) at z=baseThk — one cap per inner opening (avoids coincident face with wall bottom)
+        for (var pfi = 0; pfi < wallParts.length; pfi++) {
+            if (polyArea(wallParts[pfi]) < 0) {
+                tris.push.apply(tris, _capFace(wallParts[pfi], baseThk, true)); // hole CW + flip → facing up
+            }
+        }
+        // Walls — sides + top cap only (no bottom cap, pocket floors already above)
         if (baseChamfTopOuter > 0 || baseChamfTopInner > 0) {
-            tris.push.apply(tris, _extrudeWallsWithChamfer(wallParts, wallH, baseThk, baseChamfTopOuter, baseChamfTopInner, 0, 0));
+            tris.push.apply(tris, _extrudeWallsWithChamfer(wallParts, wallH, baseThk, baseChamfTopOuter, baseChamfTopInner, 0, 0, 2, true));
         } else {
-            tris.push.apply(tris, extrudePolygons(wallParts, wallH, baseThk));
+            for (var wsi = 0; wsi < wallParts.length; wsi++) {
+                tris.push.apply(tris, _loftWalls(wallParts[wsi], wallParts[wsi], baseThk, baseThk + wallH));
+            }
+            tris.push.apply(tris, _capsForPolygonSet(wallParts, baseThk + wallH, false)); // top cap
         }
         return tris;
     }
@@ -1278,6 +1289,7 @@ window.PuzzleSTL = (function () {
         chamfBotOuter = chamfBotOuter || 0;
         chamfBotInner = chamfBotInner || 0;
         joinType = joinType !== undefined ? joinType : 2;
+        var skipFirstBottomCap = arguments.length > 8 ? !!arguments[8] : false;
         var maxChamfTop = Math.max(chamfTopOuter, chamfTopInner);
         var maxChamfBot = Math.max(chamfBotOuter, chamfBotInner);
         if (maxChamfTop + maxChamfBot >= wallH) {
@@ -1287,6 +1299,14 @@ window.PuzzleSTL = (function () {
             maxChamfTop *= sc; maxChamfBot *= sc;
         }
         if (maxChamfTop <= 0 && maxChamfBot <= 0) {
+            if (skipFirstBottomCap) {
+                var earlyTris = [];
+                for (var ski = 0; ski < wallParts.length; ski++) {
+                    earlyTris.push.apply(earlyTris, _loftWalls(wallParts[ski], wallParts[ski], zOff, zOff + wallH));
+                }
+                earlyTris.push.apply(earlyTris, _capsForPolygonSet(wallParts, zOff + wallH, false));
+                return earlyTris;
+            }
             return extrudePolygons(wallParts, wallH, zOff);
         }
         function getChamfer(p, isTop) {
@@ -1333,7 +1353,17 @@ window.PuzzleSTL = (function () {
         }
         // Main body
         if (mainH > 0) {
-            tris.push.apply(tris, extrudePolygons(wallParts, mainH, zOff + maxChamfBot));
+            if (skipFirstBottomCap && maxChamfBot <= 0) {
+                // Sides only — caller provides pocket floors; top cap conditional on chamfer zone
+                for (var mbIdx = 0; mbIdx < wallParts.length; mbIdx++) {
+                    tris.push.apply(tris, _loftWalls(wallParts[mbIdx], wallParts[mbIdx], zOff, zOff + mainH));
+                }
+                if (maxChamfTop <= 0) {
+                    tris.push.apply(tris, _capsForPolygonSet(wallParts, zOff + mainH, false));
+                }
+            } else {
+                tris.push.apply(tris, extrudePolygons(wallParts, mainH, zOff + maxChamfBot));
+            }
         }
         // Top chamfer zone
         if (maxChamfTop > 0) {
@@ -1457,7 +1487,8 @@ window.PuzzleSTL = (function () {
             }
         }
         var tris = [];
-        // Base plate — apply bottom chamfer here (at z=0)
+        // Base plate — bottom cap + outer sides only (NO face at z=baseThk over wall area
+        // — pocket floors emitted separately to avoid coincident faces with wall bottom caps)
         if (baseChamfBotOuter > 0) {
             // Create shrunk polygon deterministically (same vertex count as outerRect)
             var botShrunk;
@@ -1482,18 +1513,29 @@ window.PuzzleSTL = (function () {
                 if (baseThk - baseChamfBotOuter > 0.001) {
                     tris.push.apply(tris, _loftWalls(outerRect, outerRect, baseChamfBotOuter, baseThk));
                 }
-                tris.push.apply(tris, _capFace(outerRect, baseThk, false));
+                // No top cap here — pocket floors emitted below
             } else {
-                tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
+                tris.push.apply(tris, _capFace(outerRect, 0, true));                    // bottom face (fallback)
+                tris.push.apply(tris, _loftWalls(outerRect, outerRect, 0, baseThk));    // outer sides
             }
         } else {
-            tris.push.apply(tris, extrudePolygon(outerRect, baseThk, 0));
+            tris.push.apply(tris, _capFace(outerRect, 0, true));                    // bottom face
+            tris.push.apply(tris, _loftWalls(outerRect, outerRect, 0, baseThk));    // outer sides
         }
-        // Walls — top chamfer per edge type (bottom chamfer is on the base plate)
+        // Pocket floor(s) at z=baseThk — one cap per inner opening (avoids coincident face with wall bottom)
+        for (var pfi2 = 0; pfi2 < wallParts.length; pfi2++) {
+            if (polyArea(wallParts[pfi2]) < 0) {
+                tris.push.apply(tris, _capFace(wallParts[pfi2], baseThk, true)); // hole CW + flip → facing up
+            }
+        }
+        // Walls — sides + top cap only (no bottom cap, pocket floors already above)
         if (baseChamfTopOuter > 0 || baseChamfTopInner > 0) {
-            tris.push.apply(tris, _extrudeWallsWithChamfer(wallParts, wallH, baseThk, baseChamfTopOuter, baseChamfTopInner, 0, 0));
+            tris.push.apply(tris, _extrudeWallsWithChamfer(wallParts, wallH, baseThk, baseChamfTopOuter, baseChamfTopInner, 0, 0, 2, true));
         } else {
-            tris.push.apply(tris, extrudePolygons(wallParts, wallH, baseThk));
+            for (var wsi2 = 0; wsi2 < wallParts.length; wsi2++) {
+                tris.push.apply(tris, _loftWalls(wallParts[wsi2], wallParts[wsi2], baseThk, baseThk + wallH));
+            }
+            tris.push.apply(tris, _capsForPolygonSet(wallParts, baseThk + wallH, false)); // top cap
         }
         return tris;
     }
@@ -2177,47 +2219,53 @@ window.PuzzleSTL = (function () {
             var effBevelSteps5 = (effBevel5 > 0.01) ? Math.max(2, Math.ceil(effBevel5 / 0.15)) : 0;
             var effBevelSlice5 = (effBevelSteps5 > 0) ? effBevel5 / effBevelSteps5 : 0;
 
-            // Zone 1: bottom flat (Z=z1 to effZ2) — pocket at base
+            // Zone 1: bottom flat (Z=z1 to effZ2) — bottom cap + sides only (no top cap = no seam with zone 2)
             if (effFlat1 > 0) {
                 var walls1 = polyDifference([outerRect], [framePocketAt(0)]);
                 if (walls1.length > 0) {
                     if (baseChamfBot > 0) {
                         baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls1, effFlat1, z1, 0, 0, baseChamfBotOuter, baseChamfBotInner));
                     } else {
-                        baseTris.push.apply(baseTris, extrudePolygons(walls1, effFlat1, z1));
+                        baseTris.push.apply(baseTris, _capsForPolygonSet(walls1, z1, true)); // bottom face
+                        for (var w1i = 0; w1i < walls1.length; w1i++) {
+                            baseTris.push.apply(baseTris, _loftWalls(walls1[w1i], walls1[w1i], z1, effZ2));
+                        }
                     }
                 }
             }
 
-            // Zone 2: bevel up (Z=effZ2 to effZ3) — pocket transitions 0→1
-            for (var bi = 0; bi < effBevelSteps1; bi++) {
-                var t = (bi + 0.5) / effBevelSteps1;
-                var bwalls = polyDifference([outerRect], [framePocketAt(t)]);
-                if (bwalls.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls, effBevelSlice1, effZ2 + bi * effBevelSlice1));
+            // Zone 2: bevel up (Z=effZ2 to effZ3) — single smooth loft, no staircase seams
+            if (effBevel1 > 0.001) {
+                baseTris.push.apply(baseTris, _loftWalls(outerRect, outerRect, effZ2, effZ3));                    // outer side (constant)
+                baseTris.push.apply(baseTris, loftWalls(framePocketAt(0), framePocketAt(1), effZ2, effZ3));      // inner side (smooth diagonal)
             }
 
-            // Zone 3: middle flat (Z=effZ3 to effZ4) — pocket at full shift
+            // Zone 3: middle flat (Z=effZ3 to effZ4) — sides only, no caps (no seam with zones 2 or 4)
             var effMidH = effZ4 - effZ3;
             if (effMidH > 0.001) {
                 var walls3 = polyDifference([outerRect], [framePocketAt(1)]);
-                if (walls3.length > 0) baseTris.push.apply(baseTris, extrudePolygons(walls3, effMidH, effZ3));
+                for (var w3i = 0; w3i < walls3.length; w3i++) {
+                    baseTris.push.apply(baseTris, _loftWalls(walls3[w3i], walls3[w3i], effZ3, effZ4));
+                }
             }
 
-            // Zone 4: bevel down (Z=effZ4 to effZ4end) — pocket transitions 1→0
-            for (var bi2 = 0; bi2 < effBevelSteps5; bi2++) {
-                var t2 = 1 - (bi2 + 0.5) / effBevelSteps5;
-                var bwalls2 = polyDifference([outerRect], [framePocketAt(t2)]);
-                if (bwalls2.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls2, effBevelSlice5, effZ4 + bi2 * effBevelSlice5));
+            // Zone 4: bevel down (Z=effZ4 to effZ4end) — single smooth loft, no staircase seams
+            if (effBevel5 > 0.001) {
+                baseTris.push.apply(baseTris, _loftWalls(outerRect, outerRect, effZ4, effZ4end));                // outer side (constant)
+                baseTris.push.apply(baseTris, loftWalls(framePocketAt(1), framePocketAt(0), effZ4, effZ4end)); // inner side (smooth diagonal)
             }
 
-            // Zone 5: top flat (Z=effZ4end to totalH) — pocket back at base
+            // Zone 5: top flat (Z=effZ4end to totalH) — sides only + top cap (no bottom cap = no seam with zone 4)
             if (effFlat5 > 0) {
                 var walls5 = polyDifference([outerRect], [framePocketAt(0)]);
                 if (walls5.length > 0) {
                     if (baseChamfTop > 0) {
-                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls5, effFlat5, totalH - effFlat5, baseChamfTopOuter, baseChamfTopInner, 0, 0));
+                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls5, effFlat5, totalH - effFlat5, baseChamfTopOuter, baseChamfTopInner, 0, 0, 2, true));
                     } else {
-                        baseTris.push.apply(baseTris, extrudePolygons(walls5, effFlat5, totalH - effFlat5));
+                        for (var w5i = 0; w5i < walls5.length; w5i++) {
+                            baseTris.push.apply(baseTris, _loftWalls(walls5[w5i], walls5[w5i], effZ4end, totalH));
+                        }
+                        baseTris.push.apply(baseTris, _capsForPolygonSet(walls5, totalH, false)); // top face
                     }
                 }
             }
