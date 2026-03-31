@@ -302,6 +302,129 @@ async function runTests() {
     } catch(e) { assert(false, '3MF+texture: EXCEPTION ' + e.message); }
 
     // ════════════════════════════════════════
+    //  SLIDING PUZZLE — MANIFOLD CHECK
+    // ════════════════════════════════════════
+    section('Sliding puzzle — manifold analysis');
+    try {
+        var slidingGrid = [[1,2,3],[4,5,6],[7,8,0]];
+        var slidingPieces = [];
+        for (var sr = 0; sr < 3; sr++)
+            for (var sc = 0; sc < 3; sc++)
+                if (slidingGrid[sr][sc] > 0)
+                    slidingPieces.push({id: slidingGrid[sr][sc], row: sr, col: sc});
+
+        var slidingData = {
+            puzzle_type: 'sliding',
+            grid: slidingGrid,
+            pieces: slidingPieces,
+            sliding_rows: 3,
+            sliding_cols: 3,
+            sliding_empty_row: 2,
+            sliding_empty_col: 2
+        };
+
+        var slidingOpts = {
+            return_raw: true,
+            include_base: true,
+            include_pieces: false
+        };
+
+        var rawResult = PuzzleSTL.exportSTL(slidingData, slidingOpts);
+        var baseTris2 = rawResult.base;
+        assert(baseTris2.length > 0, 'Sliding base: has ' + baseTris2.length + ' triangles');
+
+        // ── Manifold edge analysis ──
+        // In a manifold mesh, every edge is shared by exactly 2 triangles.
+        // Non-manifold: shared by 1 (boundary) or 3+ (non-manifold).
+        function edgeKey(v1, v2) {
+            // Quantize to avoid floating-point mismatch
+            var q = 10000;
+            var ax = Math.round(v1[0]*q), ay = Math.round(v1[1]*q), az = Math.round(v1[2]*q);
+            var bx = Math.round(v2[0]*q), by = Math.round(v2[1]*q), bz = Math.round(v2[2]*q);
+            var ka = ax+','+ay+','+az;
+            var kb = bx+','+by+','+bz;
+            return ka < kb ? ka+'|'+kb : kb+'|'+ka;
+        }
+
+        var edgeCount = {};
+        for (var ti = 0; ti < baseTris2.length; ti++) {
+            var tri2 = baseTris2[ti];
+            for (var ei = 0; ei < 3; ei++) {
+                var ej = (ei + 1) % 3;
+                var ek = edgeKey(tri2[ei], tri2[ej]);
+                edgeCount[ek] = (edgeCount[ek] || 0) + 1;
+            }
+        }
+
+        var totalEdges = Object.keys(edgeCount).length;
+        var boundary = 0, manifold = 0, nonManifold = 0;
+        var nmEdgeExamples = [];
+        for (var ek2 in edgeCount) {
+            var cnt = edgeCount[ek2];
+            if (cnt === 2) manifold++;
+            else if (cnt === 1) boundary++;
+            else { nonManifold++; if (nmEdgeExamples.length < 5) nmEdgeExamples.push(ek2 + ' (×' + cnt + ')'); }
+        }
+
+        log.innerHTML += '<span class="info">  Edges: ' + totalEdges + ' total, ' + manifold + ' manifold, ' + boundary + ' boundary, ' + nonManifold + ' non-manifold</span>\n';
+        if (nmEdgeExamples.length > 0) {
+            log.innerHTML += '<span class="info">  Examples: ' + nmEdgeExamples.join('; ') + '</span>\n';
+        }
+
+        assert(nonManifold === 0, 'Sliding base: 0 non-manifold edges (got ' + nonManifold + ')');
+        assert(boundary === 0, 'Sliding base: 0 boundary edges (got ' + boundary + ')');
+
+        // ── Bottom face analysis ──
+        // Check that the bottom face (z = min_z) has a hole (is annular, not solid)
+        var minZ = Infinity;
+        for (var ti2 = 0; ti2 < baseTris2.length; ti2++) {
+            for (var vi = 0; vi < 3; vi++) {
+                if (baseTris2[ti2][vi][2] < minZ) minZ = baseTris2[ti2][vi][2];
+            }
+        }
+
+        // Collect bottom face triangles (all 3 vertices at minZ)
+        var botTris = [];
+        var eps = 0.001;
+        for (var ti3 = 0; ti3 < baseTris2.length; ti3++) {
+            var t3 = baseTris2[ti3];
+            if (Math.abs(t3[0][2] - minZ) < eps && Math.abs(t3[1][2] - minZ) < eps && Math.abs(t3[2][2] - minZ) < eps) {
+                botTris.push(t3);
+            }
+        }
+
+        // Compute area of bottom face triangles
+        var botArea = 0;
+        for (var bt = 0; bt < botTris.length; bt++) {
+            var ba = botTris[bt][0], bb = botTris[bt][1], bc = botTris[bt][2];
+            var ux = bb[0]-ba[0], uy = bb[1]-ba[1];
+            var vx = bc[0]-ba[0], vy = bc[1]-ba[1];
+            botArea += Math.abs(ux*vy - uy*vx) / 2;
+        }
+
+        // Compute expected areas (outer rectangle and inner pocket)
+        // With return_raw + xform, coordinates are centered. We can estimate from the mesh bounds.
+        var meshMinX = Infinity, meshMaxX = -Infinity;
+        var meshMinY = Infinity, meshMaxY = -Infinity;
+        for (var ti4 = 0; ti4 < baseTris2.length; ti4++) {
+            for (var vi2 = 0; vi2 < 3; vi2++) {
+                var vv = baseTris2[ti4][vi2];
+                if (vv[0] < meshMinX) meshMinX = vv[0];
+                if (vv[0] > meshMaxX) meshMaxX = vv[0];
+                if (vv[1] < meshMinY) meshMinY = vv[1];
+                if (vv[1] > meshMaxY) meshMaxY = vv[1];
+            }
+        }
+        var fullArea = (meshMaxX - meshMinX) * (meshMaxY - meshMinY);
+        // Bottom face should be ~50-80% of full area (frame ring, not solid)
+        var botRatio = botArea / fullArea;
+        log.innerHTML += '<span class="info">  Bottom face: ' + botTris.length + ' tris, area=' + botArea.toFixed(2) + ', fullArea=' + fullArea.toFixed(2) + ', ratio=' + (botRatio*100).toFixed(1) + '%</span>\n';
+        assert(botRatio < 0.85, 'Sliding base: bottom face is annular, not solid (ratio=' + (botRatio*100).toFixed(1) + '% < 85%)');
+        assert(botRatio > 0.15, 'Sliding base: bottom face has material (ratio=' + (botRatio*100).toFixed(1) + '% > 15%)');
+
+    } catch(e) { assert(false, 'Sliding manifold: EXCEPTION ' + e.message + '\n' + (e.stack||'')); }
+
+    // ════════════════════════════════════════
     //  SUMMARY
     // ════════════════════════════════════════
     log.innerHTML += '\n<span class="info">═══════════════════════════════════════</span>\n';
