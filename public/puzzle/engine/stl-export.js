@@ -2281,73 +2281,75 @@ window.PuzzleSTL = (function () {
         var outerRect = roundedBoxPoly(0, 0, outerW, outerH, baseCornerRadius, baseCornerStyle);
 
         if (incB) {
-            // Compute effective zone heights: allow chamfer to extend beyond flatH
-            // by absorbing height from the bevel zones
-            var effFlat1 = flatH, effBevel1 = bevelH;
-            if (baseChamfBot > flatH && bevelH > 0) {
-                var extra = Math.min(baseChamfBot - flatH, bevelH);
-                effFlat1 = flatH + extra;
-                effBevel1 = bevelH - extra;
-            }
-            var effFlat5 = flatH, effBevel5 = bevelH;
-            if (baseChamfTop > flatH && bevelH > 0) {
-                var extra5 = Math.min(baseChamfTop - flatH, bevelH);
-                effFlat5 = flatH + extra5;
-                effBevel5 = bevelH - extra5;
-            }
-            var effZ2 = z1 + effFlat1;
-            var effZ3 = effZ2 + effBevel1;
-            var effZ4end = z5 + flatH - effFlat5;
-            var effZ4 = effZ4end - effBevel5;
-            var effBevelSteps1 = (effBevel1 > 0.01) ? Math.max(2, Math.ceil(effBevel1 / 0.15)) : 0;
-            var effBevelSlice1 = (effBevelSteps1 > 0) ? effBevel1 / effBevelSteps1 : 0;
-            var effBevelSteps5 = (effBevel5 > 0.01) ? Math.max(2, Math.ceil(effBevel5 / 0.15)) : 0;
-            var effBevelSlice5 = (effBevelSteps5 > 0) ? effBevel5 / effBevelSteps5 : 0;
+            // ── Smooth manifold shell: decomposed outer + inner tubes ──
+            // Uses roundedRectPoly exclusively for deterministic vertex counts (lofting)
 
-            // Zone 1: bottom flat (Z=z1 to effZ2)
-            if (effFlat1 > 0) {
-                var walls1 = polyDifference([outerRect], [framePocketAt(0)]);
-                if (walls1.length > 0) {
-                    if (baseChamfBot > 0) {
-                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls1, effFlat1, z1, 0, 0, baseChamfBotOuter, baseChamfBotInner));
-                    } else {
-                        baseTris.push.apply(baseTris, extrudePolygons(walls1, effFlat1, z1));
-                    }
-                }
-            }
+            // Outer tube polygon
+            var oCX = outerW / 2, oCY = outerH / 2;
+            var oHW = outerW / 2, oHH = outerH / 2;
+            var outerP = roundedRectPoly(oCX, oCY, oHW, oHH, baseCornerRadius, baseCornerStyle);
 
-            // Zone 2: bevel up (Z=effZ2 to effZ3)
-            for (var bi = 0; bi < effBevelSteps1; bi++) {
-                var t = (bi + 0.5) / effBevelSteps1;
-                var bwalls = polyDifference([outerRect], [framePocketAt(t)]);
-                if (bwalls.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls, effBevelSlice1, effZ2 + bi * effBevelSlice1));
-            }
+            // Chamfer: inset outer polygons (same vertex count via roundedRectPoly)
+            var cBot = baseChamfBotOuter > 0 ? Math.min(baseChamfBotOuter, oHW * 0.45, oHH * 0.45) : 0;
+            var cTop = baseChamfTopOuter > 0 ? Math.min(baseChamfTopOuter, oHW * 0.45, oHH * 0.45) : 0;
+            if (cBot + cTop > totalH * 0.9) { var cSc = totalH * 0.9 / (cBot + cTop); cBot *= cSc; cTop *= cSc; }
+            var outerPBot = cBot > 0 ? roundedRectPoly(oCX, oCY, oHW - cBot, oHH - cBot, Math.max(0.01, baseCornerRadius - cBot), baseCornerStyle) : outerP;
+            var outerPTop = cTop > 0 ? roundedRectPoly(oCX, oCY, oHW - cTop, oHH - cTop, Math.max(0.01, baseCornerRadius - cTop), baseCornerStyle) : outerP;
 
-            // Zone 3: middle flat (Z=effZ3 to effZ4)
-            var effMidH = effZ4 - effZ3;
-            if (effMidH > 0.001) {
-                var walls3 = polyDifference([outerRect], [framePocketAt(1)]);
-                if (walls3.length > 0) baseTris.push.apply(baseTris, extrudePolygons(walls3, effMidH, effZ3));
-            }
+            // Inner pocket polygons (deterministic vertex count for lofting)
+            var pCX = frameBorder + innerW / 2;
+            var pCY = frameBorder + innerH / 2;
+            var pHW = innerW / 2;
+            var pHH = innerH / 2;
+            var innerP0 = roundedRectPoly(pCX, pCY, pHW, pHH, lipFillet, lipCornerStyle);
+            var innerP1 = roundedRectPoly(pCX + shift * sdx, pCY + shift * sdy, pHW, pHH, lipFillet, lipCornerStyle);
+            var ip0cw = innerP0.slice().reverse();
+            var ip1cw = innerP1.slice().reverse();
 
-            // Zone 4: bevel down (Z=effZ4 to effZ4end)
-            for (var bi2 = 0; bi2 < effBevelSteps5; bi2++) {
-                var t2 = 1 - (bi2 + 0.5) / effBevelSteps5;
-                var bwalls2 = polyDifference([outerRect], [framePocketAt(t2)]);
-                if (bwalls2.length > 0) baseTris.push.apply(baseTris, extrudePolygons(bwalls2, effBevelSlice5, effZ4 + bi2 * effBevelSlice5));
-            }
+            // Inner chamfer: expand pocket at edges (rarely used, typically 0)
+            var cBotI = baseChamfBotInner > 0 ? Math.min(baseChamfBotInner, pHW * 0.3, pHH * 0.3) : 0;
+            var cTopI = baseChamfTopInner > 0 ? Math.min(baseChamfTopInner, pHW * 0.3, pHH * 0.3) : 0;
+            var ip0BotCw = cBotI > 0 ? roundedRectPoly(pCX, pCY, pHW + cBotI, pHH + cBotI, Math.max(0.01, lipFillet + cBotI), lipCornerStyle).slice().reverse() : ip0cw;
+            var ip0TopCw = cTopI > 0 ? roundedRectPoly(pCX, pCY, pHW + cTopI, pHH + cTopI, Math.max(0.01, lipFillet + cTopI), lipCornerStyle).slice().reverse() : ip0cw;
 
-            // Zone 5: top flat (Z=effZ4end to totalH)
-            if (effFlat5 > 0) {
-                var walls5 = polyDifference([outerRect], [framePocketAt(0)]);
-                if (walls5.length > 0) {
-                    if (baseChamfTop > 0) {
-                        baseTris.push.apply(baseTris, _extrudeWallsWithChamfer(walls5, effFlat5, totalH - effFlat5, baseChamfTopOuter, baseChamfTopInner, 0, 0));
-                    } else {
-                        baseTris.push.apply(baseTris, extrudePolygons(walls5, effFlat5, totalH - effFlat5));
-                    }
-                }
+            // If no bevel, pocket stays at base position throughout
+            var hasBevel = bevelH > 0.001;
+            var midIp = hasBevel ? ip1cw : ip0cw;
+
+            // ── Bottom annular cap ──
+            baseTris.push.apply(baseTris, _capFaceWithHoles(outerPBot, [ip0BotCw], z1, true));
+
+            // ── Outer tube (CCW → outward normals) ──
+            if (cBot > 0) baseTris.push.apply(baseTris, loftWalls(outerPBot, outerP, z1, z1 + cBot));
+            var outerMainBot = z1 + cBot;
+            var outerMainTop = totalH - cTop;
+            if (outerMainTop - outerMainBot > 0.001) baseTris.push.apply(baseTris, loftWalls(outerP, outerP, outerMainBot, outerMainTop));
+            if (cTop > 0) baseTris.push.apply(baseTris, loftWalls(outerP, outerPTop, outerMainTop, totalH));
+
+            // ── Inner tube (CW → inward normals toward pocket) ──
+            var innerZCur = z1;
+            // Inner bottom chamfer
+            if (cBotI > 0) {
+                baseTris.push.apply(baseTris, loftWalls(ip0BotCw, ip0cw, z1, z1 + cBotI));
+                innerZCur = z1 + cBotI;
             }
+            // Zone 1: bottom flat (pocket at pos 0)
+            if (z2 - innerZCur > 0.001) baseTris.push.apply(baseTris, loftWalls(ip0cw, ip0cw, innerZCur, z2));
+            // Zone 2: smooth bevel (pocket 0 → shifted)
+            if (hasBevel) baseTris.push.apply(baseTris, loftWalls(ip0cw, midIp, z2, z3));
+            // Zone 3: middle flat (pocket at shifted pos)
+            if (midH > 0.001) baseTris.push.apply(baseTris, loftWalls(midIp, midIp, z3, z4));
+            // Zone 4: smooth bevel back (pocket shifted → 0)
+            if (hasBevel) baseTris.push.apply(baseTris, loftWalls(midIp, ip0cw, z4, z5));
+            // Zone 5: top flat (pocket at pos 0)
+            var innerZEnd = totalH;
+            if (cTopI > 0) innerZEnd = totalH - cTopI;
+            if (innerZEnd - z5 > 0.001) baseTris.push.apply(baseTris, loftWalls(ip0cw, ip0cw, z5, innerZEnd));
+            // Inner top chamfer
+            if (cTopI > 0) baseTris.push.apply(baseTris, loftWalls(ip0cw, ip0TopCw, innerZEnd, totalH));
+
+            // ── Top annular cap ──
+            baseTris.push.apply(baseTris, _capFaceWithHoles(outerPTop, [ip0TopCw], totalH, false));
         } // end if (incB)
 
         // ══════════════════════════════════════════════════
