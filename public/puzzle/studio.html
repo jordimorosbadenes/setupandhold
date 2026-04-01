@@ -19,6 +19,148 @@
     </script>
 </head>
 <body>
+    <!-- Animated puzzle piece background -->
+    <div class="puzzle-bg" id="puzzle-bg" aria-hidden="true"></div>
+    <script>
+    (() => {
+        // Configuration knobs — edit these values to tune speed, rotation, size, etc.
+        const CFG = {
+            // General
+            COUNT: 150, // Número de piezas generadas en el fondo
+
+            // Grid del sprite SVG (cuántas columnas/filas tiene tu set)
+            COLS: 5, // Columnas en la cuadrícula del SVG
+            ROWS: 3, // Filas en la cuadrícula del SVG
+
+            // Dimensiones del SVG (usadas para calcular cada celda/viewBox)
+            SVG_W: 553.3183520599251, // Anchura del SVG (viewBox width)
+            SVG_H: 321.402,           // Altura del SVG (viewBox height)
+
+            // Tamaño visual de las piezas (px)
+            SIZE_MIN: 50, // Tamaño mínimo (ancho/alto en px)
+            SIZE_MAX: 100, // Tamaño máximo (ancho/alto en px)
+
+            // Duración del ciclo de animación (segundos)
+            DUR_MIN: 50, // Duración mínima del ciclo (s). Menor = más rápido
+            DUR_MAX: 100, // Duración máxima del ciclo (s)
+
+            // Amplitud del movimiento: distancia de deriva en px
+            DIST_MIN: 500, // Distancia mínima (px)
+            DIST_MAX: 500, // Distancia máxima (px)
+
+            // Rotación (grados)
+            ROT_START_MIN: -30, // Ángulo inicial mínimo (deg)
+            ROT_START_MAX: 30,  // Ángulo inicial máximo (deg)
+            ROT_DELTA_MIN: -180, // Variación de rotación mínima durante el ciclo (deg)
+            ROT_DELTA_MAX: 180,  // Variación de rotación máxima durante el ciclo (deg)
+
+            // Escala y opacidad visual
+            SCALE_MIN: 0.5,  // Factor de escala mínimo aplicado a la pieza
+            SCALE_MAX: 1.5,  // Factor de escala máximo aplicado a la pieza
+            PEAK_OPACITY_MIN: 0.6, // Opacidad pico mínima (0-1)
+            PEAK_OPACITY_MAX: 1.0, // Opacidad pico máxima (0-1)
+
+            // Otras opciones
+            SPEED_MULT: 1, // Multiplicador global de velocidad (duración * SPEED_MULT)
+            COLORS: ['var(--accent)', 'var(--accent-2)'] // Paleta CSS utilizada por `currentColor`
+        };
+
+        const rnd = (a, b) => a + Math.random() * (b - a);
+        const rndInt = (a, b) => Math.floor(rnd(a, b + 1));
+
+        const bg = document.getElementById('puzzle-bg');
+
+        fetch('../img/puzzle-pieces-set.svg')
+            .then(r => r.text())
+            .then(svgText => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svgText, 'image/svg+xml');
+                const svgEl = doc.querySelector('svg');
+                const vbStr = svgEl ? svgEl.getAttribute('viewBox') : `0 0 ${CFG.SVG_W} ${CFG.SVG_H}`;
+                const vbNums = vbStr.trim().split(/\s+/).map(Number);
+                const vbX = vbNums[0] || 0;
+                const vbY = vbNums[1] || 0;
+                const vbW = vbNums[2] || CFG.SVG_W;
+                const vbH = vbNums[3] || CFG.SVG_H;
+
+                const gEl = doc.querySelector('g');
+                const transform = gEl ? gEl.getAttribute('transform') : '';
+
+                // parse translate/scale from the <g> transform so we can map path coordinates
+                let tx = 0, ty = 0, sx = 1, sy = 1;
+                if (gEl && transform) {
+                    const tMatch = transform.match(/translate\(\s*([\-\d.]+)[,\s]+([\-\d.]+)\s*\)/);
+                    if (tMatch) { tx = parseFloat(tMatch[1]); ty = parseFloat(tMatch[2]); }
+                    const sMatch = transform.match(/scale\(\s*([\-\d.]+)(?:[,\s]+([\-\d.]+))?\s*\)/);
+                    if (sMatch) { sx = parseFloat(sMatch[1]); sy = sMatch[2] ? parseFloat(sMatch[2]) : parseFloat(sMatch[1]); }
+                }
+
+                const paths = gEl ? Array.from(gEl.querySelectorAll('path')) : [];
+
+                const cellW = vbW / CFG.COLS;
+                const cellH = vbH / CFG.ROWS;
+
+                const pieces = paths.map(p => {
+                    const d = p.getAttribute('d');
+                    const m = d.match(/M\s*([\-\d.]+)\s+([\-\d.]+)/);
+                    let col = 0, row = 0;
+                    if (m) {
+                        const px = parseFloat(m[1]);
+                        const py = parseFloat(m[2]);
+                        const gx = px * sx + tx;
+                        const gy = py * sy + ty;
+                        const rx = gx - vbX;
+                        const ry = gy - vbY;
+                        col = Math.min(Math.max(0, Math.floor(rx / cellW)), CFG.COLS - 1);
+                        row = Math.min(Math.max(0, Math.floor(ry / cellH)), CFG.ROWS - 1);
+                    }
+                    return { d, vb: `${vbX + col * cellW} ${vbY + row * cellH} ${cellW} ${cellH}` };
+                });
+
+                const frag = document.createDocumentFragment();
+                const rnd = (a, b) => a + Math.random() * (b - a);
+                for (let i = 0; i < CFG.COUNT; i++) {
+                    const piece = pieces[Math.floor(Math.random() * pieces.length)];
+                    const div = document.createElement('div');
+                    div.className = 'piece';
+                    div.style.color = CFG.COLORS[Math.floor(Math.random() * CFG.COLORS.length)];
+                    div.innerHTML = `<svg viewBox="${piece.vb}" xmlns="http://www.w3.org/2000/svg"><g transform="${transform}" fill="currentColor" stroke="none"><path d="${piece.d}"/></g></svg>`;
+
+                    const sz = Math.round(rnd(CFG.SIZE_MIN, CFG.SIZE_MAX));
+                    div.style.width = sz + 'px';
+                    div.style.height = sz + 'px';
+                    div.style.left = (Math.random() * 100) + '%';
+                    div.style.top = (Math.random() * 100) + '%';
+
+                    const dur = rnd(CFG.DUR_MIN, CFG.DUR_MAX) * CFG.SPEED_MULT;
+                    const delay = -Math.random() * dur;
+                    div.style.animationDuration = dur + 's';
+                    div.style.animationDelay = delay + 's';
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = rnd(CFG.DIST_MIN, CFG.DIST_MAX);
+                    div.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+                    div.style.setProperty('--dy', (Math.sin(angle) * dist) + 'px');
+
+                    const r0 = rnd(CFG.ROT_START_MIN, CFG.ROT_START_MAX);
+                    const dr = rnd(CFG.ROT_DELTA_MIN, CFG.ROT_DELTA_MAX);
+                    div.style.setProperty('--r0', r0 + 'deg');
+                    div.style.setProperty('--dr', dr + 'deg');
+
+                    const s = rnd(CFG.SCALE_MIN, CFG.SCALE_MAX).toFixed(2);
+                    div.style.setProperty('--s', s);
+                    const peakO = rnd(CFG.PEAK_OPACITY_MIN, CFG.PEAK_OPACITY_MAX).toFixed(2);
+                    div.style.setProperty('--peak-o', peakO);
+
+                    frag.appendChild(div);
+                }
+
+                bg.appendChild(frag);
+            })
+            .catch(err => console.warn('Error loading puzzle pieces SVG', err));
+
+    })();
+    </script>
     <div class="page-shell">
         <!-- Navigation bar matching SetupAndHold -->
         <header class="site-header">
