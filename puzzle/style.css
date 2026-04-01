@@ -67,8 +67,51 @@ body {
 a { color: inherit; text-decoration: none; }
 a:hover { color: var(--accent); }
 
+/* ── Puzzle piece animated background ── */
+.puzzle-bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+.puzzle-bg .piece {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: puzzleDrift linear infinite;
+}
+.puzzle-bg .piece svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    opacity: 0.10;
+    filter: blur(0.5px);
+}
+:root[data-theme='light'] .puzzle-bg .piece svg {
+    opacity: 0.07;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .puzzle-bg .piece { animation: none; opacity: 0; }
+    .puzzle-bg .piece:nth-child(odd) { opacity: 1; }
+    .puzzle-bg .piece:nth-child(odd) svg { opacity: 0.04; }
+}
+
+@keyframes puzzleDrift {
+    0%   { transform: translate(0, 0)    rotate(var(--r0)) scale(var(--s)); opacity: 0; }
+    8%   { opacity: var(--peak-o); }
+    50%  { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--r0) + var(--dr))) scale(var(--s)); opacity: var(--peak-o); }
+    92%  { opacity: var(--peak-o); }
+    100% { transform: translate(calc(var(--dx) * 2), calc(var(--dy) * 2)) rotate(calc(var(--r0) + var(--dr) * 2)) scale(var(--s)); opacity: 0; }
+}
+
 /* ── Page shell & Navigation (mirrors BaseLayout.astro) ── */
 .page-shell {
+    position: relative;
+    z-index: 1;
     max-width: 1100px;
     margin: 0 auto;
     padding: 32px 20px 64px;
