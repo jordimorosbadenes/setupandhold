@@ -2,12 +2,19 @@
 import '../styles/global.css';
 import { withBase } from '../utils/withBase';
 import { REPOSITORY_URL } from '../config/site';
+import { readdir } from 'node:fs/promises';
 
 const {
   title = 'Setup & Hold',
   description = 'Blog minimalista para notas y proyectos.',
   hideNav = false,
 } = Astro.props;
+
+// Auto-discover icon SVGs at build/dev time — just drop files in the folder.
+const iconFiles: string[] = await readdir(
+  new URL('../../public/img/background-svg', import.meta.url)
+).then(files => files.filter(f => f.toLowerCase().endsWith('.svg')).sort())
+  .catch(() => []);
 ---
 <!DOCTYPE html>
 <html lang="es">
@@ -39,6 +46,45 @@ const {
     </script>
   </head>
   <body>
+    <!-- Animated icon background -->
+    <div class="site-bg" id="site-bg" aria-hidden="true"></div>
+    <script is:inline src={withBase('/js/bg-engine.js')}></script>
+    <script is:inline define:vars={{ baseUrl: import.meta.env.BASE_URL, iconFiles }}>
+    (() => {
+      const CFG = {
+        COUNT: 100,
+        SIZE_MIN: 50,
+        SIZE_MAX: 100,
+        DUR_MIN: 50,
+        DUR_MAX: 100,
+        DIST_MIN: 500,
+        DIST_MAX: 500,
+        ROT_START_MIN: -30,
+        ROT_START_MAX: 30,
+        ROT_DELTA_MIN: -180,
+        ROT_DELTA_MAX: 180,
+        SCALE_MIN: 0.5,
+        SCALE_MAX: 1.5,
+        PEAK_OPACITY_MIN: 0.5,
+        PEAK_OPACITY_MAX: 1.0,
+        SPEED_MULT: 1,
+        COLORS: ['var(--accent)', 'var(--accent-2)'],
+        ICON_OPACITY: 0.15,
+        ICON_OPACITY_LIGHT: 0.15,
+        HOVER_OPACITY: 0.5,
+        HOVER_FREEZE: true,
+        HOVER_SHAKE: true,
+        HOVER_SHAKE_PX: 3.0,
+        HOVER_SHAKE_SPEED: 250,
+        BLUR: 0,        // Iconos nítidos (sin blur)
+        HOVER_BLUR: 0,  // Sin blur extra al hover
+      };
+      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
+      const base  = (baseUrl || '/').replace(/\/$/, '');
+      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      initBgEngine('site-bg', CFG, ICONS);
+    })();
+    </script>
     <div class="page-shell">
       {!hideNav && (
         <header class="site-header">
