@@ -4,9 +4,46 @@
       const saved = localStorage.getItem(storageKey);
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
-    </script><link rel="stylesheet" href="/_astro/about.DRdFSPmh.css">
+    </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
 <style>.comments-section[data-astro-cid-gysqo7gh]{margin-top:24px}.comments-title[data-astro-cid-gysqo7gh]{margin:0 0 16px;font-size:1rem;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.08em}
-</style></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <article class="hero prose" data-astro-cid-gysqo7gh> <div class="card-meta" data-astro-cid-gysqo7gh> <span class="pill" data-astro-cid-gysqo7gh>Publicado 3 de enero de 2026</span>  </div> <h1 data-astro-cid-gysqo7gh>Bienvenida a setupandhold</h1> <p data-astro-cid-gysqo7gh>Un poco sobre mí, el porqué del sitio y qué proyectos puedes ver ahora mismo.</p> <div class="tag-row" data-astro-cid-gysqo7gh> <a class="tag" href="/tags/hobbies" data-astro-cid-gysqo7gh>hobbies</a><a class="tag" href="/tags/proyectos" data-astro-cid-gysqo7gh>proyectos</a> </div> <figure style="margin: 0;" data-astro-cid-gysqo7gh> <img src="https://images.unsplash.com/photo-1587845323226-bad89242c735" alt="Header" class="post-hero-img" style="--hero-mobile: 150px; --hero-desktop: 250px; --hero-pos: center;" loading="lazy" data-astro-cid-gysqo7gh> </figure> <p>¡Hola! Soy Jordi y este sitio es mi rincón para dejar por escrito ideas, experimentos y cosas que voy construyendo.</p>
+</style></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
+const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+
+    (() => {
+      const CFG = {
+        COUNT: 100,
+        SIZE_MIN: 50,
+        SIZE_MAX: 100,
+        DUR_MIN: 50,
+        DUR_MAX: 100,
+        DIST_MIN: 500,
+        DIST_MAX: 500,
+        ROT_START_MIN: -30,
+        ROT_START_MAX: 30,
+        ROT_DELTA_MIN: -180,
+        ROT_DELTA_MAX: 180,
+        SCALE_MIN: 0.5,
+        SCALE_MAX: 1.5,
+        PEAK_OPACITY_MIN: 0.5,
+        PEAK_OPACITY_MAX: 1.0,
+        SPEED_MULT: 1,
+        COLORS: ['var(--accent)', 'var(--accent-2)'],
+        ICON_OPACITY: 0.15,
+        ICON_OPACITY_LIGHT: 0.15,
+        HOVER_OPACITY: 0.5,
+        HOVER_FREEZE: true,
+        HOVER_SHAKE: true,
+        HOVER_SHAKE_PX: 3.0,
+        HOVER_SHAKE_SPEED: 250,
+        BLUR: 0,        // Iconos nítidos (sin blur)
+        HOVER_BLUR: 0,  // Sin blur extra al hover
+      };
+      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
+      const base  = (baseUrl || '/').replace(/\/$/, '');
+      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      initBgEngine('site-bg', CFG, ICONS);
+    })();
+    })();</script> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <article class="hero prose" data-astro-cid-gysqo7gh> <div class="card-meta" data-astro-cid-gysqo7gh> <span class="pill" data-astro-cid-gysqo7gh>Publicado 3 de enero de 2026</span>  </div> <h1 data-astro-cid-gysqo7gh>Bienvenida a setupandhold</h1> <p data-astro-cid-gysqo7gh>Un poco sobre mí, el porqué del sitio y qué proyectos puedes ver ahora mismo.</p> <div class="tag-row" data-astro-cid-gysqo7gh> <a class="tag" href="/tags/hobbies" data-astro-cid-gysqo7gh>hobbies</a><a class="tag" href="/tags/proyectos" data-astro-cid-gysqo7gh>proyectos</a> </div> <figure style="margin: 0;" data-astro-cid-gysqo7gh> <img src="https://images.unsplash.com/photo-1587845323226-bad89242c735" alt="Header" class="post-hero-img" style="--hero-mobile: 150px; --hero-desktop: 250px; --hero-pos: center;" loading="lazy" data-astro-cid-gysqo7gh> </figure> <p>¡Hola! Soy Jordi y este sitio es mi rincón para dejar por escrito ideas, experimentos y cosas que voy construyendo.</p>
 <p>Trabajo en <strong>diseño de ASIC</strong> (microchips), y desde pequeño me ha llamado la atención todo lo que tiene que ver con tecnología: ordenadores, internet y electrónica. Fuera del trabajo me gusta trastear con temas como <strong>finanzas y bolsa</strong> y otros temas relacionados con la <strong>informática</strong>.</p>
 <p>Cuando no estoy delante de una pantalla, me gusta estar al aire libre practicando <strong>pádel</strong>, <strong>running</strong> o <strong>mountain bike</strong>.</p>
 <h2 id="por-qué-existe-esta-web">¿Por qué existe esta web?</h2>

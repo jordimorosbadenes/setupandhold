@@ -4,7 +4,44 @@
       const saved = localStorage.getItem(storageKey);
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
-    </script><link rel="stylesheet" href="/_astro/about.DRdFSPmh.css"></head> <body> <div class="page-shell">  <main class="page">  <section class="hero" style="text-align: center; gap: 8px;"> <h1>404</h1> <p class="prose">No encontramos lo que buscabas. Vuelve al inicio.</p> <a class="button" href="/">Volver</a> </section>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+    </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css"></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
+const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+
+    (() => {
+      const CFG = {
+        COUNT: 100,
+        SIZE_MIN: 50,
+        SIZE_MAX: 100,
+        DUR_MIN: 50,
+        DUR_MAX: 100,
+        DIST_MIN: 500,
+        DIST_MAX: 500,
+        ROT_START_MIN: -30,
+        ROT_START_MAX: 30,
+        ROT_DELTA_MIN: -180,
+        ROT_DELTA_MAX: 180,
+        SCALE_MIN: 0.5,
+        SCALE_MAX: 1.5,
+        PEAK_OPACITY_MIN: 0.5,
+        PEAK_OPACITY_MAX: 1.0,
+        SPEED_MULT: 1,
+        COLORS: ['var(--accent)', 'var(--accent-2)'],
+        ICON_OPACITY: 0.15,
+        ICON_OPACITY_LIGHT: 0.15,
+        HOVER_OPACITY: 0.5,
+        HOVER_FREEZE: true,
+        HOVER_SHAKE: true,
+        HOVER_SHAKE_PX: 3.0,
+        HOVER_SHAKE_SPEED: 250,
+        BLUR: 0,        // Iconos nítidos (sin blur)
+        HOVER_BLUR: 0,  // Sin blur extra al hover
+      };
+      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
+      const base  = (baseUrl || '/').replace(/\/$/, '');
+      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      initBgEngine('site-bg', CFG, ICONS);
+    })();
+    })();</script> <div class="page-shell">  <main class="page">  <section class="hero" style="text-align: center; gap: 8px;"> <h1>404</h1> <p class="prose">No encontramos lo que buscabas. Vuelve al inicio.</p> <a class="button" href="/">Volver</a> </section>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
     (() => {
       const key = 'theme';
       const apply = (value) => {

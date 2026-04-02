@@ -4,10 +4,47 @@
       const saved = localStorage.getItem(storageKey);
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
-    </script><link rel="stylesheet" href="/_astro/about.DRdFSPmh.css">
+    </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
 <style>.card-reactions[data-astro-cid-iyiqi2so]{font-size:.8rem;opacity:.7;margin-top:.75rem}.card-reactions[data-astro-cid-iyiqi2so]:empty{margin-top:0}
 </style><script type="module">const f="jordimorosbadenes/setupandhold",h="R_kgDOQxFETg",w="Announcements",E="DIC_kwDOQxFETs4C3D9B";function p(o,i,e){if(i===0&&e===0)return;const s=[];i>0&&s.push(`❤️ ${i}`),e>0&&s.push(`💬 ${e}`),o.textContent=s.join("  ")}function x(){document.querySelectorAll("[data-giscus-term]").forEach(o=>{const i=o.dataset.giscusTerm;if(i)try{const e=localStorage.getItem(`giscus-meta:${i}`);if(!e)return;const{reactions:s,comments:a}=JSON.parse(e);p(o,s,a)}catch{}})}function y(){const o=[];if(document.querySelectorAll("[data-giscus-term]").forEach(t=>{const r=t.dataset.giscusTerm;r&&o.push({el:t,term:r})}),o.length===0)return;const i=document.documentElement.dataset.theme==="dark"?"dark":"light",e=document.createElement("div");e.style.cssText="position:absolute;width:1px;height:1px;overflow:hidden;top:-9999px;left:-9999px;",document.body.appendChild(e);const s=new Map;let a=o.length;function u(){window.removeEventListener("message",d),e.remove()}function d(t){if(t.origin!=="https://giscus.app"||typeof t.data!="object"||!t.data.giscus||!t.source)return;const r=s.get(t.source);if(!r)return;const{discussion:c}=t.data.giscus;if(!c)return;s.delete(t.source);let n=c.reactionCount??0;!n&&c.reactions&&(n=Object.values(c.reactions).reduce((g,l)=>g+l,0));const m=c.totalCommentCount??0;localStorage.setItem(`giscus-meta:${r.term}`,JSON.stringify({reactions:n,comments:m})),p(r.el,n,m),--a<=0&&u()}window.addEventListener("message",d),o.forEach(({el:t,term:r})=>{const c=new URLSearchParams({origin:window.location.origin,repo:f,repoId:h,category:w,categoryId:E,mapping:"pathname",term:r,strict:"0",reactionsEnabled:"1",emitMetadata:"1",inputPosition:"top",theme:i,lang:"es",session:""}),n=document.createElement("iframe");n.src=`https://giscus.app/widget?${c}`,n.style.cssText="width:1px;height:1px;border:none;",e.appendChild(n),n.contentWindow&&s.set(n.contentWindow,{el:t,term:r})}),setTimeout(u,8e3)}x();y();
-</script></head> <body> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <div class="section-title"> <h2>#iphone</h2> <span class="pill">1 entradas</span> </div> <div class="post-grid"> <article class="post-card" data-astro-cid-iyiqi2so> <a class="card-link" href="/posts/android-apple" data-astro-cid-iyiqi2so> <div class="card-meta" data-astro-cid-iyiqi2so> <span class="pill" data-astro-cid-iyiqi2so>21 feb 2026</span> <div class="tag-row" data-astro-cid-iyiqi2so> <span class="tag" aria-label="Etiqueta android" data-astro-cid-iyiqi2so>android</span><span class="tag" aria-label="Etiqueta iphone" data-astro-cid-iyiqi2so>iphone</span><span class="tag" aria-label="Etiqueta relatos" data-astro-cid-iyiqi2so>relatos</span> </div> </div> <h3 data-astro-cid-iyiqi2so>Cuando me compré un iPhone siendo chico Android</h3> <p data-astro-cid-iyiqi2so>Una historia personal: de noches flasheando ROMs a comprar un iPhone, y luego volver a Android.</p> <div class="card-reactions" data-giscus-term="/posts/android-apple" aria-hidden="true" data-astro-cid-iyiqi2so></div> </a> </article>   </div> </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+</script></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
+const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+
+    (() => {
+      const CFG = {
+        COUNT: 100,
+        SIZE_MIN: 50,
+        SIZE_MAX: 100,
+        DUR_MIN: 50,
+        DUR_MAX: 100,
+        DIST_MIN: 500,
+        DIST_MAX: 500,
+        ROT_START_MIN: -30,
+        ROT_START_MAX: 30,
+        ROT_DELTA_MIN: -180,
+        ROT_DELTA_MAX: 180,
+        SCALE_MIN: 0.5,
+        SCALE_MAX: 1.5,
+        PEAK_OPACITY_MIN: 0.5,
+        PEAK_OPACITY_MAX: 1.0,
+        SPEED_MULT: 1,
+        COLORS: ['var(--accent)', 'var(--accent-2)'],
+        ICON_OPACITY: 0.15,
+        ICON_OPACITY_LIGHT: 0.15,
+        HOVER_OPACITY: 0.5,
+        HOVER_FREEZE: true,
+        HOVER_SHAKE: true,
+        HOVER_SHAKE_PX: 3.0,
+        HOVER_SHAKE_SPEED: 250,
+        BLUR: 0,        // Iconos nítidos (sin blur)
+        HOVER_BLUR: 0,  // Sin blur extra al hover
+      };
+      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
+      const base  = (baseUrl || '/').replace(/\/$/, '');
+      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      initBgEngine('site-bg', CFG, ICONS);
+    })();
+    })();</script> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <div class="section-title"> <h2>#iphone</h2> <span class="pill">1 entradas</span> </div> <div class="post-grid"> <article class="post-card" data-astro-cid-iyiqi2so> <a class="card-link" href="/posts/android-apple" data-astro-cid-iyiqi2so> <div class="card-meta" data-astro-cid-iyiqi2so> <span class="pill" data-astro-cid-iyiqi2so>21 feb 2026</span> <div class="tag-row" data-astro-cid-iyiqi2so> <span class="tag" aria-label="Etiqueta android" data-astro-cid-iyiqi2so>android</span><span class="tag" aria-label="Etiqueta iphone" data-astro-cid-iyiqi2so>iphone</span><span class="tag" aria-label="Etiqueta relatos" data-astro-cid-iyiqi2so>relatos</span> </div> </div> <h3 data-astro-cid-iyiqi2so>Cuando me compré un iPhone siendo chico Android</h3> <p data-astro-cid-iyiqi2so>Una historia personal: de noches flasheando ROMs a comprar un iPhone, y luego volver a Android.</p> <div class="card-reactions" data-giscus-term="/posts/android-apple" aria-hidden="true" data-astro-cid-iyiqi2so></div> </a> </article>   </div> </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
     (() => {
       const key = 'theme';
       const apply = (value) => {
