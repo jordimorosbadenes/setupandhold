@@ -1402,22 +1402,9 @@
     <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineSegmentsGeometry.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineMaterial.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/lines/LineSegments2.js"></script>
-    <!-- earcut for polygon triangulation (STL export) -->
-    <script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/src/earcut.min.js"></script>
-    <!-- clipper-lib for polygon boolean operations (tolerance, infill, corners) -->
-    <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
-    <!-- fflate for ZIP creation (3MF export) -->
-    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
-    <!-- Puzzle engine (local JS — replaces Python backend) -->
-    <script src="engine/utils.js"></script>
-    <script src="engine/grid.js"></script>
-    <script src="engine/solver.js"></script>
-    <script src="engine/fractal.js"></script>
-    <script src="engine/jigsaw.js"></script>
-    <script src="engine/sliding.js"></script>
-    <script src="engine/stl-export.js"></script>
-    <!-- API bridge — intercepts fetch('/api/*') and routes to engine -->
-    <script src="api-bridge.js"></script>
+    <!-- Worker client — intercepts fetch('/api/*') and routes to Cloudflare Worker -->
+    <!-- Engine source is protected server-side; only app logic runs in browser -->
+    <script src="worker-client.js"></script>
     <!-- Original frontend (unmodified) -->
     <script src="app.js"></script>
 </body>

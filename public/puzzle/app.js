@@ -5643,19 +5643,19 @@ if (galleryToggle) {
     //     preview geometry shown in the mini-viewers ***
     const STOCK_PUZZLES = {
         normal: {
-            generator: () => window.PuzzleGrid.generate({ M: 2, N: 3, min_size: 2, max_size: 3 }),
+            generator: () => fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ M: 2, N: 3, min_size: 2, max_size: 3 }) }).then(r => r.json()),
             puzzleType: 'normal',
         },
         fractal: {
-            generator: () => window.PuzzleFractal.generate({ M: 3, N: 4, min_size: 2, max_size: 2 }),
+            generator: () => fetch('/api/generate_fractal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ M: 3, N: 4, min_size: 2, max_size: 2 }) }).then(r => r.json()),
             puzzleType: 'fractal',
         },
         jigsaw: {
-            generator: () => window.PuzzleJigsaw.generate({ jigsaw_type: 'rectangular', rows: 2, cols: 3, tab_size: 20, jitter: 4 }),
+            generator: () => fetch('/api/generate_jigsaw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jigsaw_type: 'rectangular', rows: 2, cols: 3, tab_size: 20, jitter: 4 }) }).then(r => r.json()),
             puzzleType: 'jigsaw',
         },
         sliding: {
-            generator: () => window.PuzzleSliding.generate({ rows: 2, cols: 2, empty_corner: 'br' }),
+            generator: () => fetch('/api/generate_sliding', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: 2, cols: 2, empty_corner: 'br' }) }).then(r => r.json()),
             puzzleType: 'sliding',
         },
     };
@@ -5679,11 +5679,11 @@ if (galleryToggle) {
         return 'normal';
     }
 
-    function generateStockPuzzle(type) {
+    async function generateStockPuzzle(type) {
         type = type || detectPuzzleType();
         const cfg = STOCK_PUZZLES[type] || STOCK_PUZZLES.normal;
         try {
-            const result = cfg.generator();
+            const result = await cfg.generator();
             if (!result || !result.success) return null;
             const state = {
                 grid: result.grid,
@@ -5952,12 +5952,17 @@ if (galleryToggle) {
             const sBCBIOn = document.getElementById('sliding_base_chamfer_bottom_inner_on');
             if (sBCBIOn && sBCBIOn.checked) payload.base_chamfer_bottom_inner = parseFloat(document.getElementById('sliding_base_chamfer_bottom_inner').value) || 0.3;
         }
+        // Ensure puzzle_type matches the stock puzzle state (buildSTLPayload reads from
+        // puzzleData which may be a different type than the stock puzzle being previewed)
+        if (stockState) {
+            payload.puzzle_type = stockState.puzzle_type;
+        }
         return payload;
     }
 
     // ─── Render a single mini viewer ─────────────────────────────────
 
-    function getPuzzleStateForViewer() {
+    async function getPuzzleStateForViewer() {
         // If using real puzzle and it exists, use it; otherwise fall back to stock
         if (!MVConfig.useStockPuzzle && window.puzzleData && window.puzzleData.grid) {
             return window.puzzleData;
@@ -5965,17 +5970,17 @@ if (galleryToggle) {
         // Ensure stock puzzle is generated for current type
         const pType = detectPuzzleType();
         if (!stockState || currentStockType !== pType) {
-            generateStockPuzzle(pType);
+            await generateStockPuzzle(pType);
         }
         return stockState;
     }
 
-    function updateMiniViewer(id) {
+    async function updateMiniViewer(id) {
         const v = viewers[id];
         if (!v) return;
         if (!isViewerVisible(id)) return;
 
-        const puzzState = getPuzzleStateForViewer();
+        const puzzState = await getPuzzleStateForViewer();
         if (!puzzState) return;
 
         const mode = viewerMode(v.focus);
@@ -5983,8 +5988,14 @@ if (galleryToggle) {
         if (!opts) return;
 
         try {
-            // Call the STL engine directly with the puzzle state
-            const result = window.PuzzleSTL.exportSTLSeparate(puzzState, opts);
+            // Call the Worker API with the stock puzzle state explicitly
+            const response = await fetch('/api/export_stl_separate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.assign({}, opts, { puzzle_state: puzzState })),
+            });
+            const result = await response.json();
+            if (!result.success) { console.warn('Mini viewer STL failed:', id, result.error); return; }
 
             // Clear existing meshes
             while (v.group.children.length) v.group.remove(v.group.children[0]);
@@ -5994,48 +6005,39 @@ if (galleryToggle) {
             const baseColor = (document.getElementById('stl_color_base') || {}).value || '#808080';
             const reliefColor = (document.getElementById('stl_color_relief') || {}).value || '#C1B399';
 
-            function loadBlob(blob, color) {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const geom = loader.parse(reader.result);
-                        geom.computeVertexNormals();
-                        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
-                        const mesh = new THREE.Mesh(geom, mat);
-                        mesh.rotation.set(-Math.PI / 2, 0, 0);
-                        resolve(mesh);
-                    };
-                    reader.readAsArrayBuffer(blob);
-                });
+            function loadBase64(b64, color, role) {
+                const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+                const geom = loader.parse(bytes.buffer);
+                geom.computeVertexNormals();
+                const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.rotation.set(-Math.PI / 2, 0, 0);
+                mesh.userData.role = role;
+                return mesh;
             }
 
-            const promises = [];
-            if (result.pieces) promises.push(loadBlob(result.pieces, pieceColor).then(m => { m.userData.role = 'pieces'; v.group.add(m); }));
-            if (result.relief) promises.push(loadBlob(result.relief, reliefColor).then(m => { m.userData.role = 'relief'; v.group.add(m); }));
-            if (result.base) promises.push(loadBlob(result.base, baseColor).then(m => { m.userData.role = 'base'; v.group.add(m); }));
+            if (result.pieces) v.group.add(loadBase64(result.pieces, pieceColor, 'pieces'));
+            if (result.relief) v.group.add(loadBase64(result.relief, reliefColor, 'relief'));
+            if (result.base) v.group.add(loadBase64(result.base, baseColor, 'base'));
 
-            Promise.all(promises).then(() => {
-                if (!v.hasModel) {
-                    frameMiniCamera(v);
-                    v.hasModel = true;
-                } else {
-                    if (v.savedCamPos) v.camera.position.copy(v.savedCamPos);
-                    if (v.savedCamTarget && v.controls) {
-                        v.controls.target.copy(v.savedCamTarget);
-                        const prevD = v.controls.enableDamping;
-                        v.controls.enableDamping = false;
-                        v.controls.update();
-                        v.controls.enableDamping = prevD;
-                    }
+            if (!v.hasModel) {
+                frameMiniCamera(v);
+                v.hasModel = true;
+            } else {
+                if (v.savedCamPos) v.camera.position.copy(v.savedCamPos);
+                if (v.savedCamTarget && v.controls) {
+                    v.controls.target.copy(v.savedCamTarget);
+                    const prevD = v.controls.enableDamping;
+                    v.controls.enableDamping = false;
+                    v.controls.update();
+                    v.controls.enableDamping = prevD;
                 }
-                v.renderer.render(v.scene, v.camera);
-                // Trigger edge overlay rebuild AFTER this viewer's mesh is loaded.
-                // Debounced so multiple concurrent viewers coalesce into one rebuild.
-                if (_edgeRebuildFn) {
-                    if (_edgeRebuildTimer) clearTimeout(_edgeRebuildTimer);
-                    _edgeRebuildTimer = setTimeout(_edgeRebuildFn, 80);
-                }
-            });
+            }
+            v.renderer.render(v.scene, v.camera);
+            if (_edgeRebuildFn) {
+                if (_edgeRebuildTimer) clearTimeout(_edgeRebuildTimer);
+                _edgeRebuildTimer = setTimeout(_edgeRebuildFn, 80);
+            }
         } catch (e) {
             console.warn('Mini viewer update failed:', id, e);
         }
@@ -6056,14 +6058,14 @@ if (galleryToggle) {
         miniViewerTimer = setTimeout(updateAllMiniViewers, 500);
     }
 
-    function initAllMiniViewers() {
+    async function initAllMiniViewers() {
         if (miniViewerInited) return;
         document.querySelectorAll('.mini-viewer-3d').forEach(container => {
             initMiniViewer(container);
         });
         miniViewerInited = true;
         // Generate initial stock puzzle and update
-        generateStockPuzzle();
+        await generateStockPuzzle();
         updateAllMiniViewers();
     }
 
@@ -6141,9 +6143,9 @@ if (galleryToggle) {
     }
 
     // Puzzle type change → regenerate stock puzzle + update mini-viewers
-    window.onPuzzleTypeChangeMiniViewers = function (type) {
+    window.onPuzzleTypeChangeMiniViewers = async function (type) {
         if (currentStockType !== type) {
-            generateStockPuzzle(type);
+            await generateStockPuzzle(type);
             applyPuzzleTypeDefaults(type);
             // Reset hasModel so cameras re-frame for the new geometry
             for (const v of Object.values(viewers)) v.hasModel = false;

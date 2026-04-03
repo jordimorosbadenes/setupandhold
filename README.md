@@ -37,14 +37,11 @@ npm install
 npm run dev
 ```
 
-## O mejor, puedes hacer una de estas dos
-
-```bash
-./run-dev-render.bat
-./run-dev-local.bat
-```
-
 El servidor quedará en `http://localhost:4321`.
+
+## Si estás ejecutando el worker de PuzzleSudio3D en local, puedes acceder a él añadiendo `?worker=local` a la URL
+
+http://localhost:4321/puzzle/studio.html?worker=local
 
 ## Scripts principales
 
