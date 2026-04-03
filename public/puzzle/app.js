@@ -5561,6 +5561,16 @@ if (galleryToggle) {
             // 'fractal:piece-general': { az: -30, distMultiplier: 1.5 },
             // 'jigsaw:piece-edges':    { el: 12 },
             // 'sliding:base-edges':    { az: 20, el: 25 },
+
+            'fractal:piece-general': { az: -90, el: 45, distMultiplier: 0.9 },
+            'fractal:piece-edges':   { az: -90, el: 45, distMultiplier: 0.9, cornerFocus: false },
+            'fractal:base-edges':    { az: -40, el: 7, distMultiplier: 0.7 },
+
+            'sliding:piece-general': { distMultiplier: 1.2 },
+            'sliding:piece-edges':   { az: -45, el: 11, distMultiplier: 0.8 },
+            'sliding:base-general':  { az: -90, el: 18, distMultiplier: 0.9 },
+            'sliding:base-edges':    { az: -45, el: 10, distMultiplier: 0.8 },
+
         },
         cameraDistMultiplier: 1.25, // global fallback (used if a camera entry omits distMultiplier)
 
