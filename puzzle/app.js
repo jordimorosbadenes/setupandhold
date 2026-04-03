@@ -145,7 +145,7 @@ const DEFAULTS = {
     stl_cube_size:              10,
     stl_height:                 3,
     stl_tolerance:              0.3,
-    stl_corner_style:           'chamfer',    // sharp | round | chamfer
+    stl_corner_style:           'round',    // sharp | round | chamfer
     stl_corner_radius:          1.0,
     stl_corner_inner:           false,        // also apply to concave corners
     stl_color_pieces:           '#00998A',
@@ -159,8 +159,8 @@ const DEFAULTS = {
     stl_border:                 5,
     stl_base_thickness:         1,
     stl_wall_height:            3,
-    stl_base_corner_style:      'chamfer',    // sharp | round | chamfer (exterior)
-    stl_base_corner_style_inner:'chamfer',    // sharp | round | chamfer (interior)
+    stl_base_corner_style:      'round',    // sharp | round | chamfer (exterior)
+    stl_base_corner_style_inner:'round',    // sharp | round | chamfer (interior)
     base_inner_same_as_piece:   true,         // mirror piece corner for interior
     stl_base_corner_radius:     2.5,
     stl_base_corner_radius_inner: 1.0,
@@ -176,7 +176,7 @@ const DEFAULTS = {
     sliding_cell_size:          20,
     sliding_clearance:          0.3,
     sliding_piece_height:       8.0,
-    sliding_corner_style:       'chamfer',    // sharp | round | chamfer
+    sliding_corner_style:       'round',    // sharp | round | chamfer
     sliding_corner_radius:      1.0,
     sliding_stem_height:        1.0,
     sliding_cap_height:         1.0,
@@ -190,8 +190,8 @@ const DEFAULTS = {
     // ── Slider — base ──────────────────────────────────────
     sliding_frame_border:       5,
     sliding_floor_height:       1.0,
-    sliding_base_corner_style:  'chamfer',    // sharp | round | chamfer
-    sliding_base_corner_style_inner: 'chamfer', // sharp | round | chamfer (interior)
+    sliding_base_corner_style:  'round',    // sharp | round | chamfer
+    sliding_base_corner_style_inner: 'round', // sharp | round | chamfer (interior)
     sliding_base_inner_same_as_piece: true,     // mirror piece corner for interior
     sliding_base_corner_radius: 2.0,
     sliding_base_corner_radius_inner: 1.0,
@@ -4127,9 +4127,12 @@ function resetSectionDefaults(bodyId) {
         if (el.type === 'checkbox') {
             el.checked = el.defaultChecked;
         } else if (el.tagName === 'SELECT') {
-            el.selectedIndex = 0;
-            for (let i = 0; i < el.options.length; i++) {
-                if (el.options[i].defaultSelected) { el.selectedIndex = i; break; }
+            // Use DEFAULTS as source of truth for select values
+            const defaultVal = DEFAULTS[el.id];
+            if (defaultVal !== undefined) {
+                el.value = defaultVal;
+            } else {
+                el.selectedIndex = 0;
             }
         } else {
             el.value = el.defaultValue;

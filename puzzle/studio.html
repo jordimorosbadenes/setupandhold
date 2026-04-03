@@ -96,7 +96,7 @@
                         <div class="form-group fractal-only" style="display:none;">
                             <label>Forma de pieza:</label>
                             <select id="arc_shape">
-                                <option value="0" selected>Circular</option>
+                                <option value="0">Circular</option>
                                 <option value="2">Octagonal</option>
                                 <option value="1">Cuadrada</option>
                             </select>
@@ -104,7 +104,7 @@
                         <div class="form-group jigsaw-only" style="display:none;">
                             <label>Tipo jigsaw:</label>
                             <select id="jigsaw_type" onchange="onJigsawTypeChange()">
-                                <option value="rectangular" selected>Rectangular</option>
+                                <option value="rectangular">Rectangular</option>
                                 <option value="hexagonal">Hexagonal</option>
                                 <option value="circular">Circular</option>
                             </select>
@@ -112,7 +112,7 @@
                         <div class="form-group sliding-only" style="display:none;">
                             <label>Esquina vacía:</label>
                             <select id="sliding_empty_corner">
-                                <option value="br" selected>↘ Abajo-Derecha</option>
+                                <option value="br">↘ Abajo-Derecha</option>
                                 <option value="bl">↙ Abajo-Izquierda</option>
                                 <option value="tr">↗ Arriba-Derecha</option>
                                 <option value="tl">↖ Arriba-Izquierda</option>
@@ -138,7 +138,7 @@
                         <div class="form-group normal-only">
                             <label>Bordes bloqueados:</label>
                             <select id="border_prob">
-                                <option value="0" selected>0%</option>
+                                <option value="0">0%</option>
                                 <option value="25">25%</option>
                                 <option value="50">50%</option>
                                 <option value="75">75%</option>
@@ -147,7 +147,7 @@
                         <div class="form-group normal-only">
                             <label>Celdas aire:</label>
                             <select id="air_prob">
-                                <option value="0" selected>0%</option>
+                                <option value="0">0%</option>
                                 <option value="5">5%</option>
                                 <option value="10">10%</option>
                                 <option value="15">15%</option>
@@ -159,7 +159,7 @@
                                 <option value="1">Exactamente 1 (única)</option>
                                 <option value="5">Al menos 5</option>
                                 <option value="10">Al menos 10</option>
-                                <option value="0" selected>Sin restricción</option>
+                                <option value="0">Sin restricción</option>
                             </select>
                             <div id="target-disclaimer" class="disclaimer" style="display:none;">
                                 ⚠️ <strong>Aviso:</strong> Encontrar un puzzle con solución única puede tardar mucho o no lograrse nunca si el puzzle es grande (6×6 o más). Se realizarán hasta 50 intentos.
@@ -343,7 +343,7 @@
                                 <select id="stl_texture_direction">
                                     <option value="inward">↓ Grabado</option>
                                     <option value="flush">─ A ras</option>
-                                    <option value="outward" selected>↑ Relieve</option>
+                                    <option value="outward">↑ Relieve</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -373,7 +373,7 @@
                                 <select id="stl_image_direction">
                                     <option value="inward">↓ Grabado</option>
                                     <option value="flush">─ A ras</option>
-                                    <option value="outward" selected>↑ Relieve</option>
+                                    <option value="outward">↑ Relieve</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -949,7 +949,7 @@
                                                 <label>Tipo:</label>
                                                 <select id="stl_corner_style">
                                                     <option value="sharp">📐 Rectas</option>
-                                                    <option value="round" selected>🔘 Redondeadas</option>
+                                                    <option value="round">🔘 Redondeadas</option>
                                                     <option value="chamfer">◇ Chaflán</option>
                                                 </select>
                                             </div>
@@ -1043,7 +1043,7 @@
                                                         <label>Tipo:</label>
                                                         <select id="stl_base_corner_style_inner">
                                                             <option value="sharp">📐 Rectas</option>
-                                                            <option value="round" selected>🔘 Redondeadas</option>
+                                                            <option value="round">🔘 Redondeadas</option>
                                                             <option value="chamfer">◇ Chaflán</option>
                                                         </select>
                                                     </div>
@@ -1062,7 +1062,7 @@
                                                     <label>Tipo:</label>
                                                     <select id="stl_base_corner_style">
                                                         <option value="sharp">📐 Rectas</option>
-                                                        <option value="round" selected>🔘 Redondeadas</option>
+                                                        <option value="round">🔘 Redondeadas</option>
                                                         <option value="chamfer">◇ Chaflán</option>
                                                     </select>
                                                 </div>
@@ -1135,7 +1135,7 @@
                                     <div class="form-group">
                                         <label>Dir. encaje:</label>
                                         <select id="sliding_shift_direction">
-                                            <option value="br" selected>↘ Abajo-Derecha</option>
+                                            <option value="br">↘ Abajo-Derecha</option>
                                             <option value="bl">↙ Abajo-Izquierda</option>
                                             <option value="tr">↗ Arriba-Derecha</option>
                                             <option value="tl">↖ Arriba-Izquierda</option>
@@ -1160,7 +1160,7 @@
                                             <label>Tipo:</label>
                                             <select id="sliding_corner_style">
                                                 <option value="sharp">📐 Rectas</option>
-                                                <option value="round" selected>🔘 Redondeadas</option>
+                                                <option value="round">🔘 Redondeadas</option>
                                                 <option value="chamfer">◇ Chaflán</option>
                                             </select>
                                         </div>
@@ -1238,7 +1238,7 @@
                                                         <label>Tipo:</label>
                                                         <select id="sliding_base_corner_style_inner">
                                                             <option value="sharp">📐 Rectas</option>
-                                                            <option value="round" selected>🔘 Redondeadas</option>
+                                                            <option value="round">🔘 Redondeadas</option>
                                                             <option value="chamfer">◇ Chaflán</option>
                                                         </select>
                                                     </div>
@@ -1257,7 +1257,7 @@
                                                     <label>Tipo:</label>
                                                     <select id="sliding_base_corner_style">
                                                         <option value="sharp">📐 Rectas</option>
-                                                        <option value="round" selected>🔘 Redondeadas</option>
+                                                        <option value="round">🔘 Redondeadas</option>
                                                         <option value="chamfer">◇ Chaflán</option>
                                                     </select>
                                                 </div>
