@@ -249,7 +249,7 @@ const DEFAULTS = {
     stl_image_line_thickness:   0,
 
     // ── Visor ──────────────────────────────────────────────
-    stl_assembled:              false,
+    stl_assembled:              true,
     inline3d_show_base:         true,
     inline3d_free_camera:       false,
 
@@ -487,6 +487,25 @@ function onPuzzleTypeChange(value) {
     if (panelBase) panelBase.style.display = isSliding ? 'none' : '';
     // sliding-only and non-sliding panels are handled via their CSS classes above
 
+    // Reset isometric viewer when puzzle type changes
+    const puzzleCanvas = document.getElementById('puzzle-canvas');
+    const fractalSvg = document.getElementById('fractal-puzzle-svg');
+    const configHint = document.getElementById('config-viewer-hint');
+    
+    if (puzzleCanvas) {
+        const ctx = puzzleCanvas.getContext('2d');
+        ctx.clearRect(0, 0, puzzleCanvas.width, puzzleCanvas.height);
+    }
+    if (fractalSvg) {
+        fractalSvg.innerHTML = '';
+    }
+    if (configHint) {
+        configHint.style.display = '';
+    }
+
+    // Reset 3D viewer camera so it auto-fits next time section opens
+    viewerHasModel = false;
+
     // Regenerate stock puzzle for mini-viewers when puzzle type changes
     if (typeof window.onPuzzleTypeChangeMiniViewers === 'function') {
         window.onPuzzleTypeChangeMiniViewers(value);
@@ -509,10 +528,11 @@ function onJigsawTypeChange() {
 async function generatePuzzle() {
     try {
         showGenerateStatus('⏳ Generando puzzle...', 'info');
-        
-        // Animación de generación
-        puzzleCtx.fillStyle = 'rgba(102, 126, 234, 0.1)';
-        puzzleCtx.fillRect(0, 0, puzzleCanvas.width, puzzleCanvas.height);
+
+        // Reveal animation: cubrir el visor mientras se genera (corre en paralelo con la API)
+        const revealEl = document.getElementById('viewer-reveal');
+        revealEl.className = 'viewer-reveal is-entering';
+        const revealReady = new Promise(r => setTimeout(r, 180));
 
         const puzzleType = document.getElementById('btn-type-sliding').classList.contains('active') ? 'sliding'
             : document.getElementById('btn-type-jigsaw').classList.contains('active') ? 'jigsaw'
@@ -630,6 +650,11 @@ async function generatePuzzle() {
             // Apply per-puzzle-type infill defaults
             if (typeof applyInfillDefaults === 'function') applyInfillDefaults();
 
+            // Update wizard validation
+            if (typeof window.updateNextButtonValidation === 'function') {
+                window.updateNextButtonValidation();
+            }
+
             let statusMsg = `✅ ${data.piece_count} piezas generadas`;
             let statusType = 'success';
             if (data.warning) {
@@ -641,6 +666,9 @@ async function generatePuzzle() {
                 statusMsg += ` | 🎯 ${targetLabel} (${data.attempts} intento${data.attempts > 1 ? 's' : ''})`;
             }
             showGenerateStatus(statusMsg, statusType);
+
+            // Esperar a que el overlay cubra el canvas antes de redibujar
+            await revealReady;
 
             // Dibujar puzzle según tipo y modo de vista
             if (puzzleType === 'sliding') {
@@ -665,6 +693,10 @@ async function generatePuzzle() {
             const configHint = document.getElementById('config-viewer-hint');
             if (configHint) configHint.style.display = 'none';
 
+            // Revelar el nuevo puzzle con sweep-out
+            revealEl.className = 'viewer-reveal is-exiting';
+            setTimeout(() => { revealEl.className = 'viewer-reveal'; }, 220);
+
             // Actualizar visor 3D automáticamente
             if (typeof scheduleViewerUpdate === 'function') {
                 scheduleViewerUpdate();
@@ -686,6 +718,8 @@ async function generatePuzzle() {
         }
     } catch (error) {
         showGenerateStatus(`❌ Error: ${error.message}`, 'error');
+        const revealElErr = document.getElementById('viewer-reveal');
+        if (revealElErr) revealElErr.className = 'viewer-reveal';
     }
 }
 
@@ -1894,9 +1928,10 @@ async function export3MF() {
 
     const payload = buildSTLPayload('both');
     // Add color info
-    const pieceColorEl = document.getElementById('stl_color_pieces');
-    const baseColorEl = document.getElementById('stl_color_base');
-    const reliefColorEl = document.getElementById('stl_color_relief');
+    const colors = getColorElements();
+    const pieceColorEl = colors.pieces;
+    const baseColorEl = colors.base;
+    const reliefColorEl = colors.relief;
     payload.color_pieces = pieceColorEl ? pieceColorEl.value : '#6699CC';
     payload.color_base = baseColorEl ? baseColorEl.value : '#808080';
     payload.color_relief = reliefColorEl ? reliefColorEl.value : '#FF6633';
@@ -1964,9 +1999,10 @@ async function viewSTL() {
         }
 
         // Get colors from pickers
-        const pieceColorEl = document.getElementById('stl_color_pieces');
-        const baseColorEl = document.getElementById('stl_color_base');
-        const reliefColorEl = document.getElementById('stl_color_relief');
+        const colors = getColorElements();
+        const pieceColorEl = colors.pieces;
+        const baseColorEl = colors.base;
+        const reliefColorEl = colors.relief;
         const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
         const baseColor = baseColorEl ? baseColorEl.value : '#808080';
         const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
@@ -1988,12 +2024,6 @@ async function viewSTL() {
 function switchView(event, mode) {
     event.preventDefault();
     puzzleData.viewMode = mode;
-    
-    // Actualizar botones
-    document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
     
     // Redibujar con la nueva vista
     if (puzzleData.puzzleType === 'sliding') {
@@ -3219,8 +3249,9 @@ async function loadThreeFromSeparate(baseB64, piecesB64, baseColor, pieceColor, 
 // Update Three.js mesh colors without re-fetching geometry
 function updateThreeColors() {
     if (!threeGroup) return;
-    const pieceColorEl = document.getElementById('stl_color_pieces');
-    const baseColorEl = document.getElementById('stl_color_base');
+    const colors = getColorElements();
+    const pieceColorEl = colors.pieces;
+    const baseColorEl = colors.base;
     const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
     const baseColor = baseColorEl ? baseColorEl.value : '#808080';
 
@@ -3334,29 +3365,8 @@ if (viewerReloadBtn) {
     viewerReloadBtn.addEventListener('click', () => { viewSTL(); });
 }
 
-// Advanced viewer toggle
-const advToggle = document.getElementById('advanced_viewer_toggle');
-const advContent = document.getElementById('advanced-viewer-content');
-if (advToggle && advContent) {
-    advToggle.addEventListener('change', () => {
-        advContent.style.display = advToggle.checked ? '' : 'none';
-        if (advToggle.checked) {
-            // Resize renderer if it was initialized while the container was hidden (0×0)
-            if (threeRenderer) {
-                const c = document.getElementById('viewer-3d');
-                if (c) {
-                    const r = c.getBoundingClientRect();
-                    if (r.width > 0 && r.height > 0) {
-                        threeRenderer.setSize(r.width, r.height);
-                        threeCamera.aspect = r.width / r.height;
-                        threeCamera.updateProjectionMatrix();
-                    }
-                }
-            }
-            viewSTL();
-        }
-    });
-}
+// Advanced viewer visibility is now controlled by wizard system
+// (no longer need manual toggle handling)
 
 const cubeInput = document.getElementById('stl_cube_size');
 const heightInput = document.getElementById('stl_height');
@@ -3660,6 +3670,20 @@ const fillBorderGapsCheck = document.getElementById('stl_fill_border_gaps');
 if (fillBorderGapsCheck) fillBorderGapsCheck.addEventListener('change', scheduleViewerUpdate);
 
 // Color pickers: update hex label and viewer colors (no geometry re-fetch needed)
+
+// Helper function to get the correct color picker elements based on puzzle type
+function getColorElements() {
+    const isSliding = puzzleData && puzzleData.puzzleType === 'sliding';
+    return {
+        pieces: document.getElementById(isSliding ? 'sliding_color_pieces' : 'stl_color_pieces'),
+        base: document.getElementById(isSliding ? 'sliding_color_base' : 'stl_color_base'),
+        relief: document.getElementById(isSliding ? 'sliding_color_relief' : 'stl_color_relief'),
+        piecesHex: document.getElementById(isSliding ? 'sliding_color_pieces_hex' : 'stl_color_pieces_hex'),
+        baseHex: document.getElementById(isSliding ? 'sliding_color_base_hex' : 'stl_color_base_hex'),
+        reliefHex: document.getElementById(isSliding ? 'sliding_color_relief_hex' : 'stl_color_relief_hex'),
+    };
+}
+
 const colorPiecesInput = document.getElementById('stl_color_pieces');
 const colorBaseInput = document.getElementById('stl_color_base');
 const colorReliefInput = document.getElementById('stl_color_relief');
@@ -3681,6 +3705,24 @@ if (colorBaseInput) {
 }
 if (colorReliefInput) {
     colorReliefInput.addEventListener('input', () => onColorPickerChange(colorReliefInput, colorReliefHex));
+}
+
+// Color pickers for sliding puzzles
+const slidingColorPiecesInput = document.getElementById('sliding_color_pieces');
+const slidingColorBaseInput = document.getElementById('sliding_color_base');
+const slidingColorReliefInput = document.getElementById('sliding_color_relief');
+const slidingColorPiecesHex = document.getElementById('sliding_color_pieces_hex');
+const slidingColorBaseHex = document.getElementById('sliding_color_base_hex');
+const slidingColorReliefHex = document.getElementById('sliding_color_relief_hex');
+
+if (slidingColorPiecesInput) {
+    slidingColorPiecesInput.addEventListener('input', () => onColorPickerChange(slidingColorPiecesInput, slidingColorPiecesHex));
+}
+if (slidingColorBaseInput) {
+    slidingColorBaseInput.addEventListener('input', () => onColorPickerChange(slidingColorBaseInput, slidingColorBaseHex));
+}
+if (slidingColorReliefInput) {
+    slidingColorReliefInput.addEventListener('input', () => onColorPickerChange(slidingColorReliefInput, slidingColorReliefHex));
 }
 
 // Corner style selector: show/hide radius input & handle fractal circular / jigsaw
@@ -5311,9 +5353,10 @@ async function updateInline3D() {
         while (inline3DGroup.children.length) inline3DGroup.remove(inline3DGroup.children[0]);
 
         const loader = new THREE.STLLoader();
-        const pieceColorEl = document.getElementById('stl_color_pieces');
-        const baseColorEl = document.getElementById('stl_color_base');
-        const reliefColorEl = document.getElementById('stl_color_relief');
+        const colors = getColorElements();
+        const pieceColorEl = colors.pieces;
+        const baseColorEl = colors.base;
+        const reliefColorEl = colors.relief;
         const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
         const baseColor = baseColorEl ? baseColorEl.value : '#808080';
         const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
@@ -6014,9 +6057,10 @@ if (galleryToggle) {
             while (v.group.children.length) v.group.remove(v.group.children[0]);
 
             const loader = new THREE.STLLoader();
-            const pieceColor = (document.getElementById('stl_color_pieces') || {}).value || '#00998A';
-            const baseColor = (document.getElementById('stl_color_base') || {}).value || '#808080';
-            const reliefColor = (document.getElementById('stl_color_relief') || {}).value || '#C1B399';
+            const colors = getColorElements();
+            const pieceColor = (colors.pieces || {}).value || '#00998A';
+            const baseColor = (colors.base || {}).value || '#808080';
+            const reliefColor = (colors.relief || {}).value || '#C1B399';
 
             function loadBase64(b64, color, role) {
                 const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -6057,18 +6101,22 @@ if (galleryToggle) {
     }
 
     function updateAllMiniViewers() {
+        const promises = [];
         for (const id of Object.keys(viewers)) {
-            updateMiniViewer(id);
+            promises.push(updateMiniViewer(id));
         }
-        // Edge rebuild is now triggered inside each viewer's Promise.all().then()
-        // callback so it fires only after models are actually loaded.
+        return Promise.all(promises);
     }
 
     function scheduleMiniViewerUpdate() {
         const content = document.getElementById('adv3d-config-content');
         if (!content || content.style.display === 'none') return;
         if (miniViewerTimer) clearTimeout(miniViewerTimer);
-        miniViewerTimer = setTimeout(updateAllMiniViewers, 500);
+        miniViewerTimer = setTimeout(async () => {
+            await updateAllMiniViewers();
+            // Resize viewers after they've been updated
+            recalcMiniViewerSizes();
+        }, 500);
     }
 
     async function initAllMiniViewers() {
@@ -6082,18 +6130,8 @@ if (galleryToggle) {
         updateAllMiniViewers();
     }
 
-    // ─── Toggle logic ────────────────────────────────────────────────
-
-    const adv3dToggle = document.getElementById('adv3d_config_toggle');
-    const adv3dContent = document.getElementById('adv3d-config-content');
-    if (adv3dToggle && adv3dContent) {
-        adv3dToggle.addEventListener('change', () => {
-            adv3dContent.style.display = adv3dToggle.checked ? '' : 'none';
-            if (adv3dToggle.checked) {
-                initAllMiniViewers();
-            }
-        });
-    }
+    // Advanced 3D panel visibility is now controlled by wizard system
+    // Mini-viewers are initialized when the wizard activates this step
 
     // Theme change → update scene backgrounds
     const themeBtn = document.querySelector('[data-theme-toggle]');
@@ -6163,14 +6201,14 @@ if (galleryToggle) {
             // Reset hasModel so cameras re-frame for the new geometry
             for (const v of Object.values(viewers)) v.hasModel = false;
         }
-        // Force recalc of canvas sizes after display properties change
-        recalcMiniViewerSizes();
+        // scheduleMiniViewerUpdate() will handle both updating and resizing
         scheduleMiniViewerUpdate();
     };
 
     // Global hooks
     window.scheduleMiniViewerUpdate = scheduleMiniViewerUpdate;
     window.initAllMiniViewers = initAllMiniViewers;
+    window.recalcMiniViewerSizes = recalcMiniViewerSizes;
 
     // ╔═══════════════════════════════════════════════════════════════╗
     // ║  DEBUG PANEL — Ctrl+Shift+F12 to toggle                     ║
@@ -7117,4 +7155,219 @@ if (galleryToggle) {
         applyEdgeHighlightToAll();
         startEdgeAnimation();
     };
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+// ██  Wizard Step Navigation
+// ══════════════════════════════════════════════════════════════════════
+(function initWizard() {
+    'use strict';
+
+    const STEPS = [
+        { sel: '.config-panel' },
+        { sel: '.acabados-panel' },
+        { sel: '#advanced-3d-config-panel' },
+        { sel: '.viewer-panel' },
+        { sel: '.download-panel' },
+    ];
+
+    let currentStep = 1;
+    const stepData = [];
+
+    STEPS.forEach((cfg, i) => {
+        const panel = document.querySelector(cfg.sel);
+        if (!panel) return;
+
+        const stepNum = i + 1;
+        panel.classList.add('wizard-step');
+        panel.dataset.wizardStep = stepNum;
+
+        // ── Build / upgrade header ───────────────────────────────
+        const advHeader = panel.querySelector(':scope > .advanced-viewer-header');
+        let headerEl;
+
+        if (advHeader) {
+            // Panels with existing flex header (toggle switch panels)
+            headerEl = advHeader;
+            headerEl.classList.add('wizard-step-header');
+            const badge = document.createElement('span');
+            badge.className = 'wizard-step-number';
+            badge.textContent = stepNum;
+            headerEl.prepend(badge);
+        } else {
+            // Panels with a plain h2
+            const h2 = panel.querySelector(':scope > h2');
+            if (!h2) return;
+            headerEl = document.createElement('div');
+            headerEl.className = 'wizard-step-header';
+            const badge = document.createElement('span');
+            badge.className = 'wizard-step-number';
+            badge.textContent = stepNum;
+            headerEl.appendChild(badge);
+            panel.insertBefore(headerEl, h2);
+            headerEl.appendChild(h2);
+        }
+
+        // Chevron
+        const chevron = document.createElement('span');
+        chevron.className = 'wizard-step-chevron';
+        headerEl.appendChild(chevron);
+
+        // Store nav buttons for later reference
+        panel.dataset.stepNum = stepNum;
+        panel._wizardStepNum = stepNum;
+
+        // ── Wrap remaining content ───────────────────────────────
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'wizard-step-content';
+        const contentInner = document.createElement('div');
+        contentInner.className = 'wizard-step-content-inner';
+
+        let sibling = headerEl.nextSibling;
+        while (sibling) {
+            const next = sibling.nextSibling;
+            contentInner.appendChild(sibling);
+            sibling = next;
+        }
+
+        // Navigation buttons
+        const nav = document.createElement('div');
+        nav.className = 'wizard-nav';
+
+        if (stepNum > 1) {
+            const prev = document.createElement('button');
+            prev.type = 'button';
+            prev.className = 'wizard-btn wizard-prev';
+            prev.textContent = '\u2190 Anterior';
+            prev.addEventListener('click', (e) => { e.stopPropagation(); wizardGo(stepNum - 1); });
+            nav.appendChild(prev);
+        }
+        if (stepNum < STEPS.length) {
+            const next = document.createElement('button');
+            next.type = 'button';
+            next.className = 'wizard-btn wizard-next';
+            next.textContent = 'Siguiente \u2192';
+            next.dataset.wizardNext = 'true';
+            next.addEventListener('click', (e) => { 
+                e.stopPropagation();
+                if (!next.disabled) wizardGo(stepNum + 1);
+            });
+            nav.appendChild(next);
+            panel._wizardNextBtn = next;
+        }
+
+        contentInner.appendChild(nav);
+        contentWrapper.appendChild(contentInner);
+        panel.appendChild(contentWrapper);
+
+        stepData.push({ panel, stepNum });
+    });
+
+    // ── Navigation ───────────────────────────────────────────────
+    function wizardGo(step, scroll) {
+        currentStep = step;
+
+        stepData.forEach(({ panel, stepNum }) => {
+            const isActive = stepNum === step;
+            const isDone   = stepNum < step;
+            panel.classList.toggle('wizard-active', isActive);
+            panel.classList.toggle('wizard-collapsed', !isActive);
+            panel.classList.toggle('wizard-done', isDone);
+
+            // Header click behavior: only allow for active or done steps
+            const header = panel.querySelector('.wizard-step-header');
+            if (header) {
+                if (isActive || isDone) {
+                    header.addEventListener('click', headerClickListener);
+                } else {
+                    header.removeEventListener('click', headerClickListener);
+                }
+            }
+
+            // Auto-enable content toggles on first activation
+            if (isActive && !panel.dataset.wizardInited) {
+                const toggle = panel.querySelector('.wizard-step-header input[type="checkbox"]');
+                if (toggle && !toggle.checked) {
+                    toggle.checked = true;
+                    toggle.dispatchEvent(new Event('change'));
+                }
+                panel.dataset.wizardInited = '1';
+            }
+
+            // Refresh inline 3D viewer when step 2 (Design 3D) becomes active
+            if (isActive && stepNum === 2) {
+                setTimeout(() => {
+                    inline3DHasModel = false; // Reset camera frame
+                    if (typeof updateInline3D === 'function') {
+                        updateInline3D();
+                    }
+                }, 400);
+            }
+
+            // Initialize and resize 3D mini-viewers when step 3 becomes active
+            if (isActive && stepNum === 3) {
+                // Reset 3D viewer camera and regenerate on open
+                viewerHasModel = false;
+                if (typeof window.initAllMiniViewers === 'function') {
+                    window.initAllMiniViewers();
+                }
+                // Wait for CSS animation to complete before resizing viewers and refreshing STL
+                setTimeout(() => {
+                    if (typeof window.recalcMiniViewerSizes === 'function') {
+                        window.recalcMiniViewerSizes();
+                    }
+                    // Regenerate the main STL viewer with proper camera framing
+                    if (typeof viewSTL === 'function') {
+                        viewSTL();
+                    }
+                }, 400);
+            }
+        });
+
+        // Validate next button for step 1
+        updateNextButtonValidation();
+
+        if (scroll !== false) {
+            const active = stepData.find(s => s.stepNum === step);
+            if (active) {
+                setTimeout(() => {
+                    active.panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }
+    }
+
+    // Header click listener (delegated)
+    const headerClickListener = function(e) {
+        if (e.target.closest('.switch-label')) return;
+        const panel = this.closest('.wizard-step');
+        if (panel && panel._wizardStepNum) {
+            wizardGo(panel._wizardStepNum);
+        }
+    };
+
+    // Validate if next button should be enabled
+    function updateNextButtonValidation() {
+        const configPanel = stepData.find(d => d.stepNum === 1)?.panel;
+        if (!configPanel || !configPanel._wizardNextBtn) return;
+
+        const hasPuzzle = !!(puzzleData.grid && puzzleData.pieces);
+        const btn = configPanel._wizardNextBtn;
+
+        if (!hasPuzzle) {
+            btn.disabled = true;
+            btn.setAttribute('data-tooltip', 'Genera al menos un puzzle para continuar');
+        } else {
+            btn.disabled = false;
+            btn.removeAttribute('data-tooltip');
+        }
+    }
+
+    window.wizardGo   = wizardGo;
+    window.wizardNext  = () => { if (currentStep < STEPS.length) wizardGo(currentStep + 1); };
+    window.wizardPrev  = () => { if (currentStep > 1) wizardGo(currentStep - 1); };
+    window.updateNextButtonValidation = updateNextButtonValidation;
+
+    // Start at step 1 without scrolling
+    wizardGo(1, false);
 })();

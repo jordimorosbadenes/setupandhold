@@ -78,20 +78,32 @@
         <!-- Configuration Panel – two-column layout -->
         <div class="panel config-panel">
             <h2>⚙️ Configuración del Puzzle</h2>
+            
+            <!-- Puzzle Type Toggle – centered at top -->
+            <div class="puzzle-type-selector">
+                <button class="puzzle-type-btn active" id="btn-type-normal" onclick="switchPuzzleType('normal')">
+                    <img src="../img/puzzle/normal.png" alt="Normal" class="puzzle-icon-img">
+                    <span class="puzzle-label">Normal</span>
+                </button>
+                <button class="puzzle-type-btn" id="btn-type-fractal" onclick="switchPuzzleType('fractal')">
+                    <img src="../img/puzzle/fractal.png" alt="Fractal" class="puzzle-icon-img">
+                    <span class="puzzle-label">Fractal</span>
+                </button>
+                <button class="puzzle-type-btn" id="btn-type-jigsaw" onclick="switchPuzzleType('jigsaw')">
+                    <img src="../img/puzzle/jigsaw.png" alt="Jigsaw" class="puzzle-icon-img">
+                    <span class="puzzle-label">Jigsaw</span>
+                </button>
+                <button class="puzzle-type-btn" id="btn-type-sliding" onclick="switchPuzzleType('sliding')">
+                    <img src="../img/puzzle/slider.png" alt="Sliding" class="puzzle-icon-img">
+                    <span class="puzzle-label">Sliding</span>
+                </button>
+            </div>
+            
             <div class="config-two-col">
 
                 <!-- ── Col izquierda: controles ── -->
                 <div class="config-col-left">
                     <div class="config-left-top">
-                        <!-- Puzzle Type Toggle -->
-                        <div class="puzzle-type-toggle">
-                            <button class="type-btn active" id="btn-type-normal" onclick="switchPuzzleType('normal')">🧩 Normal</button>
-                            <button class="type-btn" id="btn-type-fractal" onclick="switchPuzzleType('fractal')">🔀 Fractal</button>
-                            <button class="type-btn" id="btn-type-jigsaw" onclick="switchPuzzleType('jigsaw')">🧩 Jigsaw</button>
-                            <button class="type-btn" id="btn-type-sliding" onclick="switchPuzzleType('sliding')">🔲 Sliding</button>
-                        </div>
-                    </div>
-                    <div class="config-left-scroll">
                         <!-- Full-width type selectors (before two-column grid) -->
                         <div class="form-group fractal-only" style="display:none;">
                             <label>Forma de pieza:</label>
@@ -199,11 +211,12 @@
 
                 <!-- ── Col derecha: visor de previsualización ── -->
                 <div class="config-col-right">
-                    <div class="view-controls">
-                        <button class="view-btn active" id="btn-isometric" onclick="switchView(event, 'isometric')">Isométrico</button>
-                        <button class="view-btn" id="btn-flat" onclick="switchView(event, 'flat')">Plano</button>
-                    </div>
                     <div class="config-viewer-wrapper">
+                        <label class="view-toggle" title="Alternar perspectiva">
+                            <input type="checkbox" id="perspective-toggle" checked onchange="switchView(event, this.checked ? 'isometric' : 'flat')">
+                            <img src="../img/puzzle/perspectiva.png" alt="Perspectiva">
+                        </label>
+                        <div class="viewer-reveal" id="viewer-reveal"></div>
                         <canvas id="puzzle-canvas" width="600" height="600"></canvas>
                         <div id="fractal-puzzle-svg" style="display:none;"></div>
                         <div class="acabados-nodrag-overlay" id="config-viewer-hint">🧩 Genera un puzzle para ver la previsualización</div>
@@ -879,12 +892,8 @@
         <div class="panel" id="advanced-3d-config-panel">
             <div class="advanced-viewer-header">
                 <h2>⚙️ Configuración 3D Avanzada</h2>
-                <label class="switch-label">
-                    <input type="checkbox" id="adv3d_config_toggle">
-                    <span class="switch-slider"></span>
-                </label>
             </div>
-            <div id="adv3d-config-content" style="display:none;">
+            <div id="adv3d-config-content">
 
                 <!-- ── Row 1: Piece Settings (non-sliding) ── -->
                 <div class="adv3d-section non-sliding">
@@ -1098,13 +1107,31 @@
 
                 <!-- ── Row 3: Sliding Piece Settings ── -->
                 <div class="adv3d-section sliding-only" style="display:none;">
-                    <h3>🧩 Ajustes piezas (Sliding)</h3>
+                    <h3>🧩 Ajustes piezas</h3>
 
                     <!-- General sliding piece settings + mini viewer -->
                     <div class="adv3d-row">
                         <div class="adv3d-settings">
                             <div class="collapsible-header collapsible-sub" data-target="section-sliding-piece-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
                             <div class="collapsible-body" id="section-sliding-piece-general">
+                                <div class="puzle-color-corners-grid">
+                                    <div class="puzle-colors-row">
+                                        <div class="form-group">
+                                            <label>🎨 Color piezas:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="sliding_color_pieces" value="#00998A">
+                                                <span class="color-hex" id="sliding_color_pieces_hex">#00998A</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" id="sliding-relief-color-group">
+                                            <label>🎨 Color relieve:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="sliding_color_relief" value="#C1B399">
+                                                <span class="color-hex" id="sliding_color_relief_hex">#C1B399</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="puzle-dims-grid">
                                     <div class="form-group">
                                         <label>Celda (mm):</label>
@@ -1190,13 +1217,24 @@
 
                 <!-- ── Row 4: Sliding Base Settings ── -->
                 <div class="adv3d-section sliding-only" style="display:none;">
-                    <h3>📐 Ajustes base (Sliding)</h3>
+                    <h3>📐 Ajustes base</h3>
 
                     <!-- General sliding base settings + mini viewer -->
                     <div class="adv3d-row">
                         <div class="adv3d-settings">
                             <div class="collapsible-header collapsible-sub" data-target="section-sliding-base-general"><span class="collapse-arrow">▾</span> 🎨 General</div>
                             <div class="collapsible-body" id="section-sliding-base-general">
+                                <div class="puzle-color-corners-grid">
+                                    <div class="puzle-colors-row">
+                                        <div class="form-group">
+                                            <label>🎨 Color base:</label>
+                                            <div class="color-picker-row">
+                                                <input type="color" id="sliding_color_base" value="#808080">
+                                                <span class="color-hex" id="sliding_color_base_hex">#808080</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <p class="disclaimer" style="margin-top:0;margin-bottom:8px;">
                                     ℹ️ <b>Print-in-place:</b> Sin suelo. Piezas con perfil de encaje simétrico. Ajusta holguras según tu impresora.
                                 </p>
@@ -1301,13 +1339,9 @@
         <!-- 3D Viewer Panel -->
         <div class="panel viewer-panel">
             <div class="advanced-viewer-header">
-                <h2>📦 Vista Previa 3D Avanzada</h2>
-                <label class="switch-label">
-                    <input type="checkbox" id="advanced_viewer_toggle">
-                    <span class="switch-slider"></span>
-                </label>
+                <h2>📦 Vista Previa Final</h2>
             </div>
-            <div id="advanced-viewer-content" style="display:none;">
+            <div id="advanced-viewer-content">
                 <div class="viewer-toolbar">
                     <span class="viewer-controls-hint">🖱️ Arrastrar = rotar &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; Clic derecho / Shift+arrastrar = desplazar</span>
                     <div class="viewer-mode-selector">
@@ -1329,7 +1363,7 @@
                         <label class="inline3d-switch-label">
                             🧩 Piezas ensambladas
                             <label class="switch-label switch-small">
-                                <input type="checkbox" id="stl_assembled">
+                                <input type="checkbox" id="stl_assembled" checked>
                                 <span class="switch-slider"></span>
                             </label>
                         </label>
