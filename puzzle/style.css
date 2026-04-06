@@ -234,7 +234,7 @@ a:hover { color: var(--accent); }
 }
 
 .nav-links a {
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 10px;
     transition: background 0.2s ease, color 0.2s ease;
 }
@@ -386,79 +386,213 @@ h1 {
 
 h2 {
     color: var(--text);
-    margin-bottom: 15px;
+    margin-bottom: 16px;
     font-size: 1.5em;
     letter-spacing: -0.02em;
 }
 
 h3 {
     color: var(--text);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     font-size: 1.5em;
 }
 
-/* Puzzle Type Toggle */
-.puzzle-type-toggle {
-    display: flex;
-    gap: 0;
-    margin-bottom: 20px;
-    justify-content: center;
+/* Puzzle Type Selector */
+.puzzle-type-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 32px 0 40px 0;
+    padding: 0 20px;
+    max-width: 100%;
 }
 
-.type-btn {
-    padding: 12px 28px;
+@media (max-width: 768px) {
+    .puzzle-type-selector {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 0 10px;
+    }
+}
+
+.puzzle-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 12px;
     border: 2px solid var(--accent);
     background: var(--card);
-    color: var(--accent);
+    color: var(--text);
     cursor: pointer;
     font-weight: 700;
-    font-size: 1.05em;
-    transition: all 0.3s;
+    font-size: 0.95em;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     font-family: var(--font);
+    min-height: 100px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
-.type-btn:first-child {
-    border-radius: 8px 0 0 8px;
-    border-right: 1px solid var(--accent);
+.puzzle-type-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
 }
 
-.type-btn:last-child {
-    border-radius: 0 8px 8px 0;
-    border-left: 1px solid var(--accent);
+.puzzle-type-btn:hover::before {
+    left: 100%;
 }
 
-.type-btn:hover {
+.puzzle-type-btn:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-2);
+    box-shadow: 0 8px 20px rgba(124, 242, 201, 0.2);
     background: var(--bg-soft);
 }
 
-.type-btn.active {
-    background: var(--accent);
+.puzzle-icon-img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.3s;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.puzzle-type-btn:hover .puzzle-icon-img {
+    transform: scale(1.15) rotate(5deg);
+}
+
+.puzzle-type-btn.active .puzzle-icon-img {
+    filter: drop-shadow(0 4px 8px rgba(124, 242, 201, 0.4));
+    animation: pulse-icon 0.4s ease-out;
+}
+
+.puzzle-label {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    display: block;
+}
+
+.puzzle-type-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
     color: var(--bg);
-    box-shadow: 0 5px 15px rgba(124, 242, 201, 0.3);
+    border-color: var(--accent);
+    box-shadow: 0 8px 25px rgba(124, 242, 201, 0.35);
+    transform: scale(1.05);
 }
 
-/* View Mode Controls */
+@keyframes pulse-icon {
+    0% { transform: scale(0.95) rotate(5deg); }
+    50% { transform: scale(1.25) rotate(5deg); }
+    100% { transform: scale(1.15) rotate(5deg); }
+}
+
+/* Puzzle Type Toggle (old) */
+.puzzle-type-toggle {
+    display: none;
+}
+
+/* View Mode Toggle */
 .view-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    justify-content: center;
+    display: none;
 }
 
-.view-btn {
-    padding: 8px 16px;
-    border: 2px solid var(--accent);
-    background: var(--card);
-    color: var(--accent);
-    border-radius: 5px;
+.view-toggle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 100;
     cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-    font-family: var(--font);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    background: transparent;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.view-btn:hover {
-    background: var(--bg-soft);
+.view-toggle:hover {
+    border-color: var(--accent-2);
+    box-shadow: 0 4px 12px rgba(124, 242, 201, 0.15);
+}
+
+.view-toggle input {
+    display: none;
+}
+
+.view-toggle img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+.view-toggle input:checked + img {
+    opacity: 1;
+}
+
+.view-toggle input:checked {
+    background: var(--accent);
+}
+
+.view-toggle:has(input:checked) {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ── Puzzle viewer reveal animation ────────────────────────────────────── */
+.viewer-reveal {
+    position: absolute;
+    inset: 0;
+    z-index: 9;
+    pointer-events: none;
+    border-radius: 10px;
+    background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent) 100%);
+    background-size: 200% 100%;
+    transform: translateX(-110%);
+    will-change: transform, background-position;
+}
+
+.viewer-reveal.is-entering {
+    animation:
+        reveal-sweep-in 160ms cubic-bezier(0.4, 0, 0.16, 1) both,
+        reveal-shimmer 600ms linear 160ms infinite;
+}
+
+.viewer-reveal.is-exiting {
+    animation: reveal-sweep-out 200ms cubic-bezier(0.84, 0, 0.6, 1) forwards;
+}
+
+@keyframes reveal-sweep-in {
+    from { transform: translateX(-110%); }
+    to   { transform: translateX(0); }
+}
+
+@keyframes reveal-sweep-out {
+    from { transform: translateX(0); }
+    to   { transform: translateX(110%); }
+}
+
+@keyframes reveal-shimmer {
+    from { background-position: 0% 50%; }
+    to   { background-position: 200% 50%; }
 }
 
 .view-btn.active {
@@ -507,13 +641,13 @@ h3 {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 16px;
 }
 
 .config-col-right {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 /* Responsive wrapper for the puzzle preview viewer */
@@ -570,8 +704,9 @@ h3 {
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-bottom: 15px;
+    /* horizontal-only gap: column-gap 16px, no row gap */
+    gap: 0 16px;
+    margin-bottom: 16px;
 }
 
 .stl-config-columns {
@@ -588,7 +723,7 @@ h3 {
 .stl-config-col {
     background: var(--card);
     border-radius: 8px;
-    padding: 15px;
+    padding: 16px;
     border: 1px solid var(--border);
 }
 
@@ -657,18 +792,19 @@ h3 {
 .stl-config-col-download {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 .stl-config-col-download .stl-download-options {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
+    margin-bottom: 16px;
 }
 
 .form-group-full {
@@ -716,7 +852,7 @@ h3 {
 .infill-opts.active, .texture-opts.active, .image-opts {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding: 12px;
     background: var(--card);
     border-radius: 8px;
@@ -729,7 +865,7 @@ h3 {
 .image-opts .collapsible-body {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding-top: 2px;
 }
 
@@ -752,7 +888,7 @@ h3 {
 .piece-opts {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding: 10px;
     margin-top: 8px;
     background: var(--bg-soft);
@@ -781,7 +917,7 @@ h3 {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
     margin: 6px 0 10px 0;
 }
 
@@ -801,7 +937,7 @@ h3 {
 /* Mode selector: 3 mutually-exclusive checkbox-style buttons */
 .viewer-mode-selector {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
@@ -886,7 +1022,7 @@ h3 {
 
 .stl-download-buttons {
     display: flex;
-    gap: 15px;
+    gap: 16px;
     flex-wrap: wrap;
 }
 
@@ -1139,7 +1275,7 @@ h3 {
 /* Solutions Panel */
 .solution-controls {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 15px;
     flex-wrap: wrap;
 }
@@ -1382,7 +1518,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .acabados-config {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 /* Row 2: 2D viewer + compact controls side by side */
@@ -1402,15 +1538,15 @@ input[type="number"]::-webkit-inner-spin-button {
 .acabados-texture-inline-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
+    gap: 16px;
     align-items: end;
 }
 
 /* Normalize select + button heights inside the 3-col inline row */
 .acabados-texture-inline-row .form-group .btn-small {
-    height: 40px;
-    min-height: 40px;
-    padding: 6px 12px;
+    height: 47px;
+    min-height: 47px;
+    padding: 0 14px;
     box-sizing: border-box;
 }
 
@@ -1441,7 +1577,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .acabados-col-common {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 /* Puzle / Base: colors+corners side by side, dims in 3 cols */
@@ -1454,7 +1590,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .puzle-colors-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 16px;
     align-items: center;
 }
 
@@ -1462,7 +1598,7 @@ input[type="number"]::-webkit-inner-spin-button {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 10px;
+    padding: 12px;
     margin-top: 12px;
 }
 
@@ -1483,13 +1619,14 @@ input[type="number"]::-webkit-inner-spin-button {
     /* allow columns to shrink below their content by using minmax(0, 1fr)
        this prevents overflow when the container is narrow */
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 16px;
     margin-top: 8px;
 }
 
 /* Ensure grid children can shrink and inputs/selects don't force overflow */
 .puzle-dims-grid .form-group {
     min-width: 0;
+    margin-bottom: 0;
 }
 .puzle-dims-grid input,
 .puzle-dims-grid select,
@@ -2009,14 +2146,14 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* ── Advanced 3D Configuration ── */
+/* Advanced 3D panel: no extra top margin (kept consistent by wizard margins) */
 #advanced-3d-config-panel {
-    margin-top: 16px;
+    margin-top: 0;
 }
 
 #advanced-3d-config-panel .advanced-viewer-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
 }
 
@@ -2025,8 +2162,9 @@ input[type="number"]::-webkit-inner-spin-button {
     font-size: 1.5em;
 }
 
+/* Margin handled by wizard system */
 #adv3d-config-content {
-    margin-top: 16px;
+    /* margin-top removed: wizard controls spacing */
 }
 
 .adv3d-section {
@@ -2036,7 +2174,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .adv3d-section h3 {
     font-size: 1.3em;
     font-weight: 700;
-    margin: 0 0 12px 0;
+    margin: 0 0 16px 0;
     color: var(--text);
     border-bottom: 2px solid var(--border);
     padding-bottom: 6px;
@@ -2046,7 +2184,7 @@ input[type="number"]::-webkit-inner-spin-button {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     align-items: stretch;
     background: var(--card);
     border: 1px solid var(--border);
@@ -2057,7 +2195,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .adv3d-settings {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     min-width: 0;
 }
 
@@ -2191,4 +2329,231 @@ input[type="number"]::-webkit-inner-spin-button {
     display: block;
     border-radius: inherit;
     object-fit: cover;
+}
+
+/* ══ Wizard Step System ══════════════════════════════════════════════ */
+
+.panel.wizard-step {
+    transition: padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s ease,
+                box-shadow 0.3s ease;
+    scroll-margin-top: 20px;
+    margin-bottom: 6px;
+}
+
+.panel.wizard-collapsed {
+    padding-top: 14px;
+    padding-bottom: 14px;
+    border-left-color: var(--border);
+    box-shadow: none;
+}
+
+.panel.wizard-collapsed:hover {
+    border-left-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+    box-shadow: var(--shadow);
+}
+
+.panel.wizard-active {
+    border-left-color: var(--accent);
+    margin-bottom: 6px;
+}
+
+.panel.wizard-done {
+    border-left-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    margin-bottom: 6px;
+}
+
+/* ── Step header ── */
+.wizard-step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.wizard-step-header h2 {
+    flex: 1;
+    margin: 0 !important;
+}
+
+/* ── Step number badge ── */
+.wizard-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1;
+}
+
+.wizard-active .wizard-step-number {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.wizard-done .wizard-step-number {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ── Chevron indicator ── */
+.wizard-step-chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.wizard-step-chevron::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: translate(-50%, -70%) rotate(45deg);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s;
+}
+
+.wizard-active .wizard-step-chevron::before {
+    transform: translate(-50%, -30%) rotate(-135deg);
+    border-color: var(--accent);
+}
+
+/* ── Content area — smooth collapse/expand via CSS grid ── */
+.wizard-step-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wizard-active .wizard-step-content {
+    grid-template-rows: 1fr;
+}
+
+.wizard-step-content-inner {
+    overflow: hidden;
+    padding-top: 0;
+}
+
+.wizard-active .wizard-step-content-inner {
+    padding-top: 16px;
+}
+
+/* Hide toggle switches when panel is collapsed */
+.wizard-collapsed .wizard-step-header .switch-label {
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    transition: opacity 0.2s, width 0.3s;
+}
+
+.wizard-active .wizard-step-header .switch-label {
+    opacity: 1;
+    pointer-events: auto;
+    width: 44px;
+    transition: opacity 0.3s 0.25s, width 0.3s;
+}
+
+/* Disable header clicks on future/locked steps */
+.wizard-collapsed .wizard-step-header {
+    cursor: auto;
+    pointer-events: none;
+}
+
+.wizard-active .wizard-step-header {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.wizard-done .wizard-step-header {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* ── Navigation buttons ── */
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.wizard-nav .wizard-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+}
+
+.wizard-nav .wizard-prev {
+    margin-right: auto;
+}
+
+.wizard-nav .wizard-next {
+    margin-left: auto;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.wizard-nav .wizard-next:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.wizard-nav .wizard-prev:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--card));
+}
+
+.wizard-nav .wizard-btn:disabled,
+.wizard-nav .wizard-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--bg-soft);
+    border-color: var(--border);
+    color: var(--muted);
+    box-shadow: none;
+    filter: none;
+}
+
+.wizard-nav .wizard-btn:disabled:hover,
+.wizard-nav .wizard-btn[disabled]:hover {
+    background: var(--bg-soft);
+    border-color: var(--border);
+}
+
+@media (max-width: 700px) {
+    .wizard-nav .wizard-btn {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+    }
 }
