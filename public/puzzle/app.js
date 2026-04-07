@@ -655,7 +655,7 @@ async function generatePuzzle() {
                 window.updateNextButtonValidation();
             }
 
-            let statusMsg = `✅ ${data.piece_count} piezas generadas`;
+            let statusMsg = `✅ Puzzle con ${data.piece_count} piezas generado correctamente`;
             let statusType = 'success';
             if (data.warning) {
                 statusMsg = `⚠️ ${data.warning}`;
@@ -2011,7 +2011,7 @@ async function viewSTL() {
         const threeOk = await loadThreeFromSeparate(data.base, data.pieces, baseColor, pieceColor, data.relief, reliefColor);
 
         if (threeOk) {
-            showExportStatus('✅ Modelo cargado con colores', 'success');
+            showExportStatus('✅ Modelo cargado correctamente', 'success');
         } else {
             showExportStatus('❌ Error: no se pudo cargar el modelo', 'error');
         }
