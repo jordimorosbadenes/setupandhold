@@ -2,41 +2,50 @@
  *  Worker Client — Fetch Interceptor
  *  Replaces api-bridge.js.
  *  Intercepts fetch('/api/...') calls from app.js and
- *  routes them to the Cloudflare Worker backend.
+ *  routes them to the configured backend.
  *
- *  WORKER URL RESOLUTION (in order):
+ *  BACKEND RESOLUTION (in order):
  *    1. URL param ?worker=local  → http://localhost:8787
- *    2. localStorage 'PUZZLE_WORKER_URL'
- *    3. Default: deployed worker URL (set PUZZLE_WORKER_URL below)
+ *    2. URL param ?worker=vps    → VPS_URL below
+ *    3. URL param ?worker=cf     → WORKER_URL below (Cloudflare)
+ *    4. localStorage 'PUZZLE_WORKER_URL'  (any custom URL)
+ *    5. Default: DEFAULT_BACKEND below
  *
- *  DEV USAGE (local worker):
- *    - Start worker:  cd puzzlestudio-worker && npm run dev
- *    - Open studio:   add ?worker=local to the URL
- *      e.g. http://localhost:4321/puzzle/studio.html?worker=local
- *    OR run in browser console:
- *      localStorage.setItem('PUZZLE_WORKER_URL', 'http://localhost:8787')
+ *  DEV USAGE:
+ *    ?worker=local   → local dev server (port 8787)
+ *    ?worker=vps     → VPS backend
+ *    ?worker=cf      → Cloudflare Worker
  * ===================================================== */
 (function () {
     "use strict";
 
-    // ══ Change this to your deployed Worker URL after deploying ══
-    // var DEFAULT_WORKER_URL = 'https://puzzlestudio-worker.YOUR_SUBDOMAIN.workers.dev';
-    var DEFAULT_WORKER_URL = 'https://puzzlestudio-worker.jordimorosbadenes.workers.dev';
-    // ═════════════════════════════════════════════════════════════
+    // ══ Backend URLs — edit these after deploying ══════════════
+    var WORKER_URL = 'https://puzzlestudio-worker.jordimorosbadenes.workers.dev';
+    var VPS_URL    = 'https://puzzle.setupandhold.com';
+    var LOCAL_URL  = 'http://localhost:3000';
+
+    // ══ Default backend: 'vps', 'cf', or a full URL ═══════════
+    var DEFAULT_BACKEND = 'vps';
+    // ═══════════════════════════════════════════════════════════
+
+    var BACKENDS = { local: LOCAL_URL, vps: VPS_URL, cf: WORKER_URL };
 
     function getWorkerBase() {
         // 1. URL param override
         try {
             var params = new URLSearchParams(window.location.search);
-            if (params.get('worker') === 'local') return 'http://localhost:8787';
+            var w = params.get('worker');
+            if (w && BACKENDS[w]) return BACKENDS[w];
+            if (w && w.startsWith('http')) return w.replace(/\/$/, '');
         } catch (_) {}
         // 2. localStorage override
         try {
             var stored = localStorage.getItem('PUZZLE_WORKER_URL');
             if (stored) return stored.replace(/\/$/, '');
         } catch (_) {}
-        // 3. Default deployed URL
-        return DEFAULT_WORKER_URL;
+        // 3. Default
+        if (BACKENDS[DEFAULT_BACKEND]) return BACKENDS[DEFAULT_BACKEND];
+        return DEFAULT_BACKEND;
     }
 
     var WORKER_BASE = getWorkerBase();
