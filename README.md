@@ -4,7 +4,7 @@ Blog estático construido con [Astro](https://astro.build) y listo para publicar
 en GitHub Pages. Incluye páginas de etiquetas y dos posts de
 muestra.
 
-## Requisitos
+## Requisitos en Windows
 
 - Node.js 18+ (se recomienda 20+)
 - npm (o pnpm/yarn si prefieres; ajusta los comandos)

@@ -303,34 +303,24 @@
         <div class="panel acabados-panel">
             <h2>🏗️ Diseño 3D</h2>
 
-            <!-- Row 1: Mode switch (full width) -->
-            <div class="acabados-mode-switch">
-                <label class="acabados-mode-label active" id="acabados-mode-label-infill">
-                    <input type="radio" name="acabados_mode" id="acabados_mode_infill" value="infill" checked>
-                    <span>🔲 Relleno</span>
-                </label>
-                <label class="acabados-mode-label" id="acabados-mode-label-texture">
-                    <input type="radio" name="acabados_mode" id="acabados_mode_texture" value="texture">
-                    <span>🏔️ Textura</span>
-                </label>
-                <label class="acabados-mode-label" id="acabados-mode-label-image">
-                    <input type="radio" name="acabados_mode" id="acabados_mode_image" value="image">
-                    <span>🖼️ Imagen</span>
-                </label>
-            </div>
-
-            <!-- Row 2: 2-col [2D viewer | compact mode controls] -->
-            <div class="acabados-row2">
-                <!-- Left: 2D viewer -->
-                <div class="acabados-viewer">
-                    <div class="acabados-canvas-wrapper">
-                        <canvas id="acabados-2d-canvas" width="500" height="500"></canvas>
-                        <div class="acabados-nodrag-overlay" id="acabados-hint-nodrag" style="display:none;">ℹ️ Este patrón no admite desplazamiento</div>
-                        <div class="acabados-nodrag-overlay" id="acabados-hint-nopuzzle">🧩 Genera un puzzle para ver la previsualización</div>
-                    </div>
-                    <p id="acabados-hint-drag">🖱️ Arrastra en el visor para mover el patrón</p>
+            <!-- Row 1: [Mode switch | Mode-specific options] -->
+            <div class="acabados-row1">
+                <!-- Left: Mode switch (vertical) -->
+                <div class="acabados-mode-switch">
+                    <label class="acabados-mode-label active" id="acabados-mode-label-infill">
+                        <input type="radio" name="acabados_mode" id="acabados_mode_infill" value="infill" checked>
+                        <span>🔲 Relleno</span>
+                    </label>
+                    <label class="acabados-mode-label" id="acabados-mode-label-texture">
+                        <input type="radio" name="acabados_mode" id="acabados_mode_texture" value="texture">
+                        <span>🏔️ Textura</span>
+                    </label>
+                    <label class="acabados-mode-label" id="acabados-mode-label-image">
+                        <input type="radio" name="acabados_mode" id="acabados_mode_image" value="image">
+                        <span>🖼️ Imagen</span>
+                    </label>
                 </div>
-                <!-- Right: compact mode-specific controls -->
+                <!-- Right: Mode-specific compact options -->
                 <div class="acabados-controls-compact">
                     <!-- ===== RELLENO (infill) options ===== -->
                     <div id="acabados-infill-panel" class="acabados-sub-panel options-panel">
@@ -399,9 +389,25 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Row 3: Inline 3D viewer -->
-                    <div id="acabados-3d-inline" style="width:100%; margin-top:12px;"></div>
+            <!-- Row 2: [2D viewer | 3D viewer] -->
+            <div class="acabados-row2">
+                <!-- Left: 2D viewer + drag hint -->
+                <div class="acabados-viewer">
+                    <div class="acabados-canvas-wrapper">
+                        <canvas id="acabados-2d-canvas" width="500" height="500"></canvas>
+                        <div class="acabados-nodrag-overlay" id="acabados-hint-nodrag" style="display:none;">ℹ️ Este patrón no admite desplazamiento</div>
+                        <div class="acabados-nodrag-overlay" id="acabados-hint-nopuzzle">🧩 Genera un puzzle para ver la previsualización</div>
+                    </div>
+                    <p id="acabados-hint-drag">🖱️ Arrastra en el visor para mover el patrón</p>
+                </div>
+                <!-- Right: Inline 3D viewer + controls -->
+                <div class="acabados-3d-col">
+                    <div id="acabados-3d-inline">
+                        <div class="stl-loading-overlay" id="stl-inline-loading"></div>
+                    </div>
                     <div class="acabados-inline3d-controls">
                         <label class="inline3d-switch-label">
                             📐 Mostrar base
@@ -419,7 +425,6 @@
                         </label>
                         <button type="button" id="inline3d_refresh" class="btn-compact" title="Actualizar visor 3D">🔄</button>
                     </div>
-
                 </div>
             </div>
 
@@ -1369,7 +1374,9 @@
                         </label>
                     </div>
                 </div>
-                <div id="viewer-3d"></div>
+                <div id="viewer-3d">
+                    <div class="stl-loading-overlay" id="stl-viewer-loading"></div>
+                </div>
                 <div id="status-viewer" class="status"></div>
             </div>
         </div>
