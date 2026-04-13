@@ -1966,6 +1966,7 @@ async function export3MF() {
 }
 
 async function viewSTL() {
+    const viewerOverlay = document.getElementById('stl-viewer-loading');
     try {
         const payload = buildSTLPayload();
         if (!payload.include_pieces && !payload.include_base) {
@@ -1978,6 +1979,7 @@ async function viewSTL() {
             return;
         }
         showExportStatus('⏳ Generando y cargando modelo...', 'info');
+        if (viewerOverlay) viewerOverlay.classList.add('is-active');
 
         // Fetch separate base/pieces STL data for multi-color viewing
         const response = await fetch('/api/export_stl_separate', {
@@ -2017,6 +2019,8 @@ async function viewSTL() {
         }
     } catch (error) {
         showExportStatus(`❌ Error: ${error.message}`, 'error');
+    } finally {
+        if (viewerOverlay) viewerOverlay.classList.remove('is-active');
     }
 }
 
@@ -5180,9 +5184,10 @@ let inline3DFillLight = null;
 // world-space offset applied to the camera target so only the model moves
 // inside the canvas (background stays put).
 let inline3DVerticalOffset = -70;
-// Fixed inline viewer height (pixels). Use this single value everywhere so
-// we can convert pixel offsets into world units consistently.
-let INLINE_VIEWER_HEIGHT = 399;
+// Fixed inline viewer height (pixels). Used as the initial / maximum height.
+let INLINE_VIEWER_HEIGHT = 600;
+// Actual rendered height (updated when the viewer resizes with the 2D canvas).
+let inline3DCurrentHeight = INLINE_VIEWER_HEIGHT;
 // Inline view camera angle defaults (degrees).
 // `azimuth`: rotation around Y (0 = +X front, negative = rotate towards -X).
 // `elevation`: angle above the horizontal (higher = more top-down).
@@ -5200,7 +5205,15 @@ function initInline3D() {
     inline3DScene = new THREE.Scene();
     inline3DScene.background = new THREE.Color(0xf9fafb);
 
-    const VIEWER_HEIGHT = INLINE_VIEWER_HEIGHT;
+    // Read initial height from the 2D canvas (it's square, width = height);
+    // fall back to the constant if layout hasn't been computed yet.
+    const c2dInit = document.getElementById('acabados-2d-canvas');
+    const c2dInitW = c2dInit ? c2dInit.getBoundingClientRect().width : 0;
+    const VIEWER_HEIGHT = c2dInitW >= 50
+        ? Math.min(Math.round(c2dInitW), INLINE_VIEWER_HEIGHT)
+        : INLINE_VIEWER_HEIGHT;
+    inline3DCurrentHeight = VIEWER_HEIGHT;
+
     inline3DCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 10000);
 
     inline3DRenderer = new THREE.WebGLRenderer({ antialias: true });
@@ -5247,18 +5260,33 @@ function initInline3D() {
     // Render once
     renderInline3D();
 
-    // Observe size changes
+    // Observe size changes — also syncs 3D viewer height to the 2D canvas width
+    // so both viewers always appear the same size.
     if (window.ResizeObserver) {
-        new ResizeObserver(() => {
+        let _syncH = -1;
+        const ro = new ResizeObserver(() => {
             const newW = container.clientWidth;
-            if (newW > 0 && inline3DRenderer) {
-                inline3DRenderer.setSize(newW, VIEWER_HEIGHT);
-                inline3DCamera.aspect = newW / VIEWER_HEIGHT;
-                inline3DCamera.updateProjectionMatrix();
-                renderInline3D();
-                // No CSS transform applied — vertical offset handled in camera framing.
+            if (newW <= 0 || !inline3DRenderer) return;
+            // 2D canvas is a square (width == height); match 3D viewer height to it.
+            const c2d = document.getElementById('acabados-2d-canvas');
+            const canvasW = c2d ? c2d.getBoundingClientRect().width : 0;
+            const newH = canvasW >= 50
+                ? Math.min(Math.round(canvasW), INLINE_VIEWER_HEIGHT)
+                : (container.clientHeight || INLINE_VIEWER_HEIGHT);
+            // Set CSS height once (avoid re-triggering the observer in a loop).
+            if (newH !== _syncH) {
+                _syncH = newH;
+                container.style.height = newH + 'px';
             }
-        }).observe(container);
+            inline3DCurrentHeight = newH;
+            inline3DRenderer.setSize(newW, newH);
+            inline3DCamera.aspect = newW / newH;
+            inline3DCamera.updateProjectionMatrix();
+            renderInline3D();
+        });
+        ro.observe(container);
+        const c2dObs = document.getElementById('acabados-2d-canvas');
+        if (c2dObs) ro.observe(c2dObs);
     }
 }
 
@@ -5300,7 +5328,7 @@ function frameInline3DCamera() {
     // inline3DGroup.position.y so only the model moves inside the canvas
     // while the camera and background remain fixed.
     const worldHeightAtDist = 2 * dist * Math.tan(fov / 2);
-    const pixelToWorld = worldHeightAtDist / INLINE_VIEWER_HEIGHT;
+    const pixelToWorld = worldHeightAtDist / (inline3DCurrentHeight || INLINE_VIEWER_HEIGHT);
     const worldOffset = -inline3DVerticalOffset * pixelToWorld;
 
     // Compute view direction from azimuth/elevation (degrees -> radians)
@@ -5339,6 +5367,8 @@ async function updateInline3D() {
     if (!payload) return;
     payload.assembled = true; // Inline viewer always shows assembled preview
 
+    const inlineOverlay = document.getElementById('stl-inline-loading');
+    if (inlineOverlay) inlineOverlay.classList.add('is-active');
     try {
         const response = await fetch('/api/export_stl_separate', {
             method: 'POST',
@@ -5456,11 +5486,18 @@ async function updateInline3D() {
         renderInline3D();
     } catch (e) {
         console.warn('Inline 3D update failed:', e);
+    } finally {
+        if (inlineOverlay) inlineOverlay.classList.remove('is-active');
     }
 }
 
 function scheduleInline3DUpdate() {
     if (inline3DTimer) clearTimeout(inline3DTimer);
+    // Show overlay immediately for instant visual feedback
+    if (inline3DGroup && puzzleData && puzzleData.grid) {
+        const inlineOverlay = document.getElementById('stl-inline-loading');
+        if (inlineOverlay) inlineOverlay.classList.add('is-active');
+    }
     inline3DTimer = setTimeout(updateInline3D, 400);
 }
 
@@ -5887,6 +5924,13 @@ if (galleryToggle) {
             savedCamTarget: null,
         };
         viewers[id] = viewer;
+
+        // Inject loading overlay (same animation as the other STL viewers)
+        const overlay = document.createElement('div');
+        overlay.className = 'stl-loading-overlay';
+        overlay.id = 'stl-mini-loading-' + id;
+        container.appendChild(overlay);
+
         return viewer;
     }
 
@@ -6036,6 +6080,8 @@ if (galleryToggle) {
         if (!v) return;
         if (!isViewerVisible(id)) return;
 
+        const miniOverlay = document.getElementById('stl-mini-loading-' + id);
+        if (miniOverlay) miniOverlay.classList.add('is-active');
         const puzzState = await getPuzzleStateForViewer();
         if (!puzzState) return;
 
@@ -6097,6 +6143,8 @@ if (galleryToggle) {
             }
         } catch (e) {
             console.warn('Mini viewer update failed:', id, e);
+        } finally {
+            if (miniOverlay) miniOverlay.classList.remove('is-active');
         }
     }
 
@@ -6112,6 +6160,11 @@ if (galleryToggle) {
         const content = document.getElementById('adv3d-config-content');
         if (!content || content.style.display === 'none') return;
         if (miniViewerTimer) clearTimeout(miniViewerTimer);
+        // Show all mini-viewer overlays immediately for instant feedback
+        for (const id of Object.keys(viewers)) {
+            const ov = document.getElementById('stl-mini-loading-' + id);
+            if (ov) ov.classList.add('is-active');
+        }
         miniViewerTimer = setTimeout(async () => {
             await updateAllMiniViewers();
             // Resize viewers after they've been updated
