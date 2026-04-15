@@ -20,19 +20,19 @@ En el instituto llevaba la etiqueta de "Jordi Android": rooteaba los teléfonos,
 <div style="display:flex;gap:12px;margin:14px 0;justify-content:space-between;">
 	<figure style="margin:0;flex:1;min-width:0;">
 		<a href="https://www.xatakandroid.com/moviles-android/aquaris-toda-la-informacion-del-nuevo-android-de-bq" target="_blank" rel="noopener noreferrer">
-			<img src="https://static.fnac-static.com/multimedia/ES/images_produits/ES/Zoom_Planche_BD/8/0/3/8436545510308_4/tsp20130401174950/bq-Aquaris-4-5-Android-4-5-dual-SIM.jpg" alt="BQ Aquaris" style="width:100%;height:auto;border-radius:6px;" />
+			<img src="/img/posts/aquaris.png" alt="BQ Aquaris" style="width:100%;aspect-ratio:1;object-fit:contain;background:white;border-radius:6px;" />
 		</a>
 		<figcaption style="font-size:14px;color:#999;margin-top:6px;"><a href="https://www.xatakandroid.com/moviles-android/aquaris-toda-la-informacion-del-nuevo-android-de-bq" target="_blank" rel="noopener noreferrer">BQ Aquaris 4.5</a></figcaption>
 	</figure>
 	<figure style="margin:0;flex:1;min-width:0;">
 		<a href="https://www.xataka.com/analisis/samsung-galaxy-s4-analisis" target="_blank" rel="noopener noreferrer">
-			<img src="https://informaticagonzaga.es/wp-content/uploads/2024/11/20130827133947-s4-mini-2-web.jpg" alt="Samsung Galaxy S4" style="width:100%;height:auto;border-radius:6px;" />
+			<img src="/img/posts/s4.png" alt="Samsung Galaxy S4" style="width:100%;aspect-ratio:1;object-fit:contain;background:white;border-radius:6px;" />
 		</a>
 		<figcaption style="font-size:14px;color:#999;margin-top:6px;"><a href="https://www.xataka.com/analisis/samsung-galaxy-s4-analisis" target="_blank" rel="noopener noreferrer">Samsung Galaxy S4</a></figcaption>
 	</figure>
 	<figure style="margin:0;flex:1;min-width:0;">
 		<a href="https://www.xataka.com/moviles/xiaomi-mi-9t-caracteristicas-precio-ficha-tecnica" target="_blank" rel="noopener noreferrer">
-			<img src="https://img.pccomponentes.com/articles/24/241189/xiaomi-mi-9t-pro-azul-mzb8017eu-1.jpg" alt="Xiaomi Mi 9T" style="width:100%;height:auto;border-radius:6px;" />
+			<img src="/img/posts/mi9t.png" alt="Xiaomi Mi 9T" style="width:100%;aspect-ratio:1;object-fit:contain;background:white;border-radius:6px;" />
 		</a>
 		<figcaption style="font-size:14px;color:#999;margin-top:6px;"><a href="https://www.xataka.com/moviles/xiaomi-mi-9t-caracteristicas-precio-ficha-tecnica" target="_blank" rel="noopener noreferrer">Xiaomi Mi 9T</a></figcaption>
 	</figure>
@@ -71,7 +71,7 @@ Finalmente, en 2024 caí. Apple me ganó una batalla que pensaba que nunca pens�
 
 <div style="margin:12px 0;max-width:420px;">
 	<a href="https://www.apple.com/es/newsroom/2023/09/apple-unveils-iphone-15-pro-and-iphone-15-pro-max/" target="_blank" rel="noopener noreferrer">
-		<img src="https://img.pccomponentes.com/articles/1077/10777890/1669-apple-iphone-15-pro-max-256gb-titanio-natural-libre.jpg" alt="iPhone 15 Pro Max" style="width:100%;height:auto;border-radius:8px;" />
+		<img src="/img/posts/iphone.png" alt="iPhone 15 Pro Max" style="width:100%;height:auto;border-radius:8px;" />
 	</a>
 	<div style="font-size:14px;color:#999;margin-top:6px;"><a href="https://www.apple.com/es/newsroom/2023/09/apple-unveils-iphone-15-pro-and-iphone-15-pro-max/" target="_blank" rel="noopener noreferrer">iPhone 15 Pro Max</a></div>
 </div>
@@ -103,7 +103,7 @@ La elección fue difícil, pero finalmente me decanté por el Xiaomi 15 por una 
 
 <div style="margin:12px 0;max-width:420px;">
 	<a href="https://www.mi.com/global/product/xiaomi-15/" target="_blank" rel="noopener noreferrer">
-		<img src="https://img-cdn.heureka.group/v1/a11ab22e-3b53-5281-9e6a-65ce13c8eadb.jpg" alt="Xiaomi 15" style="width:100%;height:auto;border-radius:8px;" />
+		<img src="/img/posts/xiaomi15.png" alt="Xiaomi 15" style="width:100%;height:auto;border-radius:8px;" />
 	</a>
 	<div style="font-size:14px;color:#999;margin-top:6px;"><a href="https://www.mi.com/global/product/xiaomi-15/" target="_blank" rel="noopener noreferrer">Xiaomi 15</a></div>
 </div>
@@ -114,7 +114,7 @@ Con esa experiencia, decidí quitarme la espinita por fin e ir a por lo más pur
 
 <div style="margin:12px 0;max-width:420px;">
 	<a href="https://store.google.com/product/pixel_10_pro" target="_blank" rel="noopener noreferrer">
-		<img src="https://res.plaisio.gr/c_limit,f_auto,w_2048,q_75/d_Shared:NotFound:product-notfound.jpg/Shared/Product/Images/4972546.jpg" alt="Pixel 10 Pro" style="width:100%;height:auto;border-radius:8px;" />
+		<img src="/img/posts/pixel.png" alt="Pixel 10 Pro" style="width:100%;height:auto;border-radius:8px;" />
 	</a>
 	<div style="font-size:14px;color:#999;margin-top:6px;"><a href="https://store.google.com/product/pixel_10_pro" target="_blank" rel="noopener noreferrer">Pixel 10 Pro</a></div>
 </div>
@@ -131,7 +131,7 @@ Aquí está el resumen de mis impresiones tras probar los tres últimos terminal
 
 <div style="float:left;margin-right:14px;margin-bottom:10px;max-width:280px;">
 	<a href="https://www.apple.com/iphone-15-pro/" target="_blank" rel="noopener noreferrer">
-		<img src="https://img.pccomponentes.com/articles/1077/10777890/1669-apple-iphone-15-pro-max-256gb-titanio-natural-libre.jpg" alt="iPhone 15 Pro Max" style="width:100%;height:auto;border-radius:8px;" />
+		<img src="/img/posts/iphone.png" alt="iPhone 15 Pro Max" style="width:100%;height:auto;border-radius:8px;" />
 	</a>
 </div>
 
@@ -158,7 +158,7 @@ En resumen: un teléfono premium y pulido pero con ciertas frustraciones inheren
 
 <div style="float:left;margin-right:14px;margin-bottom:10px;max-width:280px;">
 	<a href="https://www.mi.com/global/product/xiaomi-15/" target="_blank" rel="noopener noreferrer">
-		<img src="https://img-cdn.heureka.group/v1/a11ab22e-3b53-5281-9e6a-65ce13c8eadb.jpg" alt="Xiaomi 15" style="width:100%;height:auto;border-radius:8px;" />
+		<img src="/img/posts/xiaomi15.png" alt="Xiaomi 15" style="width:100%;height:auto;border-radius:8px;" />
 	</a>
 </div>
 
@@ -182,7 +182,7 @@ Esperaba mejor software a estas alturas, pero el hardware sigue siendo una ganga
 
 <div style="float:left;margin-right:14px;margin-bottom:10px;max-width:280px;">
 	<a href="https://store.google.com/product/pixel_10_pro" target="_blank" rel="noopener noreferrer">
-		<img src="https://res.plaisio.gr/c_limit,f_auto,w_2048,q_75/d_Shared:NotFound:product-notfound.jpg/Shared/Product/Images/4972546.jpg" alt="Pixel 10 Pro" style="width:100%;height:auto;border-radius:8px;" />
+		<img src="/img/posts/pixel.png" alt="Pixel 10 Pro" style="width:100%;height:auto;border-radius:8px;" />
 	</a>
 </div>
 
