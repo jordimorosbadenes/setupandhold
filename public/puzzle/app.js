@@ -247,6 +247,10 @@ const DEFAULTS = {
     stl_image_already_bw:       false,
     stl_texture_custom_blur:    true,
     stl_image_line_thickness:   0,
+    stl_image_multicolor:       false,
+    stl_image_num_colors:       4,
+    stl_image_color_tolerance: 50,
+    stl_image_relief_color:     '#C1B399',
 
     // ── Visor ──────────────────────────────────────────────
     stl_assembled:              true,
@@ -1735,17 +1739,33 @@ function buildSTLPayload(modeOverride) {
             payload.texture_no_border = (document.getElementById('stl_image_no_border') || {}).checked || false;
             payload.texture_line_thickness = parseInt((document.getElementById('stl_image_line_thickness') || {}).value) || 0;
             payload.texture_engrave_depth = parseFloat((document.getElementById('stl_image_engrave_depth') || {}).value) || 0.4;
-            // Include the processed B/W image as raw pixel data for STL generation
+
+            const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
+            payload.texture_multicolor = isMulticolor;
+
             if (customTextureImage) {
                 const zoom = parseFloat((document.getElementById('stl_texture_custom_zoom') || {}).value) || 100;
                 payload.texture_zoom = zoom;
-                const imgCtx = customTextureImage.getContext('2d');
-                const imgData = imgCtx.getImageData(0, 0, customTextureImage.width, customTextureImage.height);
-                const gray = new Uint8Array(customTextureImage.width * customTextureImage.height);
-                for (let i = 0; i < gray.length; i++) gray[i] = imgData.data[i * 4];
-                payload.texture_image_data = Array.from(gray);
-                payload.texture_image_width = customTextureImage.width;
-                payload.texture_image_height = customTextureImage.height;
+
+                if (isMulticolor && customTextureColorIndices && customTexturePalette) {
+                    // Multicolor: send color indices + palette
+                    payload.texture_image_data = Array.from(customTextureColorIndices);
+                    payload.texture_image_width = customTextureImage.width;
+                    payload.texture_image_height = customTextureImage.height;
+                    payload.texture_color_palette = customTexturePalette.map(c =>
+                        '#' + c.map(v => v.toString(16).padStart(2, '0')).join('')
+                    );
+                    payload.texture_num_colors = customTexturePalette.length;
+                } else {
+                    // B&W: send grayscale array
+                    const imgCtx = customTextureImage.getContext('2d');
+                    const imgData = imgCtx.getImageData(0, 0, customTextureImage.width, customTextureImage.height);
+                    const gray = new Uint8Array(customTextureImage.width * customTextureImage.height);
+                    for (let i = 0; i < gray.length; i++) gray[i] = imgData.data[i * 4];
+                    payload.texture_image_data = Array.from(gray);
+                    payload.texture_image_width = customTextureImage.width;
+                    payload.texture_image_height = customTextureImage.height;
+                }
             }
         } else {
         const textureType = document.getElementById('stl_texture_type').value;
@@ -1934,7 +1954,22 @@ async function export3MF() {
     const reliefColorEl = colors.relief;
     payload.color_pieces = pieceColorEl ? pieceColorEl.value : '#6699CC';
     payload.color_base = baseColorEl ? baseColorEl.value : '#808080';
-    payload.color_relief = reliefColorEl ? reliefColorEl.value : '#FF6633';
+
+    // For image mode: use the image relief color from section 2 (or palette for multicolor)
+    const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
+    const isImageMode = acabadosMode && acabadosMode.value === 'image';
+    const isMulticolor = isImageMode && (document.getElementById('stl_image_multicolor') || {}).checked;
+
+    if (isImageMode && !isMulticolor) {
+        const imgReliefEl = document.getElementById('stl_image_relief_color');
+        payload.color_relief = imgReliefEl ? imgReliefEl.value : '#C1B399';
+    } else if (isMulticolor && payload.texture_color_palette) {
+        // Multicolor: send palette as color_relief_palette, primary relief = first color
+        payload.color_relief = payload.texture_color_palette[0] || '#C1B399';
+        payload.color_relief_palette = payload.texture_color_palette;
+    } else {
+        payload.color_relief = reliefColorEl ? reliefColorEl.value : '#FF6633';
+    }
 
     try {
         showDownloadStatus('⏳ Generando 3MF multi-color...', 'info');
@@ -2009,8 +2044,17 @@ async function viewSTL() {
         const baseColor = baseColorEl ? baseColorEl.value : '#808080';
         const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
 
+        // Build palette color map for multicolor parts
+        let mcColors = null;
+        if (data.multicolor_parts && customTexturePalette) {
+            mcColors = {};
+            customTexturePalette.forEach((rgb, idx) => {
+                mcColors[idx] = '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('');
+            });
+        }
+
         // Load into Three.js with separate colors
-        const threeOk = await loadThreeFromSeparate(data.base, data.pieces, baseColor, pieceColor, data.relief, reliefColor);
+        const threeOk = await loadThreeFromSeparate(data.base, data.pieces, baseColor, pieceColor, data.relief, reliefColor, data.multicolor_parts, mcColors);
 
         if (threeOk) {
             showExportStatus('✅ Modelo cargado correctamente', 'success');
@@ -3166,7 +3210,7 @@ function init3DViewer() {
     showExportStatus('🎥 Visor 3D inicializado', 'info');
 }
 
-async function loadThreeFromSeparate(baseB64, piecesB64, baseColor, pieceColor, reliefB64, reliefColor) {
+async function loadThreeFromSeparate(baseB64, piecesB64, baseColor, pieceColor, reliefB64, reliefColor, mcParts, mcColors) {
     /**
      * Load separate base, pieces, and relief STL data into Three.js with different colors.
      * baseB64/piecesB64/reliefB64: base64-encoded STL binary strings (may be null/undefined).
@@ -3216,6 +3260,15 @@ async function loadThreeFromSeparate(baseB64, piecesB64, baseColor, pieceColor, 
         if (baseB64) await addSTLMesh(baseB64, baseColor);
         if (piecesB64) await addSTLMesh(piecesB64, pieceColor);
         if (reliefB64) await addSTLMesh(reliefB64, reliefColor || '#FF6633');
+
+        // Load per-color multicolor parts with their palette colors
+        if (mcParts && mcColors) {
+            for (const ci of Object.keys(mcParts)) {
+                if (mcParts[ci] && mcColors[ci]) {
+                    await addSTLMesh(mcParts[ci], mcColors[ci]);
+                }
+            }
+        }
 
         // Center all meshes together
         const tempGroup = new THREE.Group();
@@ -3543,6 +3596,7 @@ function updateAcabadosMode() {
         lbl.classList.toggle('active', radio && radio.checked);
     });
     if (val === 'texture') updateTextureOptions();
+    updateReliefColorLock();
     updateDragHints();
     scheduleViewerUpdate();
 }
@@ -4635,6 +4689,7 @@ function drawCustomImage(ctx, totalW, totalH, viewScale, paramScale) {
     const zoom = parseFloat((document.getElementById('stl_texture_custom_zoom') || {}).value) || 100;
     const zoomFactor = zoom / 100;
     const lineThickness = parseInt((document.getElementById('stl_image_line_thickness') || {}).value) || 0;
+    const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
 
     const imgW = totalW * zoomFactor;
     const imgH = totalH * zoomFactor;
@@ -4646,7 +4701,6 @@ function drawCustomImage(ctx, totalW, totalH, viewScale, paramScale) {
     const drawY = (totalH - imgH) / 2 + offY;
 
     // Build a version of the image with transparent whites
-    // Use an offscreen canvas to convert white→transparent, black→semi-opaque
     const off = document.createElement('canvas');
     off.width = customTextureImage.width;
     off.height = customTextureImage.height;
@@ -4656,43 +4710,57 @@ function drawCustomImage(ctx, totalW, totalH, viewScale, paramScale) {
     const d = imgData.data;
     const w = off.width, h = off.height;
 
-    // Build binary mask: 1 = visible pixel (dark pixels)
-    const mask = new Uint8Array(w * h);
-    for (let i = 0; i < d.length; i += 4) {
-        const gray = d[i];
-        mask[i / 4] = gray < 128 ? 1 : 0;
-    }
-
-    // Apply dilation (MaxFilter equivalent) if line thickness > 0
-    let finalMask = mask;
-    if (lineThickness > 0) {
-        finalMask = new Uint8Array(w * h);
-        const r = lineThickness;
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                let found = false;
-                for (let dy = -r; dy <= r && !found; dy++) {
-                    for (let dx = -r; dx <= r && !found; dx++) {
-                        if (dx * dx + dy * dy > r * r) continue;
-                        const nx = x + dx, ny = y + dy;
-                        if (nx >= 0 && nx < w && ny >= 0 && ny < h && mask[ny * w + nx]) {
-                            found = true;
-                        }
-                    }
-                }
-                finalMask[y * w + x] = found ? 1 : 0;
+    if (isMulticolor && customTextureColorIndices && customTexturePalette) {
+        // Multicolor: show quantized colors semi-transparent, white = transparent
+        for (let i = 0; i < customTextureColorIndices.length; i++) {
+            const ci = customTextureColorIndices[i];
+            const pi = i * 4;
+            if (ci === 255 || ci >= customTexturePalette.length) {
+                d[pi + 3] = 0; // transparent background
+            } else {
+                d[pi] = customTexturePalette[ci][0];
+                d[pi + 1] = customTexturePalette[ci][1];
+                d[pi + 2] = customTexturePalette[ci][2];
+                d[pi + 3] = 200;
             }
         }
-    }
+    } else {
+        // B&W: build binary mask
+        const mask = new Uint8Array(w * h);
+        for (let i = 0; i < d.length; i += 4) {
+            mask[i / 4] = d[i] < 128 ? 1 : 0;
+        }
 
-    // Apply mask to image data
-    for (let i = 0; i < finalMask.length; i++) {
-        const pi = i * 4;
-        if (finalMask[i]) {
-            d[pi] = d[pi + 1] = d[pi + 2] = 40;
-            d[pi + 3] = 200;
-        } else {
-            d[pi + 3] = 0;
+        // Apply dilation if line thickness > 0
+        let finalMask = mask;
+        if (lineThickness > 0) {
+            finalMask = new Uint8Array(w * h);
+            const r = lineThickness;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let found = false;
+                    for (let dy = -r; dy <= r && !found; dy++) {
+                        for (let dx = -r; dx <= r && !found; dx++) {
+                            if (dx * dx + dy * dy > r * r) continue;
+                            const nx = x + dx, ny = y + dy;
+                            if (nx >= 0 && nx < w && ny >= 0 && ny < h && mask[ny * w + nx]) {
+                                found = true;
+                            }
+                        }
+                    }
+                    finalMask[y * w + x] = found ? 1 : 0;
+                }
+            }
+        }
+
+        for (let i = 0; i < finalMask.length; i++) {
+            const pi = i * 4;
+            if (finalMask[i]) {
+                d[pi] = d[pi + 1] = d[pi + 2] = 40;
+                d[pi + 3] = 200;
+            } else {
+                d[pi + 3] = 0;
+            }
         }
     }
     offCtx.putImageData(imgData, 0, 0);
@@ -4906,15 +4974,23 @@ function drawHexagon(ctx, cx, cy, r, fill) {
 // ============================================================
 // Custom image texture
 // ============================================================
-let customTextureImage = null; // Processed B/W image data
+let customTextureImage = null; // Processed B/W or quantized image data
 let customTextureOriginal = null; // Original uploaded image
+let customTextureColorIndices = null; // For multicolor: array of color indices (0..N-1)
+let customTexturePalette = null; // For multicolor: array of [r,g,b] centroids
 
 function initCustomTextureHandlers() {
     const fileInput = document.getElementById('stl_texture_custom_file');
     const thresholdInput = document.getElementById('stl_texture_custom_threshold');
     const blurCheck = document.getElementById('stl_texture_custom_blur');
+    const blurRadiusInput = document.getElementById('stl_image_blur_radius');
     const zoomInput = document.getElementById('stl_texture_custom_zoom');
-    const editBtn = document.getElementById('texture-custom-edit-btn');
+    const paintBtn = document.getElementById('texture-paint-btn');
+    const multicolorToggle = document.getElementById('stl_image_multicolor');
+    const numColorsInput = document.getElementById('stl_image_num_colors');
+    const toleranceInput = document.getElementById('stl_image_color_tolerance');
+    const imageReliefColor = document.getElementById('stl_image_relief_color');
+    const imageReliefColorHex = document.getElementById('stl_image_relief_color_hex');
 
     if (fileInput) {
         fileInput.addEventListener('change', (e) => {
@@ -4926,21 +5002,16 @@ function initCustomTextureHandlers() {
                 img.onload = () => {
                     customTextureOriginal = img;
                     processCustomTexture();
-                    if (editBtn) editBtn.style.display = '';
                 };
                 img.src = ev.target.result;
             };
             reader.readAsDataURL(file);
-            // update custom file button label
             const fileBtn = document.getElementById('texture-custom-file-btn');
             if (fileBtn) fileBtn.textContent = 'Reemplazar imagen';
         });
-        // if we have a custom button, open file selector when clicked
         const fileBtn = document.getElementById('texture-custom-file-btn');
         if (fileBtn) {
-            fileBtn.addEventListener('click', () => {
-                fileInput.click();
-            });
+            fileBtn.addEventListener('click', () => { fileInput.click(); });
         }
     }
 
@@ -4950,10 +5021,14 @@ function initCustomTextureHandlers() {
         });
     }
 
-    if (zoomInput) {
-        zoomInput.addEventListener('input', () => {
-            render2DViewer();
+    if (blurRadiusInput) {
+        blurRadiusInput.addEventListener('input', () => {
+            if (customTextureOriginal) processCustomTexture();
         });
+    }
+
+    if (zoomInput) {
+        zoomInput.addEventListener('input', () => { render2DViewer(); });
     }
 
     if (blurCheck) {
@@ -4962,7 +5037,6 @@ function initCustomTextureHandlers() {
         });
     }
 
-    // Line thickness triggers 2D re-render
     const lineThicknessInput = document.getElementById('stl_image_line_thickness');
     if (lineThicknessInput) {
         lineThicknessInput.addEventListener('input', () => render2DViewer());
@@ -4973,28 +5047,310 @@ function initCustomTextureHandlers() {
     if (alreadyBWCheck) {
         alreadyBWCheck.addEventListener('change', () => {
             const thresholdGroup = document.getElementById('image-threshold-group');
-            const blurCheck = document.getElementById('stl_texture_custom_blur');
+            const blurEl = document.getElementById('stl_texture_custom_blur');
             if (thresholdGroup) thresholdGroup.style.opacity = alreadyBWCheck.checked ? '0.4' : '';
             if (thresholdGroup) thresholdGroup.style.pointerEvents = alreadyBWCheck.checked ? 'none' : '';
-            if (blurCheck) blurCheck.disabled = alreadyBWCheck.checked;
-            if (blurCheck && blurCheck.closest) {
-                const lbl = blurCheck.closest('.form-group');
+            if (blurEl) blurEl.disabled = alreadyBWCheck.checked;
+            if (blurEl && blurEl.closest) {
+                const lbl = blurEl.closest('.form-group');
                 if (lbl) { lbl.style.opacity = alreadyBWCheck.checked ? '0.4' : ''; lbl.style.pointerEvents = alreadyBWCheck.checked ? 'none' : ''; }
             }
             if (customTextureOriginal) processCustomTexture();
         });
     }
 
-    if (editBtn) {
-        editBtn.addEventListener('click', openTextureEditor);
+    // Paint button: opens the paint editor modal
+    if (paintBtn) {
+        paintBtn.addEventListener('click', openTextureEditor);
     }
+
+    // Multicolor toggle
+    if (multicolorToggle) {
+        multicolorToggle.addEventListener('change', () => {
+            updateImageColorMode();
+            if (customTextureOriginal) processCustomTexture();
+            if (_editorOpen) editorUpdateColorSwatches();
+        });
+    }
+
+    // Number of colors
+    if (numColorsInput) {
+        numColorsInput.addEventListener('input', () => {
+            if (customTextureOriginal) processCustomTexture();
+        });
+    }
+
+    // Color tolerance
+    if (toleranceInput) {
+        toleranceInput.addEventListener('input', () => {
+            if (customTextureOriginal) processCustomTexture();
+        });
+    }
+
+    // Image relief color picker sync
+    if (imageReliefColor) {
+        imageReliefColor.addEventListener('input', () => {
+            if (imageReliefColorHex) imageReliefColorHex.textContent = imageReliefColor.value;
+            // Sync to the main relief color in advanced config
+            const mainRelief = document.getElementById('stl_color_relief');
+            const mainReliefHex = document.getElementById('stl_color_relief_hex');
+            if (mainRelief) mainRelief.value = imageReliefColor.value;
+            if (mainReliefHex) mainReliefHex.textContent = imageReliefColor.value;
+            if (!_editorOpen) {
+                scheduleInline3DUpdate();
+                if (typeof scheduleMiniViewerUpdate === 'function') scheduleMiniViewerUpdate();
+            }
+        });
+    }
+}
+
+function updateImageColorMode() {
+    const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
+    const bwLabel = document.getElementById('image-mode-bw-label');
+    const multiLabel = document.getElementById('image-mode-multi-label');
+    const editBwOpts = document.getElementById('image-edit-bw-opts');
+    const editMultiOpts = document.getElementById('image-edit-multi-opts');
+
+    if (bwLabel) bwLabel.classList.toggle('active', !isMulticolor);
+    if (multiLabel) multiLabel.classList.toggle('active', isMulticolor);
+    if (editBwOpts) editBwOpts.style.display = isMulticolor ? 'none' : '';
+    if (editMultiOpts) editMultiOpts.style.display = isMulticolor ? '' : 'none';
+
+    // Disable line thickness in multicolor
+    const ltGroup = document.getElementById('tex-line-thickness-group');
+    if (ltGroup) {
+        ltGroup.style.opacity = isMulticolor ? '0.4' : '';
+        ltGroup.style.pointerEvents = isMulticolor ? 'none' : '';
+    }
+
+    // Lock/unlock relief color in advanced config
+    updateReliefColorLock();
+}
+
+function updateReliefColorLock() {
+    const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
+    const isImage = acabadosMode && acabadosMode.value === 'image';
+    const reliefGroup = document.getElementById('relief-color-group');
+    const reliefHint = document.getElementById('relief-color-locked-hint');
+    if (reliefGroup) {
+        reliefGroup.classList.toggle('relief-color-locked', isImage);
+    }
+    if (reliefHint) {
+        reliefHint.style.display = isImage ? '' : 'none';
+    }
+}
+
+// ── Color quantization (k-means) ──────────────────────────
+function quantizeImageColors(imageData, w, h, numColors, tolerance) {
+    tolerance = tolerance || 50;
+    const iterations = 20;
+    const total = w * h;
+    const data = imageData.data;
+
+    // Collect pixel colors (skip pure white background from padding)
+    const pixels = [];
+    const pixelIndices = [];
+    for (let i = 0; i < total; i++) {
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+        if (r > 248 && g > 248 && b > 248) continue;
+        pixels.push([r, g, b]);
+        pixelIndices.push(i);
+    }
+    if (pixels.length === 0) return { indices: new Uint8Array(total), palette: [[255,255,255]], bgIndex: 0 };
+
+    // Initialize centroids using evenly-spaced sample
+    const centroids = [];
+    const step = Math.max(1, Math.floor(pixels.length / numColors));
+    for (let c = 0; c < numColors; c++) {
+        centroids.push([...pixels[Math.min(c * step, pixels.length - 1)]]);
+    }
+
+    // K-means iterations (on sampled pixels for speed)
+    const sampleStep = Math.max(1, Math.floor(pixels.length / 10000));
+    for (let iter = 0; iter < iterations; iter++) {
+        const sums = centroids.map(() => [0, 0, 0]);
+        const counts = new Array(numColors).fill(0);
+        for (let i = 0; i < pixels.length; i += sampleStep) {
+            const p = pixels[i];
+            let minDist = Infinity, best = 0;
+            for (let c = 0; c < numColors; c++) {
+                const dr = p[0] - centroids[c][0], dg = p[1] - centroids[c][1], db = p[2] - centroids[c][2];
+                const d = dr * dr + dg * dg + db * db;
+                if (d < minDist) { minDist = d; best = c; }
+            }
+            sums[best][0] += p[0]; sums[best][1] += p[1]; sums[best][2] += p[2];
+            counts[best]++;
+        }
+        for (let c = 0; c < numColors; c++) {
+            if (counts[c] > 0) {
+                centroids[c] = [sums[c][0] / counts[c], sums[c][1] / counts[c], sums[c][2] / counts[c]];
+            }
+        }
+    }
+
+    // Merge centroids that are closer than tolerance (RGB distance)
+    const tolSq = tolerance * tolerance;
+    const merged = [centroids[0]];
+    for (let i = 1; i < centroids.length; i++) {
+        let tooClose = false;
+        for (let j = 0; j < merged.length; j++) {
+            const dr = centroids[i][0] - merged[j][0];
+            const dg = centroids[i][1] - merged[j][1];
+            const db = centroids[i][2] - merged[j][2];
+            if (dr * dr + dg * dg + db * db < tolSq) {
+                // Merge: average into existing centroid
+                merged[j] = [(merged[j][0] + centroids[i][0]) / 2,
+                             (merged[j][1] + centroids[i][1]) / 2,
+                             (merged[j][2] + centroids[i][2]) / 2];
+                tooClose = true;
+                break;
+            }
+        }
+        if (!tooClose) merged.push(centroids[i]);
+    }
+    const finalCentroids = merged;
+    const finalNumColors = finalCentroids.length;
+
+    // Sort centroids by luminance (darkest first)
+    const sorted = finalCentroids.map((c, i) => ({ c, origIdx: i, lum: c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114 }));
+    sorted.sort((a, b) => a.lum - b.lum);
+    const sortedCentroids = sorted.map(s => s.c.map(v => Math.round(v)));
+
+    // Assign all pixels to nearest centroid (full pass)
+    const indices = new Uint8Array(total);
+    indices.fill(255); // background
+    for (let i = 0; i < total; i++) {
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+        if (r > 248 && g > 248 && b > 248) continue; // background
+        let minDist = Infinity, best = 0;
+        for (let c = 0; c < finalNumColors; c++) {
+            const dr = r - sortedCentroids[c][0], dg = g - sortedCentroids[c][1], db = b - sortedCentroids[c][2];
+            const d = dr * dr + dg * dg + db * db;
+            if (d < minDist) { minDist = d; best = c; }
+        }
+        indices[i] = best;
+    }
+
+    return { indices, palette: sortedCentroids, bgIndex: 255 };
+}
+
+function updatePaletteSwatches(palette) {
+    const container = document.getElementById('image-palette-swatches');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!palette || palette.length === 0) {
+        container.innerHTML = '<span class="palette-hint">Carga una imagen para detectar colores</span>';
+        return;
+    }
+    palette.forEach((color, idx) => {
+        const hex = '#' + color.map(v => v.toString(16).padStart(2, '0')).join('');
+        const item = document.createElement('div');
+        item.className = 'palette-swatch-item color-picker-row';
+        const picker = document.createElement('input');
+        picker.type = 'color';
+        picker.value = hex;
+        picker.title = 'Color ' + (idx + 1) + ' — clic para editar';
+        picker.addEventListener('input', () => {
+            const h = picker.value;
+            customTexturePalette[idx] = [
+                parseInt(h.slice(1, 3), 16),
+                parseInt(h.slice(3, 5), 16),
+                parseInt(h.slice(5, 7), 16)
+            ];
+            reassignPixelsToPalette();
+        });
+        item.appendChild(picker);
+        container.appendChild(item);
+    });
+}
+
+function reassignPixelsToPalette() {
+    if (!customTextureOriginal || !customTexturePalette) return;
+
+    // Rebuild from original image
+    const offCanvas = document.createElement('canvas');
+    const size = 512;
+    offCanvas.width = size;
+    offCanvas.height = size;
+    const offCtx = offCanvas.getContext('2d');
+
+    const img = customTextureOriginal;
+    const scale = Math.min(size / img.width, size / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    offCtx.fillStyle = '#fff';
+    offCtx.fillRect(0, 0, size, size);
+    offCtx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+
+    const imageData = offCtx.getImageData(0, 0, size, size);
+    const data = imageData.data;
+    const total = size * size;
+    const palette = customTexturePalette;
+    const numC = palette.length;
+
+    const indices = new Uint8Array(total);
+    indices.fill(255);
+    for (let i = 0; i < total; i++) {
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+        if (r > 248 && g > 248 && b > 248) continue;
+        let minDist = Infinity, best = 0;
+        for (let c = 0; c < numC; c++) {
+            const dr = r - palette[c][0], dg = g - palette[c][1], db = b - palette[c][2];
+            const d = dr * dr + dg * dg + db * db;
+            if (d < minDist) { minDist = d; best = c; }
+        }
+        indices[i] = best;
+        data[i * 4] = palette[best][0];
+        data[i * 4 + 1] = palette[best][1];
+        data[i * 4 + 2] = palette[best][2];
+        data[i * 4 + 3] = 255;
+    }
+
+    offCtx.putImageData(imageData, 0, 0);
+    customTextureColorIndices = indices;
+    customTextureImage = offCanvas;
+    if (_editorOpen) {
+        editorRefreshPreview();
+        editorUpdateColorSwatches();
+    } else {
+        render2DViewer();
+        scheduleInline3DUpdate();
+        if (typeof scheduleMiniViewerUpdate === 'function') scheduleMiniViewerUpdate();
+    }
+}
+
+// Rebuild customTextureColorIndices from the current customTextureImage pixels.
+// Used after Apply in multicolor mode so paint strokes update the STL & 2D viewer.
+function rebuildColorIndices() {
+    if (!customTextureImage || !customTexturePalette || !customTexturePalette.length) return;
+    const size = 512;
+    const ctx = customTextureImage.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, size, size);
+    const data = imageData.data;
+    const total = size * size;
+    const palette = customTexturePalette;
+    const numC = palette.length;
+    const indices = new Uint8Array(total);
+    indices.fill(255);
+    for (let i = 0; i < total; i++) {
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2], a = data[i * 4 + 3];
+        if (a < 10 || (r > 248 && g > 248 && b > 248)) continue;
+        let minDist = Infinity, best = 0;
+        for (let c = 0; c < numC; c++) {
+            const dr = r - palette[c][0], dg = g - palette[c][1], db = b - palette[c][2];
+            const d2 = dr * dr + dg * dg + db * db;
+            if (d2 < minDist) { minDist = d2; best = c; }
+        }
+        indices[i] = best;
+    }
+    customTextureColorIndices = indices;
 }
 
 function processCustomTexture() {
     if (!customTextureOriginal) return;
-    const alreadyBW = (document.getElementById('stl_image_already_bw') || {}).checked;
-    const threshold = parseInt((document.getElementById('stl_texture_custom_threshold') || {}).value) || 128;
-    const doBlur = !alreadyBW && (document.getElementById('stl_texture_custom_blur') || {}).checked;
+    const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
+    const doBlur = (document.getElementById('stl_texture_custom_blur') || {}).checked;
+    const blurRadius = parseInt((document.getElementById('stl_image_blur_radius') || {}).value) || 2;
 
     // Create offscreen canvas
     const offCanvas = document.createElement('canvas');
@@ -5012,140 +5368,459 @@ function processCustomTexture() {
     offCtx.fillRect(0, 0, size, size);
     offCtx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
 
-    // Get image data
     const imageData = offCtx.getImageData(0, 0, size, size);
     const data = imageData.data;
 
-    if (alreadyBW) {
-        // Use image as-is: just convert to strict B&W from existing pixel values
-        for (let i = 0; i < data.length; i += 4) {
-            const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            const val = gray > 128 ? 255 : 0;
-            data[i] = data[i + 1] = data[i + 2] = val;
-            data[i + 3] = 255;
-        }
-    } else {
-        // Optional blur (simple box blur)
-        if (doBlur) {
-            const tmp = new Uint8ClampedArray(data);
-            const radius = 2;
-            for (let y = radius; y < size - radius; y++) {
-                for (let x = radius; x < size - radius; x++) {
-                    let sum = 0, count = 0;
-                    for (let dy = -radius; dy <= radius; dy++) {
-                        for (let dx = -radius; dx <= radius; dx++) {
-                            const idx = ((y + dy) * size + (x + dx)) * 4;
-                            sum += (tmp[idx] + tmp[idx + 1] + tmp[idx + 2]) / 3;
-                            count++;
-                        }
+    // Apply blur (shared for both B&W and multicolor)
+    if (doBlur) {
+        const tmp = new Uint8ClampedArray(data);
+        const radius = blurRadius;
+        for (let y = radius; y < size - radius; y++) {
+            for (let x = radius; x < size - radius; x++) {
+                let sumR = 0, sumG = 0, sumB = 0, count = 0;
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const idx = ((y + dy) * size + (x + dx)) * 4;
+                        sumR += tmp[idx]; sumG += tmp[idx + 1]; sumB += tmp[idx + 2];
+                        count++;
                     }
-                    const avg = sum / count;
-                    const idx = (y * size + x) * 4;
-                    data[idx] = data[idx + 1] = data[idx + 2] = avg;
                 }
+                const idx = (y * size + x) * 4;
+                data[idx] = sumR / count;
+                data[idx + 1] = sumG / count;
+                data[idx + 2] = sumB / count;
             }
-        }
-
-        // Threshold to B/W
-        for (let i = 0; i < data.length; i += 4) {
-            const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            const val = gray > threshold ? 255 : 0;
-            data[i] = data[i + 1] = data[i + 2] = val;
-            data[i + 3] = 255;
         }
     }
 
-    offCtx.putImageData(imageData, 0, 0);
+    if (isMulticolor) {
+        // ── Multicolor quantization ──
+        const numColors = parseInt((document.getElementById('stl_image_num_colors') || {}).value) || 4;
+        const tolerance = parseInt((document.getElementById('stl_image_color_tolerance') || {}).value) || 50;
+        // Re-read imageData after blur
+        const blurredData = offCtx.getImageData(0, 0, size, size);
+        if (doBlur) {
+            // Copy blurred data back
+            offCtx.putImageData(imageData, 0, 0);
+        }
+        const result = quantizeImageColors(doBlur ? imageData : blurredData, size, size, numColors, tolerance);
+        customTextureColorIndices = result.indices;
+        customTexturePalette = result.palette;
+
+        // Paint quantized colors onto canvas
+        for (let i = 0; i < result.indices.length; i++) {
+            const idx = result.indices[i];
+            const pi = i * 4;
+            if (idx === 255) {
+                data[pi] = data[pi + 1] = data[pi + 2] = 255;
+            } else if (idx < result.palette.length) {
+                data[pi] = result.palette[idx][0];
+                data[pi + 1] = result.palette[idx][1];
+                data[pi + 2] = result.palette[idx][2];
+            }
+            data[pi + 3] = 255;
+        }
+        offCtx.putImageData(imageData, 0, 0);
+        updatePaletteSwatches(result.palette);
+    } else {
+        // ── B&W threshold ──
+        customTextureColorIndices = null;
+        customTexturePalette = null;
+        updatePaletteSwatches(null);
+
+        const alreadyBW = (document.getElementById('stl_image_already_bw') || {}).checked;
+        const threshold = parseInt((document.getElementById('stl_texture_custom_threshold') || {}).value) || 128;
+
+        if (alreadyBW) {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const val = gray > 128 ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = val;
+                data[i + 3] = 255;
+            }
+        } else {
+            // Blur already applied above; just threshold
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const val = gray > threshold ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = val;
+                data[i + 3] = 255;
+            }
+        }
+        offCtx.putImageData(imageData, 0, 0);
+    }
+
     customTextureImage = offCanvas;
-    render2DViewer();
-    scheduleInline3DUpdate();
-    if (typeof scheduleMiniViewerUpdate === 'function') scheduleMiniViewerUpdate();
+    // When editor is open, only update the preview canvas — skip 2D viewer and STL updates
+    if (_editorOpen) {
+        editorRefreshPreview();
+        editorUpdateColorSwatches();
+    } else {
+        render2DViewer();
+        scheduleInline3DUpdate();
+        if (typeof scheduleMiniViewerUpdate === 'function') scheduleMiniViewerUpdate();
+    }
 }
 
 // ============================================================
-// Texture Editor (Paint Modal)
+// Advanced Image Editor (Modal)
 // ============================================================
 let editorCanvas = null;
 let editorCtx = null;
 let editorPaintColor = 'black';
 let editorBrushSize = 10;
 let isEditorPainting = false;
+let _editorOpen = false;
+let _editorSnapshot = null; // canvas snapshot before opening (for cancel)
+let _editorSnapshotControls = null; // saved control values for cancel
+let _editorLastPaintPos = null;
+let _editorPaintLayer = null; // offscreen canvas for paint strokes (overlay)
+
+function editorRefreshPreview() {
+    if (!editorCanvas || !customTextureImage) return;
+    editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+    // Composite paint overlay on top
+    if (_editorPaintLayer) {
+        editorCtx.drawImage(_editorPaintLayer, 0, 0);
+    }
+}
+
+function editorUpdateColorSwatches() {
+    const container = document.getElementById('tex-color-swatches');
+    if (!container) return;
+    container.innerHTML = '';
+    const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
+
+    if (isMulticolor && customTexturePalette && customTexturePalette.length) {
+        // Palette colors + white (eraser/background)
+        customTexturePalette.forEach((rgb, i) => {
+            const hex = '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
+            const btn = document.createElement('button');
+            btn.className = 'tex-color-btn' + (i === 0 ? ' active' : '');
+            btn.style.background = hex;
+            btn.dataset.color = hex;
+            btn.title = hex;
+            container.appendChild(btn);
+        });
+        // White / background
+        const wBtn = document.createElement('button');
+        wBtn.className = 'tex-color-btn';
+        wBtn.style.background = '#ffffff';
+        wBtn.dataset.color = 'white';
+        wBtn.title = 'Fondo (blanco)';
+        wBtn.style.border = '2px solid var(--border)';
+        container.appendChild(wBtn);
+        editorPaintColor = '#' + customTexturePalette[0].map(c => c.toString(16).padStart(2, '0')).join('');
+    } else {
+        // B&W: black + white
+        const bBtn = document.createElement('button');
+        bBtn.className = 'tex-color-btn active';
+        bBtn.style.background = '#000';
+        bBtn.dataset.color = 'black';
+        bBtn.title = 'Negro';
+        container.appendChild(bBtn);
+        const wBtn = document.createElement('button');
+        wBtn.className = 'tex-color-btn';
+        wBtn.style.background = '#fff';
+        wBtn.dataset.color = 'white';
+        wBtn.title = 'Blanco';
+        wBtn.style.border = '2px solid var(--border)';
+        container.appendChild(wBtn);
+        editorPaintColor = 'black';
+    }
+
+    // Click handler for all color buttons
+    container.querySelectorAll('.tex-color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.tex-color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            editorPaintColor = btn.dataset.color;
+        });
+    });
+}
 
 function openTextureEditor() {
     if (!customTextureImage) return;
     const modal = document.getElementById('texture-editor-modal');
     if (!modal) return;
-    modal.style.display = 'flex';
+    _editorOpen = true;
 
+    // Snapshot current state for cancel
+    const snap = document.createElement('canvas');
+    snap.width = 512; snap.height = 512;
+    snap.getContext('2d').drawImage(customTextureImage, 0, 0);
+    _editorSnapshot = snap;
+    // Save control values for cancel
+    _editorSnapshotControls = {};
+    ['stl_texture_custom_blur', 'stl_image_blur_radius', 'stl_image_line_thickness',
+     'stl_image_already_bw', 'stl_texture_custom_threshold',
+     'stl_image_num_colors', 'stl_image_color_tolerance', 'stl_image_relief_color'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) _editorSnapshotControls[id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+
+    modal.style.display = 'flex';
     editorCanvas = document.getElementById('texture-editor-canvas');
     editorCtx = editorCanvas.getContext('2d');
-    // Copy current processed image to editor
     editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
 
-    // Paint handlers
-    const handlePaint = (e) => {
-        if (!isEditorPainting) return;
+    // Create transparent paint overlay layer
+    _editorPaintLayer = document.createElement('canvas');
+    _editorPaintLayer.width = 512;
+    _editorPaintLayer.height = 512;
+    const paintCtx = _editorPaintLayer.getContext('2d');
+
+    // Set up color swatches based on current mode
+    editorUpdateColorSwatches();
+
+    // Update mode-specific controls visibility inside editor
+    updateImageColorMode();
+
+    // Disable line thickness in multicolor
+    const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
+    const ltGroup = document.getElementById('tex-line-thickness-group');
+    if (ltGroup) {
+        ltGroup.style.opacity = isMulticolor ? '0.4' : '';
+        ltGroup.style.pointerEvents = isMulticolor ? 'none' : '';
+    }
+
+    // Brush preview
+    const brushPreview = document.getElementById('tex-brush-preview');
+    const updateBrushPreview = () => {
+        if (brushPreview) {
+            const sz = Math.max(6, editorBrushSize * 0.6);
+            brushPreview.style.width = sz + 'px';
+            brushPreview.style.height = sz + 'px';
+        }
+    };
+    updateBrushPreview();
+
+    // --- Paint handlers (paint on overlay layer, then composite) ---
+    const paintCtxRef = paintCtx;
+    const paintStroke = (x, y) => {
+        paintCtxRef.fillStyle = editorPaintColor;
+        paintCtxRef.beginPath();
+        paintCtxRef.arc(x, y, editorBrushSize, 0, Math.PI * 2);
+        paintCtxRef.fill();
+        // Redraw: base + overlay
+        editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+        editorCtx.drawImage(_editorPaintLayer, 0, 0);
+    };
+
+    const interpolatePaint = (x, y) => {
+        if (_editorLastPaintPos) {
+            const dx = x - _editorLastPaintPos.x;
+            const dy = y - _editorLastPaintPos.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const step = Math.max(1, editorBrushSize * 0.3);
+            if (dist > step) {
+                const steps = Math.ceil(dist / step);
+                for (let s = 1; s < steps; s++) {
+                    const t = s / steps;
+                    paintStroke(_editorLastPaintPos.x + dx * t, _editorLastPaintPos.y + dy * t);
+                }
+            }
+        }
+        paintStroke(x, y);
+        _editorLastPaintPos = { x, y };
+    };
+
+    const getCanvasPos = (e) => {
         const rect = editorCanvas.getBoundingClientRect();
-        const scaleX = 512 / rect.width;
-        const scaleY = 512 / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        return {
+            x: (e.clientX - rect.left) * (512 / rect.width),
+            y: (e.clientY - rect.top) * (512 / rect.height)
+        };
+    };
+
+    // Brush cursor: draw a circle overlay showing brush size/color
+    const drawBrushCursor = (x, y) => {
+        // Redraw base + paint overlay (no leftover cursors)
+        editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+        if (_editorPaintLayer) editorCtx.drawImage(_editorPaintLayer, 0, 0);
+        // Draw cursor circle
+        editorCtx.save();
+        editorCtx.beginPath();
+        editorCtx.arc(x, y, editorBrushSize, 0, Math.PI * 2);
+        editorCtx.strokeStyle = 'rgba(0,0,0,0.6)';
+        editorCtx.lineWidth = 1.5;
+        editorCtx.stroke();
+        editorCtx.beginPath();
+        editorCtx.arc(x, y, editorBrushSize, 0, Math.PI * 2);
+        editorCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+        editorCtx.lineWidth = 0.8;
+        editorCtx.stroke();
+        editorCtx.globalAlpha = 0.35;
         editorCtx.fillStyle = editorPaintColor;
         editorCtx.beginPath();
         editorCtx.arc(x, y, editorBrushSize, 0, Math.PI * 2);
         editorCtx.fill();
+        editorCtx.restore();
     };
 
-    editorCanvas.onmousedown = (e) => { isEditorPainting = true; handlePaint(e); };
-    editorCanvas.onmousemove = handlePaint;
-    editorCanvas.onmouseup = () => { isEditorPainting = false; };
-    editorCanvas.onmouseleave = () => { isEditorPainting = false; };
-
-    // Toolbar
-    document.getElementById('tex-paint-black').onclick = () => {
-        editorPaintColor = 'black';
-        document.getElementById('tex-paint-black').classList.add('active');
-        document.getElementById('tex-paint-white').classList.remove('active');
+    editorCanvas.onmousedown = (e) => {
+        isEditorPainting = true;
+        _editorLastPaintPos = null;
+        const pos = getCanvasPos(e);
+        interpolatePaint(pos.x, pos.y);
     };
-    document.getElementById('tex-paint-white').onclick = () => {
-        editorPaintColor = 'white';
-        document.getElementById('tex-paint-white').classList.add('active');
-        document.getElementById('tex-paint-black').classList.remove('active');
-    };
-    document.getElementById('tex-brush-size').oninput = (e) => {
-        editorBrushSize = parseInt(e.target.value);
-    };
-    document.getElementById('tex-editor-reset').onclick = () => {
-        if (customTextureImage) {
-            editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+    editorCanvas.onmousemove = (e) => {
+        const pos = getCanvasPos(e);
+        if (isEditorPainting) {
+            interpolatePaint(pos.x, pos.y);
+        } else {
+            drawBrushCursor(pos.x, pos.y);
         }
     };
+    editorCanvas.onmouseup = () => { isEditorPainting = false; _editorLastPaintPos = null; };
+    editorCanvas.onmouseleave = () => {
+        isEditorPainting = false;
+        _editorLastPaintPos = null;
+        // Remove cursor overlay
+        editorCtx.drawImage(customTextureImage, 0, 0, 512, 512);
+        if (_editorPaintLayer) editorCtx.drawImage(_editorPaintLayer, 0, 0);
+    };
+
+    // Brush size
+    const brushInput = document.getElementById('tex-brush-size');
+    if (brushInput) {
+        brushInput.value = editorBrushSize;
+        brushInput.oninput = (e) => {
+            editorBrushSize = parseInt(e.target.value);
+            updateBrushPreview();
+        };
+    }
+
+    // Eraser
+    const eraserBtn = document.getElementById('tex-eraser');
+    if (eraserBtn) {
+        eraserBtn.onclick = () => {
+            const swatches = document.getElementById('tex-color-swatches');
+            if (swatches) swatches.querySelectorAll('.tex-color-btn').forEach(b => b.classList.remove('active'));
+            editorPaintColor = 'white';
+            eraserBtn.classList.add('active');
+        };
+    }
+
+    // Reset paint: clear paint overlay and reprocess from original
+    document.getElementById('tex-editor-reset').onclick = () => {
+        if (_editorPaintLayer) {
+            _editorPaintLayer.getContext('2d').clearRect(0, 0, 512, 512);
+        }
+        processCustomTexture();
+    };
+
+    // Restore defaults: reset all controls to default values
+    const defaultsBtn = document.getElementById('tex-editor-defaults');
+    if (defaultsBtn) {
+        defaultsBtn.onclick = () => {
+            const defaults = {
+                'stl_texture_custom_blur': true,
+                'stl_image_blur_radius': 2,
+                'stl_image_line_thickness': 0,
+                'stl_image_already_bw': false,
+                'stl_texture_custom_threshold': 128,
+                'stl_image_num_colors': 4,
+                'stl_image_color_tolerance': 50,
+                'stl_image_relief_color': '#C1B399'
+            };
+            for (const id in defaults) {
+                const el = document.getElementById(id);
+                if (!el) continue;
+                if (el.type === 'checkbox') el.checked = defaults[id];
+                else el.value = defaults[id];
+                const range = document.querySelector('input[type="range"][data-link="' + id + '"]');
+                if (range) range.value = defaults[id];
+            }
+            if (_editorPaintLayer) {
+                _editorPaintLayer.getContext('2d').clearRect(0, 0, 512, 512);
+            }
+            processCustomTexture();
+        };
+    }
+
+    // Slider ↔ number sync inside editor
+    modal.querySelectorAll('.slider-number-group').forEach(group => {
+        const range = group.querySelector('input[type="range"]');
+        const num = group.querySelector('input[type="number"]');
+        if (!range || !num) return;
+        range.oninput = () => { num.value = range.value; processCustomTexture(); };
+        num.oninput = () => { range.value = num.value; processCustomTexture(); };
+    });
+
+    // Checkbox changes inside editor
+    const blurCheck = modal.querySelector('#stl_texture_custom_blur');
+    if (blurCheck) blurCheck.onchange = () => processCustomTexture();
+    const alreadyBW = modal.querySelector('#stl_image_already_bw');
+    if (alreadyBW) alreadyBW.onchange = () => processCustomTexture();
+
+    // Multicolor toggle inside editor
+    const mcToggle = document.getElementById('stl_image_multicolor');
+    // Note: multicolor toggle is outside the modal — in the main panel. Not duplicated.
+
+    // Cancel
     document.getElementById('tex-editor-cancel').onclick = closeTextureEditor;
     document.getElementById('texture-editor-close').onclick = closeTextureEditor;
+
+    // Apply: commit changes + paint overlay + trigger STL update
     document.getElementById('tex-editor-apply').onclick = () => {
-        // Copy editor canvas to customTextureImage
+        // Composite: base processed image + paint overlay
         const offCanvas = document.createElement('canvas');
-        offCanvas.width = 512;
-        offCanvas.height = 512;
+        offCanvas.width = 512; offCanvas.height = 512;
         const offCtx = offCanvas.getContext('2d');
-        offCtx.drawImage(editorCanvas, 0, 0);
+        offCtx.drawImage(customTextureImage, 0, 0);
+        if (_editorPaintLayer) offCtx.drawImage(_editorPaintLayer, 0, 0);
         customTextureImage = offCanvas;
-        closeTextureEditor();
+        // For multicolor mode, rebuild color indices so paint strokes affect the STL & 2D viewer
+        const isMulticolor = (document.getElementById('stl_image_multicolor') || {}).checked;
+        if (isMulticolor) rebuildColorIndices();
+        _editorOpen = false;
+        _editorPaintLayer = null;
+        const modal = document.getElementById('texture-editor-modal');
+        if (modal) modal.style.display = 'none';
+        isEditorPainting = false;
         render2DViewer();
+        scheduleInline3DUpdate();
+        if (typeof scheduleMiniViewerUpdate === 'function') scheduleMiniViewerUpdate();
     };
 }
 
 function closeTextureEditor() {
+    // Restore snapshot and control values
+    if (_editorSnapshot) {
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 512; offCanvas.height = 512;
+        offCanvas.getContext('2d').drawImage(_editorSnapshot, 0, 0);
+        customTextureImage = offCanvas;
+    }
+    if (_editorSnapshotControls) {
+        for (const id in _editorSnapshotControls) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            if (el.type === 'checkbox') el.checked = _editorSnapshotControls[id];
+            else el.value = _editorSnapshotControls[id];
+            // Sync range partners
+            const range = document.querySelector('input[type="range"][data-link="' + id + '"]');
+            if (range) range.value = _editorSnapshotControls[id];
+        }
+    }
+    _editorOpen = false;
+    _editorSnapshot = null;
+    _editorSnapshotControls = null;
+    _editorPaintLayer = null;
     const modal = document.getElementById('texture-editor-modal');
     if (modal) modal.style.display = 'none';
     isEditorPainting = false;
+    render2DViewer();
 }
 
 // Initialize custom texture handlers
 initCustomTextureHandlers();
 
 // Generic slider ↔ number sync for all slider-number-group pairs
+// Skip sliders inside the texture editor modal — those are handled by the editor itself
 document.querySelectorAll('.slider-number-group').forEach(group => {
+    if (group.closest('#texture-editor-modal')) return;
     const range = group.querySelector('input[type="range"]');
     const num = group.querySelector('input[type="number"]');
     if (!range || !num) return;
@@ -5153,13 +5828,20 @@ document.querySelectorAll('.slider-number-group').forEach(group => {
     num.addEventListener('input', () => { range.value = num.value; render2DViewer(); scheduleInline3DUpdate(); });
 });
 
-// Threshold range slider needs to reprocess the image (generic sync only calls render2DViewer)
-const thresholdRange = document.querySelector('input[type="range"][data-link="stl_texture_custom_threshold"]');
-if (thresholdRange) {
-    thresholdRange.addEventListener('input', () => {
-        if (customTextureOriginal) processCustomTexture();
-    });
-}
+// Image-processing range sliders need to reprocess the image (generic sync only calls render2DViewer)
+[
+    'stl_texture_custom_threshold',
+    'stl_image_blur_radius',
+    'stl_image_num_colors',
+    'stl_image_color_tolerance',
+].forEach(id => {
+    const rangeEl = document.querySelector('input[type="range"][data-link="' + id + '"]');
+    if (rangeEl) {
+        rangeEl.addEventListener('input', () => {
+            if (customTextureOriginal) processCustomTexture();
+        });
+    }
+});
 
 // ============================================================
 // Inline 3D Viewer (acabados panel)
@@ -5413,6 +6095,23 @@ async function updateInline3D() {
             mesh.userData.role = 'relief';
             allMeshes.push(mesh);
         }
+        // Multicolor parts: each color gets its own mesh with palette color
+        if (data.multicolor_parts && customTexturePalette) {
+            for (const ci of Object.keys(data.multicolor_parts)) {
+                const idx = parseInt(ci);
+                const rgb = customTexturePalette[idx];
+                if (!rgb || !data.multicolor_parts[ci]) continue;
+                const hex = '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('');
+                const buf = Uint8Array.from(atob(data.multicolor_parts[ci]), c => c.charCodeAt(0)).buffer;
+                const geom = loader.parse(buf);
+                geom.computeVertexNormals();
+                const mat = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.4, metalness: 0.15, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.rotation.set(-Math.PI / 2, 0, 0);
+                mesh.userData.role = 'relief';
+                allMeshes.push(mesh);
+            }
+        }
         if (data.base) {
             const buf = Uint8Array.from(atob(data.base), c => c.charCodeAt(0)).buffer;
             const geom = loader.parse(buf);
@@ -5462,6 +6161,14 @@ async function updateInline3D() {
                 reliefMesh.position.z += dz;
                 reliefMesh.position.y += pieceRaise;
             }
+            // Also shift all multicolor relief meshes
+            allMeshes.forEach(m => {
+                if (m.userData.role === 'relief' && m !== reliefMesh) {
+                    m.position.x += dx;
+                    m.position.z += dz;
+                    m.position.y += pieceRaise;
+                }
+            });
 
             allMeshes.forEach(m => { tempGrp.remove(m); inline3DGroup.add(m); });
         } else {

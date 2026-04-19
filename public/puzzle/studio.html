@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -147,7 +147,7 @@
                             <label>Tamaño máximo (celdas):</label>
                             <input type="number" id="max_size" value="4" min="1" max="10">
                         </div>
-                        <div class="form-group normal-only">
+                        <div class="form-group normal-only" data-premium="advanced">
                             <label>Bordes bloqueados:</label>
                             <select id="border_prob">
                                 <option value="0">0%</option>
@@ -156,7 +156,7 @@
                                 <option value="75">75%</option>
                             </select>
                         </div>
-                        <div class="form-group normal-only">
+                        <div class="form-group normal-only" data-premium="advanced">
                             <label>Celdas aire:</label>
                             <select id="air_prob">
                                 <option value="0">0%</option>
@@ -165,7 +165,7 @@
                                 <option value="15">15%</option>
                             </select>
                         </div>
-                        <div class="form-group normal-only">
+                        <div class="form-group normal-only" data-premium="advanced">
                             <label>Soluciones objetivo:</label>
                             <select id="target_solutions" onchange="onTargetSolutionsChange(this.value)">
                                 <option value="1">Exactamente 1 (única)</option>
@@ -383,9 +383,6 @@
                                 <label>Cargar imagen:</label>
                                 <input type="file" id="stl_texture_custom_file" accept="image/*" style="display:none">
                                 <button type="button" class="btn btn-small" id="texture-custom-file-btn">Cargar imagen</button>
-                            </div>
-                            <div class="form-group">
-                                <button class="btn btn-small" id="texture-custom-edit-btn" style="display:none">🖌️ Editar</button>
                             </div>
                         </div>
                     </div>
@@ -734,6 +731,19 @@
                     <div class="image-opts acabados-sub-panel options-panel" id="image-opts-ajustes">
                         <div class="collapsible-header collapsible-sub" data-target="section-image-3d"><span class="collapse-arrow">▾</span> 🔧 Ajustes de imagen</div>
                         <div class="collapsible-body" id="section-image-3d">
+                        <!-- Modo color toggle -->
+                        <div class="form-group image-color-mode-row" data-premium="multicolor">
+                            <span class="image-color-mode-label-text">🎨 Modo color:</span>
+                            <div class="image-color-mode-toggle">
+                                <span class="image-mode-text" id="image-mode-bw-label">B&amp;N</span>
+                                <label class="switch-label switch-small">
+                                    <input type="checkbox" id="stl_image_multicolor">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span class="image-mode-text" id="image-mode-multi-label">Multicolor</span>
+                            </div>
+                        </div>
+                        <!-- General image controls -->
                         <div class="form-group">
                             <label>Zoom imagen:</label>
                             <div class="slider-number-group">
@@ -741,31 +751,9 @@
                                 <input type="number" id="stl_texture_custom_zoom" min="10" max="500" value="100" class="slider-num-input">
                             </div>
                         </div>
+                        <!-- Advanced editor button -->
                         <div class="form-group">
-                            <label class="stl-check-label">
-                                <input type="checkbox" id="stl_image_already_bw">
-                                Mi imagen ya está en blanco y negro
-                            </label>
-                        </div>
-                        <div class="form-group" id="image-threshold-group">
-                            <label>Umbral blanco/negro:</label>
-                            <div class="slider-number-group">
-                                <input type="range" class="range-input" min="0" max="255" value="128" data-link="stl_texture_custom_threshold">
-                                <input type="number" id="stl_texture_custom_threshold" min="0" max="255" value="128" class="slider-num-input">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Grosor de línea (px):</label>
-                            <div class="slider-number-group">
-                                <input type="range" class="range-input" min="0" max="10" step="1" value="0" data-link="stl_image_line_thickness">
-                                <input type="number" id="stl_image_line_thickness" min="0" max="10" step="1" value="0" class="slider-num-input">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="stl-check-label">
-                                <input type="checkbox" id="stl_texture_custom_blur" checked>
-                                Suavizar antes de umbralizar
-                            </label>
+                            <button class="btn btn-small" id="texture-paint-btn">🔧 Ajustes avanzados de imagen</button>
                         </div>
                         </div>
                     </div>
@@ -804,7 +792,7 @@
                                     <input type="number" id="stl_texture_height" value="0.6" step="0.1" min="0.1" max="5" class="slider-num-input">
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" data-premium="advanced">
                                 <label>Margen hasta el borde (mm):</label>
                                 <div class="slider-number-group">
                                     <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.5" data-link="stl_texture_wall">
@@ -837,7 +825,7 @@
                                 <input type="number" id="stl_image_height" value="0.6" step="0.1" min="0.1" max="5" class="slider-num-input">
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" data-premium="advanced">
                             <label>Margen hasta el borde (mm):</label>
                             <div class="slider-number-group">
                                 <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.5" data-link="stl_image_wall">
@@ -871,19 +859,104 @@
             <div class="modal-overlay" id="texture-editor-modal" style="display: none;">
                 <div class="modal-content texture-editor-content">
                     <div class="modal-header">
-                        <h3>🖌️ Editor de Textura</h3>
+                        <h3>&#128295; Ajustes avanzados de imagen</h3>
                         <button class="modal-close" id="texture-editor-close">&times;</button>
                     </div>
-                    <div class="texture-editor-toolbar">
-                        <button class="btn btn-small active" id="tex-paint-black">⬛ Pintar negro</button>
-                        <button class="btn btn-small" id="tex-paint-white">⬜ Pintar blanco</button>
-                        <label>Tamaño pincel: <input type="range" id="tex-brush-size" min="1" max="50" value="10"></label>
-                        <button class="btn btn-small" id="tex-editor-reset">↩️ Reiniciar</button>
+                    <div class="texture-editor-body">
+                        <!-- Left: canvas + paint tools -->
+                        <div class="tex-editor-left">
+                            <canvas id="texture-editor-canvas" width="512" height="512"></canvas>
+                            <div class="tex-paint-toolbar">
+                                <div class="tex-paint-tools">
+                                    <span class="tex-toolbar-label">🖌️ Pintar:</span>
+                                    <div class="tex-color-swatches" id="tex-color-swatches">
+                                        <button class="tex-color-btn active" data-color="black" style="background:#000" title="Negro"></button>
+                                        <button class="tex-color-btn" data-color="white" style="background:#fff" title="Blanco"></button>
+                                    </div>
+                                    <label class="tex-brush-label">
+                                        <span class="tex-brush-icon" id="tex-brush-preview"></span>
+                                        <input type="range" id="tex-brush-size" min="2" max="50" value="10">
+                                    </label>
+                                    <button class="btn btn-small tex-tool-btn" id="tex-eraser" title="Borrador">🧹</button>
+                                    <button class="btn btn-small tex-tool-btn" id="tex-editor-reset" title="Reiniciar">↩️</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right: controls -->
+                        <div class="tex-editor-right">
+                            <div class="form-group" id="tex-line-thickness-group">
+                                <label>Grosor de línea (px):</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="0" max="10" step="1" value="0" data-link="stl_image_line_thickness">
+                                    <input type="number" id="stl_image_line_thickness" min="0" max="10" step="1" value="0" class="slider-num-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="stl-check-label">
+                                    <input type="checkbox" id="stl_texture_custom_blur" checked>
+                                    Suavizar imagen
+                                </label>
+                            </div>
+                            <div class="form-group" id="image-blur-radius-group">
+                                <label>Radio de suavizado:</label>
+                                <div class="slider-number-group">
+                                    <input type="range" class="range-input" min="1" max="8" step="1" value="2" data-link="stl_image_blur_radius">
+                                    <input type="number" id="stl_image_blur_radius" min="1" max="8" step="1" value="2" class="slider-num-input">
+                                </div>
+                            </div>
+                            <!-- B&W options -->
+                            <div id="image-edit-bw-opts">
+                                <div class="form-group" id="image-bw-color-group">
+                                    <label>🎨 Color relieve:</label>
+                                    <div class="color-picker-row">
+                                        <input type="color" id="stl_image_relief_color" value="#C1B399">
+                                        <span class="color-hex" id="stl_image_relief_color_hex">#C1B399</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="stl-check-label">
+                                        <input type="checkbox" id="stl_image_already_bw">
+                                        Mi imagen ya está en blanco y negro
+                                    </label>
+                                </div>
+                                <div class="form-group" id="image-threshold-group">
+                                    <label>Umbral blanco/negro:</label>
+                                    <div class="slider-number-group">
+                                        <input type="range" class="range-input" min="0" max="255" value="128" data-link="stl_texture_custom_threshold">
+                                        <input type="number" id="stl_texture_custom_threshold" min="0" max="255" value="128" class="slider-num-input">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Multicolor options -->
+                            <div id="image-edit-multi-opts" style="display:none;">
+                                <div class="form-group">
+                                    <label>Número de colores:</label>
+                                    <div class="slider-number-group">
+                                        <input type="range" class="range-input" min="2" max="8" step="1" value="4" data-link="stl_image_num_colors">
+                                        <input type="number" id="stl_image_num_colors" min="2" max="8" step="1" value="4" class="slider-num-input">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tolerancia de color:</label>
+                                    <div class="slider-number-group">
+                                        <input type="range" class="range-input" min="10" max="120" step="1" value="50" data-link="stl_image_color_tolerance">
+                                        <input type="number" id="stl_image_color_tolerance" min="10" max="120" step="1" value="50" class="slider-num-input">
+                                    </div>
+                                    <span class="slider-hint">Bajo = más detalle · Alto = fusiona colores similares</span>
+                                </div>
+                                <div class="form-group" id="image-palette-group">
+                                    <label>Paleta detectada: <span class="palette-edit-hint">(clic para editar)</span></label>
+                                    <div class="image-palette-swatches" id="image-palette-swatches">
+                                        <span class="palette-hint">Carga una imagen para detectar colores</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <canvas id="texture-editor-canvas" width="512" height="512"></canvas>
                     <div class="texture-editor-actions">
-                        <button class="btn" id="tex-editor-cancel">Cancelar</button>
-                        <button class="btn btn-primary" id="tex-editor-apply">✅ Aplicar</button>
+                        <button class="btn btn-secondary" id="tex-editor-cancel">Cancelar</button>
+                        <button class="btn btn-secondary" id="tex-editor-defaults" title="Restaurar valores por defecto">&#x21A9; Restaurar ajustes</button>
+                        <button class="btn btn-primary tex-apply-btn" id="tex-editor-apply">&#10004; Aplicar cambios</button>
                     </div>
                 </div>
             </div>
@@ -928,6 +1001,7 @@
                                                 <input type="color" id="stl_color_relief" value="#C1B399">
                                                 <span class="color-hex" id="stl_color_relief_hex">#C1B399</span>
                                             </div>
+                                            <div class="relief-color-locked-hint" id="relief-color-locked-hint" style="display:none;">Controlado desde Diseño 3D en modo imagen</div>
                                         </div>
                                     </div>
                                 </div>
@@ -976,15 +1050,15 @@
                                                 <input type="number" id="stl_corner_radius" value="1.0" step="0.1" min="0.1" max="10">
                                             </div>
                                         </div>
-                                        <div class="form-group" id="corner-inner-group">
+                                        <div class="form-group" id="corner-inner-group" data-premium="advanced">
                                             <label><input type="checkbox" id="stl_corner_inner"> Aplicar también a esquinas interiores</label>
                                         </div>
                                         <div class="puzle-dims-grid">
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="piece_chamfer_top_on"> Superior (mm):</label>
                                                 <input type="number" id="piece_chamfer_top" value="0.5" step="0.1" min="0.1" max="5" disabled>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="piece_chamfer_bottom_on"> Inferior (mm):</label>
                                                 <input type="number" id="piece_chamfer_bottom" value="0.5" step="0.1" min="0.1" max="5" disabled>
                                             </div>
@@ -1091,15 +1165,15 @@
                                             </div>
                                         </div>
                                         <div class="puzle-dims-grid">
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="base_chamfer_top_outer_on"> Sup. exterior (mm):</label>
                                                 <input type="number" id="base_chamfer_top_outer" value="0.5" step="0.1" min="0.1" max="5" disabled>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="base_chamfer_top_inner_on"> Sup. interior (mm):</label>
                                                 <input type="number" id="base_chamfer_top_inner" value="0.5" step="0.1" min="0.1" max="5" disabled>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="base_chamfer_bottom_outer_on"> Inf. exterior (mm):</label>
                                                 <input type="number" id="base_chamfer_bottom_outer" value="0.5" step="0.1" min="0.1" max="5" disabled>
                                             </div>
@@ -1206,11 +1280,11 @@
                                         </div>
                                     </div>
                                     <div class="puzle-dims-grid">
-                                        <div class="form-group">
+                                        <div class="form-group" data-premium="advanced">
                                             <label><input type="checkbox" id="sliding_piece_chamfer_top_on"> Superior (mm):</label>
                                             <input type="number" id="sliding_piece_chamfer_top" value="0.3" step="0.1" min="0.1" max="5" disabled>
                                         </div>
-                                        <div class="form-group">
+                                        <div class="form-group" data-premium="advanced">
                                             <label><input type="checkbox" id="sliding_piece_chamfer_bottom_on"> Inferior (mm):</label>
                                             <input type="number" id="sliding_piece_chamfer_bottom" value="0.3" step="0.1" min="0.1" max="5" disabled>
                                         </div>
@@ -1315,19 +1389,19 @@
                                             </div>
                                         </div>
                                         <div class="puzle-dims-grid">
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="sliding_base_chamfer_top_outer_on"> Sup. exterior (mm):</label>
                                                 <input type="number" id="sliding_base_chamfer_top_outer" value="0.3" step="0.1" min="0.1" max="5" disabled>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="sliding_base_chamfer_top_inner_on"> Sup. interior (mm):</label>
                                                 <input type="number" id="sliding_base_chamfer_top_inner" value="0.3" step="0.1" min="0.1" max="5" disabled>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="sliding_base_chamfer_bottom_outer_on"> Inf. exterior (mm):</label>
                                                 <input type="number" id="sliding_base_chamfer_bottom_outer" value="0.3" step="0.1" min="0.1" max="5" disabled>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group" data-premium="advanced">
                                                 <label><input type="checkbox" id="sliding_base_chamfer_bottom_inner_on"> Inf. interior (mm):</label>
                                                 <input type="number" id="sliding_base_chamfer_bottom_inner" value="0.3" step="0.1" min="0.1" max="5" disabled>
                                             </div>
@@ -1450,6 +1524,8 @@
     <!-- Worker client — intercepts fetch('/api/*') and routes to Cloudflare Worker -->
     <!-- Engine source is protected server-side; only app logic runs in browser -->
     <script src="worker-client.js"></script>
+    <!-- Premium feature gating -->
+    <script src="premium.js"></script>
     <!-- Original frontend (unmodified) -->
     <script src="app.js"></script>
 </body>

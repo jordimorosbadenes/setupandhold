@@ -2119,22 +2119,34 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* Texture editor */
-.texture-editor-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-    padding: 8px;
-    background: var(--card);
-    border-radius: 8px;
+.texture-editor-content {
+    max-width: 900px;
+    width: 95vw;
 }
-
-.texture-editor-toolbar label {
-    font-size: 0.85em;
+.texture-editor-body {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: 20px;
+    align-items: flex-start;
+}
+.tex-editor-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.tex-editor-right {
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 560px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+@media (max-width: 700px) {
+    .texture-editor-body { flex-direction: column; }
+    .tex-editor-right { flex: none; max-height: none; }
 }
 
 #texture-editor-canvas {
@@ -2142,10 +2154,73 @@ input[type="number"]::-webkit-inner-spin-button {
     width: 100%;
     max-width: 512px;
     height: auto;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: none;
+    background: repeating-conic-gradient(var(--border) 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+}
+
+/* Paint toolbar */
+.tex-paint-toolbar {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 8px 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    margin: 0 auto;
-    cursor: crosshair;
+}
+.tex-paint-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.tex-toolbar-label {
+    font-size: 0.85em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.tex-color-swatches {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+.tex-color-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    padding: 0;
+    outline: none;
+}
+.tex-color-btn:hover {
+    transform: scale(1.15);
+}
+.tex-color-btn.active {
+    box-shadow: 0 0 0 3px var(--accent);
+    transform: scale(1.1);
+}
+.tex-brush-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85em;
+}
+.tex-brush-icon {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text);
+    transition: width 0.12s, height 0.12s;
+}
+.tex-tool-btn {
+    font-size: 1em;
+    padding: 2px 6px;
+    min-width: 30px;
+}
+.tex-tool-btn.active {
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 .texture-editor-actions {
@@ -2153,6 +2228,114 @@ input[type="number"]::-webkit-inner-spin-button {
     gap: 10px;
     justify-content: flex-end;
     margin-top: 16px;
+}
+
+/* Secondary button style for cancel/restore type actions */
+.btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.2s;
+}
+.btn-secondary:hover {
+    background: var(--border);
+}
+
+/* Apply button in texture-editor-actions should not stretch to 100% */
+.texture-editor-actions .btn-primary {
+    width: auto;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    color: var(--bg);
+    padding: 12px 24px;
+}
+
+/* ── Image multicolor mode ── */
+.image-color-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.image-color-mode-label-text {
+    font-weight: 500;
+}
+.image-color-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.image-mode-text {
+    font-size: 0.85em;
+    color: var(--muted);
+    transition: color 0.2s;
+}
+.image-mode-text.active {
+    color: var(--accent);
+    font-weight: 600;
+}
+.image-palette-swatches {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.palette-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.palette-swatch:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+.palette-swatch.editing {
+    box-shadow: 0 0 0 3px var(--accent);
+}
+.palette-hint {
+    font-size: 0.82em;
+    color: var(--muted);
+    font-style: italic;
+}
+.palette-edit-hint {
+    font-size: 0.82em;
+    color: var(--muted);
+    font-weight: normal;
+}
+.slider-hint {
+    font-size: 0.78em;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 2px;
+    display: block;
+}
+#image-edit-section {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+/* Relief color group locked state */
+.relief-color-locked {
+    opacity: 0.4;
+    pointer-events: none;
+    position: relative;
+}
+.relief-color-locked-hint {
+    font-size: 0.78em;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 2px;
 }
 
 /* Viewer panel */
@@ -2331,7 +2514,283 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* Disabled overlay when toggle is off */
-#advanced-3d-config-panel .adv3d-settings input:disabled,
+#advanced-3d-config-panel .adv3d-settings input:disabled {
+    opacity: 0.45;
+}
+
+/* ============================================================
+   Premium — Gold Indicator & Download Gating
+   ============================================================ */
+
+/* --- Gold shimmer on [data-premium] containers --- */
+[data-premium] {
+    border: 1px solid rgba(255, 200, 55, 0.22) !important;
+    border-radius: 8px;
+    background-color: rgba(255, 215, 0, 0.025) !important;
+    background-image: linear-gradient(
+        110deg,
+        transparent 20%,
+        rgba(255, 215, 0, 0.06) 35%,
+        rgba(255, 215, 0, 0.13) 50%,
+        rgba(255, 215, 0, 0.06) 65%,
+        transparent 80%
+    ) !important;
+    background-size: 250% 100%;
+    animation: premiumShimmer 5s ease-in-out infinite;
+    padding: 6px 10px;
+}
+
+@keyframes premiumShimmer {
+    0%, 100% { background-position: 200% center; }
+    50%      { background-position: -200% center; }
+}
+
+/* --- Cursor-following tooltip --- */
+.premium-tooltip {
+    position: fixed;
+    z-index: 100001;
+    background: #151525;
+    color: #ffd700;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    border: 1px solid rgba(255, 200, 55, 0.35);
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.premium-tooltip.visible {
+    opacity: 1;
+}
+.premium-tooltip span {
+    font-weight: 400;
+    font-size: 0.85em;
+    color: #b0b0c0;
+}
+
+/* --- Download panel lock --- */
+.premium-download-lock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 22px 18px;
+    margin-bottom: 14px;
+    border: 1.5px solid rgba(255, 200, 55, 0.35);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.04), rgba(255, 180, 0, 0.09));
+    background-size: 250% 100%;
+    animation: premiumShimmer 5s ease-in-out infinite;
+    text-align: center;
+}
+.premium-download-lock-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.premium-download-lock-icon {
+    font-size: 1.6em;
+    color: #ffd700;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+    line-height: 1;
+}
+.premium-download-lock-title {
+    font-weight: 700;
+    font-size: 1.05em;
+    color: #ffd700;
+    letter-spacing: 0.3px;
+}
+.premium-download-lock-text {
+    color: var(--muted);
+    font-size: 0.88em;
+    line-height: 1.6;
+    margin: 0;
+}
+.premium-download-lock-text strong {
+    color: #ffd700;
+}
+.premium-download-lock-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+.premium-gumroad-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 9px 20px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 0.88em;
+    letter-spacing: 0.02em;
+    color: #2a1a00 !important;
+    background: linear-gradient(120deg, #f7e08a, #d4af37) !important;
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+.premium-gumroad-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+.premium-download-lock-input-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+}
+.premium-download-lock-input-row .premium-code-input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+.premium-verify-btn {
+    padding: 8px 16px !important;
+    border: 1.5px solid #ffd700 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #ffd700 !important;
+    font-weight: 700 !important;
+    font-size: 0.85em !important;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.premium-verify-btn:hover {
+    background: #ffd700 !important;
+    color: #1a1a2e !important;
+}
+.premium-download-lock-error {
+    color: #f87171;
+    font-size: 0.85em;
+    text-align: center;
+}
+
+/* Disabled download buttons */
+.download-panel .stl-download-buttons .btn:disabled {
+    opacity: 0.3 !important;
+    pointer-events: none !important;
+    filter: grayscale(0.6) !important;
+    cursor: not-allowed !important;
+}
+
+/* Unlock button */
+.premium-unlock-btn {
+    margin-top: 4px;
+    padding: 8px 22px;
+    border: 1.5px solid #ffd700;
+    border-radius: 8px;
+    background: transparent;
+    color: #ffd700;
+    font-weight: 700;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font);
+    letter-spacing: 0.3px;
+}
+.premium-unlock-btn:hover {
+    background: #ffd700;
+    color: var(--bg, #1a1a2e);
+}
+
+/* --- Unlock dialog (modal) --- */
+.premium-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.premium-dialog {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: premiumDialogIn 0.2s ease-out;
+}
+@keyframes premiumDialogIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.premium-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.premium-dialog-header h3 {
+    margin: 0;
+    font-size: 1.15em;
+    color: #ffd700;
+}
+
+.premium-dialog-text {
+    color: var(--muted);
+    font-size: 0.92em;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.premium-dialog-input-row {
+    margin-bottom: 12px;
+}
+.premium-code-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 1em;
+    font-family: 'Space Mono', monospace, var(--font);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.premium-code-input:focus {
+    border-color: #ffd700;
+}
+
+.premium-dialog-error {
+    color: #f87171;
+    font-size: 0.85em;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.premium-dialog-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.premium-dialog-actions .btn-primary {
+    width: auto;
+    padding: 10px 22px;
+}
+.premium-dialog-actions .btn-secondary {
+    padding: 10px 18px;
+}
 #advanced-3d-config-panel .adv3d-settings select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
