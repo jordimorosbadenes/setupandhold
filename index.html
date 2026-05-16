@@ -7,7 +7,7 @@
     </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
 <style>.card-reactions[data-astro-cid-iyiqi2so]{font-size:.8rem;opacity:.7;margin-top:.75rem}.card-reactions[data-astro-cid-iyiqi2so]:empty{margin-top:0}
 </style>
-<link rel="stylesheet" href="/_astro/index.CYGnDQRe.css"><script type="module">const f="jordimorosbadenes/setupandhold",h="R_kgDOQxFETg",w="Announcements",E="DIC_kwDOQxFETs4C3D9B";function p(o,i,e){if(i===0&&e===0)return;const s=[];i>0&&s.push(`❤️ ${i}`),e>0&&s.push(`💬 ${e}`),o.textContent=s.join("  ")}function x(){document.querySelectorAll("[data-giscus-term]").forEach(o=>{const i=o.dataset.giscusTerm;if(i)try{const e=localStorage.getItem(`giscus-meta:${i}`);if(!e)return;const{reactions:s,comments:a}=JSON.parse(e);p(o,s,a)}catch{}})}function y(){const o=[];if(document.querySelectorAll("[data-giscus-term]").forEach(t=>{const r=t.dataset.giscusTerm;r&&o.push({el:t,term:r})}),o.length===0)return;const i=document.documentElement.dataset.theme==="dark"?"dark":"light",e=document.createElement("div");e.style.cssText="position:absolute;width:1px;height:1px;overflow:hidden;top:-9999px;left:-9999px;",document.body.appendChild(e);const s=new Map;let a=o.length;function u(){window.removeEventListener("message",d),e.remove()}function d(t){if(t.origin!=="https://giscus.app"||typeof t.data!="object"||!t.data.giscus||!t.source)return;const r=s.get(t.source);if(!r)return;const{discussion:c}=t.data.giscus;if(!c)return;s.delete(t.source);let n=c.reactionCount??0;!n&&c.reactions&&(n=Object.values(c.reactions).reduce((g,l)=>g+l,0));const m=c.totalCommentCount??0;localStorage.setItem(`giscus-meta:${r.term}`,JSON.stringify({reactions:n,comments:m})),p(r.el,n,m),--a<=0&&u()}window.addEventListener("message",d),o.forEach(({el:t,term:r})=>{const c=new URLSearchParams({origin:window.location.origin,repo:f,repoId:h,category:w,categoryId:E,mapping:"pathname",term:r,strict:"0",reactionsEnabled:"1",emitMetadata:"1",inputPosition:"top",theme:i,lang:"es",session:""}),n=document.createElement("iframe");n.src=`https://giscus.app/widget?${c}`,n.style.cssText="width:1px;height:1px;border:none;",e.appendChild(n),n.contentWindow&&s.set(n.contentWindow,{el:t,term:r})}),setTimeout(u,8e3)}x();y();
+<link rel="stylesheet" href="/_astro/index.DkXDYBOp.css"><script type="module">const f="jordimorosbadenes/setupandhold",h="R_kgDOQxFETg",w="Announcements",E="DIC_kwDOQxFETs4C3D9B";function p(o,i,e){if(i===0&&e===0)return;const s=[];i>0&&s.push(`❤️ ${i}`),e>0&&s.push(`💬 ${e}`),o.textContent=s.join("  ")}function x(){document.querySelectorAll("[data-giscus-term]").forEach(o=>{const i=o.dataset.giscusTerm;if(i)try{const e=localStorage.getItem(`giscus-meta:${i}`);if(!e)return;const{reactions:s,comments:a}=JSON.parse(e);p(o,s,a)}catch{}})}function y(){const o=[];if(document.querySelectorAll("[data-giscus-term]").forEach(t=>{const r=t.dataset.giscusTerm;r&&o.push({el:t,term:r})}),o.length===0)return;const i=document.documentElement.dataset.theme==="dark"?"dark":"light",e=document.createElement("div");e.style.cssText="position:absolute;width:1px;height:1px;overflow:hidden;top:-9999px;left:-9999px;",document.body.appendChild(e);const s=new Map;let a=o.length;function u(){window.removeEventListener("message",d),e.remove()}function d(t){if(t.origin!=="https://giscus.app"||typeof t.data!="object"||!t.data.giscus||!t.source)return;const r=s.get(t.source);if(!r)return;const{discussion:c}=t.data.giscus;if(!c)return;s.delete(t.source);let n=c.reactionCount??0;!n&&c.reactions&&(n=Object.values(c.reactions).reduce((g,l)=>g+l,0));const m=c.totalCommentCount??0;localStorage.setItem(`giscus-meta:${r.term}`,JSON.stringify({reactions:n,comments:m})),p(r.el,n,m),--a<=0&&u()}window.addEventListener("message",d),o.forEach(({el:t,term:r})=>{const c=new URLSearchParams({origin:window.location.origin,repo:f,repoId:h,category:w,categoryId:E,mapping:"pathname",term:r,strict:"0",reactionsEnabled:"1",emitMetadata:"1",inputPosition:"top",theme:i,lang:"es",session:""}),n=document.createElement("iframe");n.src=`https://giscus.app/widget?${c}`,n.style.cssText="width:1px;height:1px;border:none;",e.appendChild(n),n.contentWindow&&s.set(n.contentWindow,{el:t,term:r})}),setTimeout(u,8e3)}x();y();
 </script></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
 const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
 
@@ -1619,6 +1619,28 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     };
   }
 
+  // Rotate puzzle 90° (transpose) so the narrower dimension is always horizontal.
+  // Swaps [r,c] → [c,r] in every region cell. Dominoes are just pip-value pairs,
+  // they have no coordinates, so they are unaffected.
+  function normalizeOrientation(puzzle) {
+    let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+    puzzle.regions.forEach(reg => reg.cells.forEach(([r, c]) => {
+      if (r < minR) minR = r; if (r > maxR) maxR = r;
+      if (c < minC) minC = c; if (c > maxC) maxC = c;
+    }));
+    const rows = maxR - minR + 1;
+    const cols = maxC - minC + 1;
+    if (cols <= rows) return puzzle; // already portrait or square — nothing to do
+    // Transpose: (r, c) → (c, r)
+    return {
+      ...puzzle,
+      regions: puzzle.regions.map(reg => ({
+        ...reg,
+        cells: reg.cells.map(([r, c]) => [c, r]),
+      })),
+    };
+  }
+
   const VPS_URL = 'https://puzzle.setupandhold.com';
 
   async function fetchNytPuzzles(dateStr) {
@@ -1628,9 +1650,9 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     return {
-      easy:   data.easy   ? parseNytDiff(data.easy,   'easy')   : null,
-      medium: data.medium ? parseNytDiff(data.medium, 'medium') : null,
-      hard:   data.hard   ? parseNytDiff(data.hard,   'hard')   : null,
+      easy:   data.easy   ? normalizeOrientation(parseNytDiff(data.easy,   'easy'))   : null,
+      medium: data.medium ? normalizeOrientation(parseNytDiff(data.medium, 'medium')) : null,
+      hard:   data.hard   ? normalizeOrientation(parseNytDiff(data.hard,   'hard'))   : null,
     };
   }
 
@@ -1710,7 +1732,6 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
   let rotDeg = 0;         // cumulative degrees for smooth CSS rotation animation
   let targetCell = null;  // "r,c" of first cell click
   let solved = false;
-  let boardCols = 0; // tracked for ResizeObserver-based cell scaling
 
   let puzzleCellSet = new Set(); // cached for drag snap detection
   const DRAG_THRESHOLD = 8;     // px of movement before drag activates
@@ -1761,21 +1782,7 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
   const flipBtn  = root.querySelector('[data-flip-btn]');
   const clearBtn = root.querySelector('[data-clear-btn]');
   const diffBtns = [...root.querySelectorAll('[data-diff-btn]')];
-  const dayBadge  = root.querySelector('[data-day-badge]');
-  const boardWrapEl = boardEl.parentElement; // .mp__board-wrap
-
-  // Recalculate cell size when the panel becomes visible or the viewport resizes.
-  // This fires automatically when the MiniGames tab switches to Pips (display: none → visible).
-  if (typeof ResizeObserver !== 'undefined' && boardWrapEl) {
-    new ResizeObserver(entries => {
-      const w = entries[0].contentRect.width;
-      if (w > 0 && boardCols > 0) {
-        const cellPx = Math.min(46, Math.max(30, Math.floor((w - 32) / boardCols)));
-        boardEl.style.setProperty('--mp-cell', cellPx + 'px');
-        boardEl.style.setProperty('--mp-dot',  Math.max(5, Math.round(cellPx * 0.2)) + 'px');
-      }
-    }).observe(boardWrapEl);
-  }
+  const dayBadge = root.querySelector('[data-day-badge]');
 
   function renderBadges() {
     // highlight active difficulty button
@@ -1811,14 +1818,6 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     const { minR, maxR, minC, maxC } = getBBox(cellSet);
     const rows = maxR - minR + 1;
     const cols = maxC - minC + 1;
-    boardCols = cols;
-    // Size cells to fill available width if the panel is already visible
-    const wrapW = boardWrapEl ? boardWrapEl.clientWidth : 0;
-    if (wrapW > 0) {
-      const cellPx = Math.min(46, Math.max(30, Math.floor((wrapW - 32) / cols)));
-      boardEl.style.setProperty('--mp-cell', cellPx + 'px');
-      boardEl.style.setProperty('--mp-dot',  Math.max(5, Math.round(cellPx * 0.2)) + 'px');
-    }
     const { regionIdx, firstCell } = buildRegionMeta(puzzle);
 
     boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell, 46px))`;
