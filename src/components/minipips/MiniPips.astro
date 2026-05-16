@@ -28,12 +28,12 @@
         <span class="mp__day-value" data-day-badge></span>
       </div>
     </div>
+    <p class="mp__hint">Completa todas las regiones colocando las fichas 🧩📍✅</p>
     <div class="mp__diff-row">
       <button class="mp__badge mp__badge--btn" data-diff-btn="easy">fácil</button>
       <button class="mp__badge mp__badge--btn" data-diff-btn="medium">medio</button>
       <button class="mp__badge mp__badge--btn" data-diff-btn="hard">difícil</button>
     </div>
-    <p class="mp__hint">Coloca todas las fichas satisfaciendo las regiones</p>
   </header>
 
   <!-- Board: cells rendered by JS -->
@@ -68,7 +68,7 @@
   }
 
   /* ── Header ─────────────────────────────── */
-  .mp__header { display: grid; gap: 4px; }
+  .mp__header { display: grid; gap: 8px; }
 
   .mp__topline {
     display: flex;
@@ -118,6 +118,8 @@
   }
 
   .mp__badge--btn {
+    flex: 1;
+    text-align: center;
     cursor: pointer;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
   }
@@ -153,12 +155,13 @@
   .mp__cell[data-region="6"] { --rcolor: #f6ad55; }
   .mp__cell[data-region="7"] { --rcolor: #76e4f7; }
 
-  /* Unconstrained (empty-type) cells — no color, just a neutral slot */
+  /* Unconstrained (empty-type) cells — completely blank, blends with board */
   .mp__cell--unconstrained {
-    background: var(--card);
+    background: var(--bg-soft);
+    cursor: default;
   }
   .mp__cell--unconstrained::before {
-    border-color: color-mix(in srgb, var(--border) 75%, transparent);
+    display: none;
   }
 
   /* ── Board ───────────────────────────────── */
@@ -275,8 +278,8 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    width: 84%;
-    height: 84%;
+    width: 76%;
+    height: 76%;
     gap: 2px;
   }
 
@@ -1295,6 +1298,16 @@
   document.addEventListener('pointermove', onDragMove, { passive: false });
   document.addEventListener('pointerup',   onDragEnd);
   document.addEventListener('pointercancel', onDragEnd);
+
+  // Deselect active domino on click outside interactive game areas
+  document.addEventListener('pointerdown', e => {
+    if (selectedDomino === -1) return;
+    if (e.target.closest('.mp__slot') ||
+        e.target.closest('.mp__cell:not(.mp__cell--ghost)') ||
+        e.target.closest('[data-flip-btn]')) return;
+    selectDomino(-1);
+    renderTray();
+  });
 
   /* ────────────────────────────── CONTROLS ──── */
   flipBtn.addEventListener('click', () => {
