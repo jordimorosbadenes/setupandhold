@@ -98,14 +98,11 @@
   .mp__day-label {
     font-size: 0.85rem;
     color: var(--muted);
-    line-height: 1;
   }
   .mp__day-value {
     font-weight: 800;
     color: var(--text);
     letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
   }
 
   .mp__badge {
@@ -155,6 +152,14 @@
   .mp__cell[data-region="5"] { --rcolor: #68d391; }
   .mp__cell[data-region="6"] { --rcolor: #f6ad55; }
   .mp__cell[data-region="7"] { --rcolor: #76e4f7; }
+
+  /* Unconstrained (empty-type) cells — no color, just a neutral slot */
+  .mp__cell--unconstrained {
+    background: var(--card);
+  }
+  .mp__cell--unconstrained::before {
+    border-color: color-mix(in srgb, var(--border) 75%, transparent);
+  }
 
   /* ── Board ───────────────────────────────── */
   .mp__board-wrap {
@@ -857,7 +862,11 @@
 
         const ri = regionIdx[key];
         div.dataset.region = ri;
-        div.style.setProperty('--rcolor', REGION_COLORS[ri % REGION_COLORS.length]);
+        if (puzzle.regions[ri].type !== 'empty') {
+          div.style.setProperty('--rcolor', REGION_COLORS[ri % REGION_COLORS.length]);
+        } else {
+          div.classList.add('mp__cell--unconstrained');
+        }
 
         // join: same-region adjacent cells visually merge
         if (regionIdx[`${r-1},${c}`] === ri) div.classList.add('mp__cell--jt');
