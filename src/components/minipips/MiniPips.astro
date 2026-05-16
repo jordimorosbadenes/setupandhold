@@ -291,14 +291,15 @@
 
   /* ── Domino in tray ──────────────────────── */
 
-  /* Fixed-size wrapper — rotating a domino never shifts other pieces */
+  /* Fixed-size wrapper — overflow:visible lets rotated dominoes protrude */
   .mp__slot {
     width: 92px;
-    height: 92px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: visible;
   }
 
   .mp__domino {
@@ -309,7 +310,8 @@
     cursor: grab;
     touch-action: none;
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    transition: transform 0.2s ease, box-shadow 0.15s ease, border-color 0.15s ease,
+                opacity 0.2s ease, filter 0.2s ease;
     user-select: none;
     transform: rotate(var(--mp-rot, 0deg));
     position: relative;
@@ -330,6 +332,14 @@
   }
 
   .mp__domino--dragging { opacity: 0.3; }
+
+  /* Dim unselected, unplaced dominoes when one is selected */
+  .mp__tray:has(.mp__domino--selected)
+    .mp__slot:not(:has(.mp__domino--selected))
+    .mp__domino:not(.mp__domino--placed) {
+    opacity: 0.35;
+    filter: saturate(0.25) brightness(0.85);
+  }
 
   .mp__half {
     width: 42px;
