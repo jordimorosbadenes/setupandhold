@@ -142,7 +142,7 @@
     background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: calc(var(--radius) - 4px);
-    overflow: hidden;
+    overflow: visible;
   }
 
   .mp__board {
@@ -604,6 +604,28 @@
     };
   }
 
+  // Rotate puzzle 90° (transpose) so the narrower dimension is always horizontal.
+  // Swaps [r,c] → [c,r] in every region cell. Dominoes are just pip-value pairs,
+  // they have no coordinates, so they are unaffected.
+  function normalizeOrientation(puzzle) {
+    let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+    puzzle.regions.forEach(reg => reg.cells.forEach(([r, c]) => {
+      if (r < minR) minR = r; if (r > maxR) maxR = r;
+      if (c < minC) minC = c; if (c > maxC) maxC = c;
+    }));
+    const rows = maxR - minR + 1;
+    const cols = maxC - minC + 1;
+    if (cols <= rows) return puzzle; // already portrait or square — nothing to do
+    // Transpose: (r, c) → (c, r)
+    return {
+      ...puzzle,
+      regions: puzzle.regions.map(reg => ({
+        ...reg,
+        cells: reg.cells.map(([r, c]) => [c, r]),
+      })),
+    };
+  }
+
   const VPS_URL = 'https://puzzle.setupandhold.com';
 
   async function fetchNytPuzzles(dateStr) {
@@ -613,9 +635,9 @@
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     return {
-      easy:   data.easy   ? parseNytDiff(data.easy,   'easy')   : null,
-      medium: data.medium ? parseNytDiff(data.medium, 'medium') : null,
-      hard:   data.hard   ? parseNytDiff(data.hard,   'hard')   : null,
+      easy:   data.easy   ? normalizeOrientation(parseNytDiff(data.easy,   'easy'))   : null,
+      medium: data.medium ? normalizeOrientation(parseNytDiff(data.medium, 'medium')) : null,
+      hard:   data.hard   ? normalizeOrientation(parseNytDiff(data.hard,   'hard'))   : null,
     };
   }
 
@@ -695,7 +717,6 @@
   let rotDeg = 0;         // cumulative degrees for smooth CSS rotation animation
   let targetCell = null;  // "r,c" of first cell click
   let solved = false;
-  let boardCols = 0; // tracked for ResizeObserver-based cell scaling
 
   let puzzleCellSet = new Set(); // cached for drag snap detection
   const DRAG_THRESHOLD = 8;     // px of movement before drag activates
@@ -746,21 +767,7 @@
   const flipBtn  = root.querySelector('[data-flip-btn]');
   const clearBtn = root.querySelector('[data-clear-btn]');
   const diffBtns = [...root.querySelectorAll('[data-diff-btn]')];
-  const dayBadge  = root.querySelector('[data-day-badge]');
-  const boardWrapEl = boardEl.parentElement; // .mp__board-wrap
-
-  // Recalculate cell size when the panel becomes visible or the viewport resizes.
-  // This fires automatically when the MiniGames tab switches to Pips (display: none → visible).
-  if (typeof ResizeObserver !== 'undefined' && boardWrapEl) {
-    new ResizeObserver(entries => {
-      const w = entries[0].contentRect.width;
-      if (w > 0 && boardCols > 0) {
-        const cellPx = Math.min(46, Math.max(30, Math.floor((w - 32) / boardCols)));
-        boardEl.style.setProperty('--mp-cell', cellPx + 'px');
-        boardEl.style.setProperty('--mp-dot',  Math.max(5, Math.round(cellPx * 0.2)) + 'px');
-      }
-    }).observe(boardWrapEl);
-  }
+  const dayBadge = root.querySelector('[data-day-badge]');
 
   function renderBadges() {
     // highlight active difficulty button
@@ -796,14 +803,6 @@
     const { minR, maxR, minC, maxC } = getBBox(cellSet);
     const rows = maxR - minR + 1;
     const cols = maxC - minC + 1;
-    boardCols = cols;
-    // Size cells to fill available width if the panel is already visible
-    const wrapW = boardWrapEl ? boardWrapEl.clientWidth : 0;
-    if (wrapW > 0) {
-      const cellPx = Math.min(46, Math.max(30, Math.floor((wrapW - 32) / cols)));
-      boardEl.style.setProperty('--mp-cell', cellPx + 'px');
-      boardEl.style.setProperty('--mp-dot',  Math.max(5, Math.round(cellPx * 0.2)) + 'px');
-    }
     const { regionIdx, firstCell } = buildRegionMeta(puzzle);
 
     boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell, 46px))`;
