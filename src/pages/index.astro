@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
-import Mini2048 from '../components/mini2048/Mini2048.astro';
+import MiniGames from '../components/MiniGames.astro';
 import { getCollection } from 'astro:content';
 import { withBase } from '../utils/withBase';
 
@@ -53,8 +53,8 @@ const latest = allPosts.filter((p: any) => !p.data?.pinned).slice(0, 3);
       </div>
     </div>
 
-    <aside class="home-side" aria-label="Juego 2048">
-      <Mini2048 />
+    <aside class="home-side" aria-label="Minijuegos">
+      <MiniGames />
     </aside>
   </section>
 </BaseLayout>

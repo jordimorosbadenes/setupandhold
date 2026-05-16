@@ -1,0 +1,663 @@
+---
+const base = (import.meta as any).env?.BASE_URL ?? '/';
+const wordsUrl = (base.endsWith('/') ? base : base + '/') + 'js/es5-words.txt';
+---
+
+<section class="mw" aria-label="Wordle en español" data-words-url={wordsUrl}>
+  <header class="mw__header">
+    <div class="mw__topline">
+      <h2 class="mw__title">Wordle</h2>
+      <div class="mw__badge" data-day-badge></div>
+    </div>
+    <p class="mw__hint">Adivina la palabra de hoy en 6 intentos</p>
+  </header>
+
+  <!-- 6 rows × 5 columns -->
+  <div class="mw__grid" data-grid role="application" aria-label="Cuadrícula Wordle">
+    {Array.from({ length: 30 }).map((_, i) => {
+      const row = Math.floor(i / 5);
+      const col = i % 5;
+      return (
+        <div
+          class="mw__cell"
+          data-row={row}
+          data-col={col}
+          data-state="empty"
+          aria-label={`Fila ${row + 1}, columna ${col + 1}`}
+        ></div>
+      );
+    })}
+  </div>
+
+  <!-- Message / feedback area -->
+  <p class="mw__msg" data-msg aria-live="polite"></p>
+
+  <!-- On-screen keyboard (Spanish layout) -->
+  <div class="mw__kbd" role="group" aria-label="Teclado virtual">
+    <div class="mw__kbd-row">
+      {['Q','W','E','R','T','Y','U','I','O','P'].map(k => (
+        <button class="mw__key" data-key={k} type="button" aria-label={`Letra ${k}`}>{k}</button>
+      ))}
+    </div>
+    <div class="mw__kbd-row">
+      {['A','S','D','F','G','H','J','K','L','Ñ'].map(k => (
+        <button class="mw__key" data-key={k} type="button" aria-label={`Letra ${k}`}>{k}</button>
+      ))}
+    </div>
+    <div class="mw__kbd-row">
+      <button class="mw__key mw__key--action" data-key="ENTER" type="button" aria-label="Confirmar palabra">↵</button>
+      {['Z','X','C','V','B','N','M'].map(k => (
+        <button class="mw__key" data-key={k} type="button" aria-label={`Letra ${k}`}>{k}</button>
+      ))}
+      <button class="mw__key mw__key--action" data-key="BACKSPACE" type="button" aria-label="Borrar letra">⌫</button>
+    </div>
+  </div>
+</section>
+
+<style>
+  .mw {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  /* ── Header ─────────────────────────────── */
+  .mw__header {
+    display: grid;
+    gap: 4px;
+  }
+
+  .mw__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mw__title {
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .mw__badge {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-soft);
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .mw__badge:empty { display: none; }
+
+  .mw__hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  /* ── Grid ────────────────────────────────── */
+  .mw__grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 6px);
+    background: var(--bg-soft);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mw__cell {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    font-weight: 900;
+    font-size: clamp(0.75rem, 3.8cqi, 1.1rem);
+    letter-spacing: -0.02em;
+    color: var(--text);
+    text-transform: uppercase;
+    transition: border-color 0.12s ease;
+    user-select: none;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* ── Cell states ─────────────────────────── */
+  .mw__cell[data-state='active'] {
+    border-color: color-mix(in srgb, var(--text) 45%, var(--border));
+  }
+
+  .mw__cell[data-state='correct'] {
+    background: color-mix(in srgb, var(--accent) 30%, var(--card));
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    color: var(--text);
+  }
+
+  .mw__cell[data-state='present'] {
+    background: color-mix(in srgb, #f0b429 35%, var(--card));
+    border-color: color-mix(in srgb, #f0b429 70%, transparent);
+    color: var(--text);
+  }
+
+  .mw__cell[data-state='absent'] {
+    background: color-mix(in srgb, var(--muted) 18%, var(--card));
+    border-color: color-mix(in srgb, var(--muted) 28%, var(--border));
+    color: var(--muted);
+  }
+
+  /* ── Animations ──────────────────────────── */
+  @keyframes mw-pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.13); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes mw-flip {
+    0%   { transform: scaleY(1); }
+    45%  { transform: scaleY(0); }
+    55%  { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+  }
+
+  @keyframes mw-shake {
+    0%, 100% { transform: translateX(0); }
+    20%      { transform: translateX(-5px); }
+    40%      { transform: translateX(5px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
+
+  @keyframes mw-bounce {
+    0%, 100% { transform: translateY(0); }
+    35%      { transform: translateY(-9px); }
+    65%      { transform: translateY(-4px); }
+  }
+
+  .mw__cell--pop    { animation: mw-pop    0.13s ease; }
+  .mw__cell--flip   { animation: mw-flip   0.50s ease forwards; }
+  .mw__cell--shake  { animation: mw-shake  0.40s ease; }
+  .mw__cell--bounce { animation: mw-bounce 0.55s ease; }
+
+  /* ── Message ─────────────────────────────── */
+  .mw__msg {
+    margin: 0;
+    min-height: 1.3em;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--muted);
+    transition: opacity 0.3s ease;
+  }
+
+  .mw__msg:empty {
+    min-height: 0;
+  }
+
+  .mw__msg[data-type='error'] {
+    color: color-mix(in srgb, #ef4444 75%, var(--text));
+    font-weight: 600;
+  }
+
+  .mw__msg[data-type='success'] {
+    color: color-mix(in srgb, var(--accent) 85%, var(--text));
+    font-weight: 700;
+  }
+
+  /* ── Keyboard ────────────────────────────── */
+  .mw__kbd {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+  }
+
+  .mw__kbd-row {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .mw__key {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-soft);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+  }
+
+  .mw__key:hover {
+    background: color-mix(in srgb, var(--muted) 14%, var(--bg-soft));
+    color: var(--text);
+  }
+
+  .mw__key:active { transform: scale(0.92); }
+
+  .mw__key--action {
+    flex: 1.6;
+    font-size: 0.95rem;
+  }
+
+  /* ── Key states ──────────────────────────── */
+  .mw__key[data-kstate='correct'] {
+    background: color-mix(in srgb, var(--accent) 35%, var(--card));
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    color: var(--text);
+  }
+
+  .mw__key[data-kstate='present'] {
+    background: color-mix(in srgb, #f0b429 40%, var(--card));
+    border-color: color-mix(in srgb, #f0b429 65%, transparent);
+    color: var(--text);
+  }
+
+  .mw__key[data-kstate='absent'] {
+    background: color-mix(in srgb, var(--muted) 14%, var(--card));
+    border-color: var(--border);
+    opacity: 0.5;
+  }
+
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width: 720px) {
+    .mw { padding: 12px; }
+    .mw__key { height: 40px; }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const initWordle = (root) => {
+      if (root.dataset.mwInit === '1') return;
+      root.dataset.mwInit = '1';
+
+      /* ── Word lists ─────────────────────────────────────────────────── */
+      // ANSWERS: curated list used to pick the daily word.
+      // VALID: superset used for guess validation — expanded asynchronously
+      //        by fetching the full ~4700-word dictionary.
+      const ANSWERS = [
+        'ABRIR','ACASO','ACERO','ACTOR','AGUDO','AGUJA','AHORA','AJENO',
+        'ALDEA','ALETA','ALFIL','ALGUN','ALTAR','ALTOS','AMADO','AMIGA',
+        'AMIGO','AMBOS','AMENO','ANCHO','ANGEL','ANTES','APODO','ARBOL',
+        'ARDUO','ARENA','ARMAR','ARMAS','ARTES','ASADO','ASILO','ATLAS',
+        'AUTOR','AVARO','AVION','AYUDA',
+        'BANCO','BANDO','BARRO','BASTO','BELLO','BOLSO','BOMBA','BORDE',
+        'BRAVO','BREVE','BRISA','BUENO','BUFON','BURLA','BUSCA',
+        'CABLE','CAIDA','CALMA','CALLE','CALOR','CAMPO','CANTO','CAPAZ',
+        'CARGA','CARTA','CASCO','CAUSA','CEDER','CELDA','CENAR','CERDO',
+        'CESTO','CHICO','CIEGO','CINCO','CITAR','CLARO','CLASE','CLAVO',
+        'CLIMA','COBRO','COLOR','COLMO','COMER','COMUN','CORTO','COSER',
+        'COSTA','CREMA','CRUEL','CUAJO','CUERO','CUEVA','CULPA','CURVA',
+        'DANZA','DATOS','DEBUT','DEJAR','DENSO','DESEO','DESDE','DICHO',
+        'DISCO','DOBLE','DOMAR','DRAMA','DUDAR','DUELO','DULCE',
+        'ECHAR','ENERO','ENOJO','ENTRE','ERIZO','ETAPA','EXITO','EXTRA',
+        'FALLA','FALSO','FANGO','FARDO','FAVOR','FELIZ','FENIX','FERIA',
+        'FIERO','FINAL','FIRMA','FLACO','FLOTA','FONDO','FORMA','FORJA',
+        'FRASE','FRUTO','FUEGO','FUMAR','FUNDA','FURIA',
+        'GALLO','GANAS','GANSO','GENIO','GIRAR','GLOBO','GOLPE','GORDO',
+        'GRAMO','GRASA','GRAVE','GRITO','GRUPO','GUSTO',
+        'HACHA','HIELO','HONDO','HUMOR',
+        'IDEAL','IGUAL',
+        'JUEGO','JUNTO','JUSTO',
+        'LABOR','LARGO','LECHE','LIBRE','LIBRO','LISTA','LLANO','LLENO',
+        'MACHO','MAGIA','MANGO','MARCA','MARCO','MARZO','MEDIA','MEJOR',
+        'MENOR','METRO','MIEDO','MUNDO','MUSLO',
+        'NACER','NADIE','NEGRO','NIETO','NIVEL','NOBLE','NOCHE','NORTE',
+        'NOVIO','NUEVO','NUNCA',
+        'OBESO','ORDEN',
+        'PADRE','PAGAR','PATIO','PEDIR','PEINE','PELEA','PELON','PERRO',
+        'PIANO','PICAR','PINAR','PINTA','PLATO','PLAZA','PLENO','PLOMO',
+        'POBRE','PODER','POLLO','POMPA','PORTA','PULPO',
+        'QUEJA','QUESO',
+        'RANGO','RAZON','RECTO','REGLA','REINO','RELOJ','RESTO','RIGOR',
+        'RITMO','ROBOT','ROMBO','RONDA',
+        'SABIO','SABOR','SALIR','SALSA','SALTO','SALVO','SIGLO','SOBRE',
+        'SOLAR','SORDO','SUCIO','SUELO','SURCO',
+        'TABLA','TARDE','TECHO','TEMOR','TENER','TIGRE','TOCAR','TOMAR','TONTO',
+        'TORPE','TORSO','TOTAL','TRAMA','TRAPO','TRECE','TRIGO','TRONO',
+        'TURNO','TUTOR',
+        'VALOR','VASCO','VELAR','VELOZ','VENUS','VERDE','VERSO','VIAJE',
+        'VIEJO','VIGOR','VILLA','VISTA','VITAL','VIVIR','VOCAL','VOLAR',
+        'VOTAR',
+        'YOGUR','ZURDO',
+        'AÑEJO','BAÑAR','OTOÑO','TEÑIR','PIÑON','SEÑAL',
+      ];
+
+      // VALID starts as a copy of ANSWERS; the full dictionary is fetched
+      // in the background so common words like TARDE are accepted immediately.
+      const VALID = new Set(ANSWERS);
+      const wordsUrl = root.getAttribute('data-words-url') || '/js/es5-words.txt';
+      (async () => {
+        try {
+          const res = await fetch(wordsUrl);
+          if (!res.ok) return;
+          const text = await res.text();
+          text.split('\n').forEach(w => { const wd = w.trim(); if (wd.length === 5) VALID.add(wd); });
+        } catch { /* fail silently — ANSWERS remains the fallback */ }
+      })();
+
+      const STORAGE_KEY = 'mini-wordle-state-v1';
+      const MAX_ROWS = 6;
+      const WORD_LEN = 5;
+
+      /* ── DOM refs ───────────────────────────────────────────────────── */
+      const msgEl = root.querySelector('[data-msg]');
+      const badgeEl = root.querySelector('[data-day-badge]');
+
+      const getCell = (row, col) => root.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+      const getKey  = (k) => root.querySelector(`[data-key="${k}"]`);
+
+      /* ── Date helpers ───────────────────────────────────────────────── */
+      const getDateKey = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      };
+
+      const getDayIndex = () => {
+        const epoch = new Date('2026-01-01').getTime();
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return Math.max(0, Math.floor((d.getTime() - epoch) / 86400000));
+      };
+
+      const getTodayWord = () => ANSWERS[getDayIndex() % ANSWERS.length];
+
+      /* ── State ──────────────────────────────────────────────────────── */
+      const defaultState = () => ({
+        date: getDateKey(),
+        word: getTodayWord(),
+        guesses: [],
+        currentInput: '',
+        status: 'playing', // 'playing' | 'won' | 'lost'
+      });
+
+      let state;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          state = saved.date === getDateKey() ? saved : defaultState();
+        } else {
+          state = defaultState();
+        }
+      } catch { state = defaultState(); }
+
+      const save = () => {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+      };
+
+      /* ── Badge ──────────────────────────────────────────────────────── */
+      if (badgeEl) badgeEl.textContent = `#${getDayIndex() + 1}`;
+
+      /* ── Evaluation ─────────────────────────────────────────────────── */
+      const evaluate = (guess, word) => {
+        const result = Array(WORD_LEN).fill('absent');
+        const wordUsed  = Array(WORD_LEN).fill(false);
+        const guessUsed = Array(WORD_LEN).fill(false);
+
+        // Pass 1: correct position
+        for (let i = 0; i < WORD_LEN; i++) {
+          if (guess[i] === word[i]) {
+            result[i]    = 'correct';
+            wordUsed[i]  = true;
+            guessUsed[i] = true;
+          }
+        }
+        // Pass 2: wrong position
+        for (let i = 0; i < WORD_LEN; i++) {
+          if (guessUsed[i]) continue;
+          for (let j = 0; j < WORD_LEN; j++) {
+            if (!wordUsed[j] && guess[i] === word[j]) {
+              result[i]   = 'present';
+              wordUsed[j] = true;
+              break;
+            }
+          }
+        }
+        return result;
+      };
+
+      /* ── Keyboard state ─────────────────────────────────────────────── */
+      const updateKeyboard = () => {
+        const prio = { correct: 3, present: 2, absent: 1 };
+        const best = {};
+        state.guesses.forEach(guess => {
+          const res = evaluate(guess, state.word);
+          res.forEach((s, i) => {
+            const ch = guess[i];
+            if (!best[ch] || prio[s] > prio[best[ch]]) best[ch] = s;
+          });
+        });
+        root.querySelectorAll('[data-key]').forEach(btn => {
+          const k = btn.dataset.key;
+          if (best[k]) btn.dataset.kstate = best[k];
+          else delete btn.dataset.kstate;
+        });
+      };
+
+      /* ── Render ─────────────────────────────────────────────────────── */
+      const renderAll = () => {
+        for (let r = 0; r < MAX_ROWS; r++) {
+          for (let c = 0; c < WORD_LEN; c++) {
+            const cell = getCell(r, c);
+            if (!cell) continue;
+            cell.textContent = '';
+            cell.dataset.state = 'empty';
+            cell.className = 'mw__cell';
+          }
+        }
+
+        // Committed guesses
+        state.guesses.forEach((guess, r) => {
+          const res = evaluate(guess, state.word);
+          for (let c = 0; c < WORD_LEN; c++) {
+            const cell = getCell(r, c);
+            if (cell) { cell.textContent = guess[c]; cell.dataset.state = res[c]; }
+          }
+        });
+
+        // Current input row
+        if (state.status === 'playing') {
+          const r = state.guesses.length;
+          state.currentInput.split('').forEach((ch, c) => {
+            const cell = getCell(r, c);
+            if (cell) { cell.textContent = ch; cell.dataset.state = 'active'; }
+          });
+        }
+
+        updateKeyboard();
+      };
+
+      /* ── Message ────────────────────────────────────────────────────── */
+      let msgTimer = null;
+      const showMsg = (text, type, duration) => {
+        if (!msgEl) return;
+        if (msgTimer) clearTimeout(msgTimer);
+        msgEl.textContent = text;
+        msgEl.dataset.type = type || '';
+        if (duration > 0) {
+          msgTimer = setTimeout(() => {
+            msgEl.textContent = '';
+            msgEl.dataset.type = '';
+          }, duration);
+        }
+      };
+
+      /* ── Animations ─────────────────────────────────────────────────── */
+      const shakeRow = (r) => {
+        for (let c = 0; c < WORD_LEN; c++) {
+          const cell = getCell(r, c);
+          if (!cell) continue;
+          cell.classList.remove('mw__cell--shake');
+          void cell.offsetWidth;
+          cell.classList.add('mw__cell--shake');
+          cell.addEventListener('animationend', () => cell.classList.remove('mw__cell--shake'), { once: true });
+        }
+      };
+
+      const bounceRow = (r) => {
+        for (let c = 0; c < WORD_LEN; c++) {
+          const cell = getCell(r, c);
+          if (!cell) continue;
+          setTimeout(() => {
+            cell.classList.add('mw__cell--bounce');
+            cell.addEventListener('animationend', () => cell.classList.remove('mw__cell--bounce'), { once: true });
+          }, c * 80);
+        }
+      };
+
+      const revealRow = (r, onDone) => {
+        const guess = state.guesses[r];
+        const res   = evaluate(guess, state.word);
+        for (let c = 0; c < WORD_LEN; c++) {
+          ((col, s) => {
+            const cell = getCell(r, col);
+            if (!cell) return;
+            setTimeout(() => {
+              cell.classList.add('mw__cell--flip');
+              setTimeout(() => { cell.dataset.state = s; }, 240);
+              cell.addEventListener('animationend', () => cell.classList.remove('mw__cell--flip'), { once: true });
+            }, col * 110);
+          })(c, res[c]);
+        }
+        const delay = (WORD_LEN - 1) * 110 + 550;
+        setTimeout(() => { if (onDone) onDone(); }, delay);
+      };
+
+      /* ── Input handlers ─────────────────────────────────────────────── */
+      const handleLetter = (ch) => {
+        if (state.status !== 'playing') return;
+        const r = state.guesses.length;
+        if (r >= MAX_ROWS || state.currentInput.length >= WORD_LEN) return;
+        state.currentInput += ch;
+        save();
+        const c = state.currentInput.length - 1;
+        const cell = getCell(r, c);
+        if (cell) {
+          cell.textContent = ch;
+          cell.dataset.state = 'active';
+          cell.classList.remove('mw__cell--pop');
+          void cell.offsetWidth;
+          cell.classList.add('mw__cell--pop');
+          cell.addEventListener('animationend', () => cell.classList.remove('mw__cell--pop'), { once: true });
+        }
+      };
+
+      const handleBackspace = () => {
+        if (state.status !== 'playing' || !state.currentInput.length) return;
+        const r = state.guesses.length;
+        const c = state.currentInput.length - 1;
+        const cell = getCell(r, c);
+        if (cell) { cell.textContent = ''; cell.dataset.state = 'empty'; }
+        state.currentInput = state.currentInput.slice(0, -1);
+        save();
+      };
+
+      const handleEnter = () => {
+        if (state.status !== 'playing') return;
+        const r = state.guesses.length;
+        if (state.currentInput.length < WORD_LEN) {
+          showMsg('Faltan letras', 'error', 1500);
+          shakeRow(r);
+          return;
+        }
+        const guess = state.currentInput;
+        if (!VALID.has(guess)) {
+          showMsg('Palabra no válida', 'error', 1500);
+          shakeRow(r);
+          return;
+        }
+        state.guesses.push(guess);
+        state.currentInput = '';
+        save();
+
+        revealRow(r, () => {
+          updateKeyboard();
+          if (guess === state.word) {
+            state.status = 'won';
+            save();
+            bounceRow(r);
+            const praise = ['¡Increíble!','¡Excelente!','¡Muy bien!','¡Genial!','¡Bien!','¡Uf, por poco!'];
+            showMsg(praise[Math.min(r, praise.length - 1)], 'success', 0);
+          } else if (state.guesses.length >= MAX_ROWS) {
+            state.status = 'lost';
+            save();
+            showMsg(`Era: ${state.word}`, 'error', 0);
+          }
+        });
+      };
+
+      /* ── On-screen keyboard clicks ──────────────────────────────────── */
+      root.querySelectorAll('[data-key]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const k = btn.dataset.key;
+          if (k === 'ENTER')     handleEnter();
+          else if (k === 'BACKSPACE') handleBackspace();
+          else handleLetter(k);
+        });
+      });
+
+      /* ── Physical keyboard ──────────────────────────────────────────── */
+      const isActive = () => {
+        // Don't handle keys when this panel is hidden
+        const panel = root.closest('[data-mg-panel]');
+        if (panel && panel.classList.contains('mg__panel--hidden')) return false;
+        // Don't steal from focused inputs
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return false;
+        return true;
+      };
+
+      const onKeyDown = (e) => {
+        if (!isActive()) return;
+        const k = e.key;
+        if (k === 'Enter') { e.preventDefault(); handleEnter(); }
+        else if (k === 'Backspace') { e.preventDefault(); handleBackspace(); }
+        else if (k === 'ñ' || k === 'Ñ') { e.preventDefault(); handleLetter('Ñ'); }
+        else if (/^[a-zA-Z]$/.test(k)) {
+          e.preventDefault();
+          const norm = k.toUpperCase()
+            .replace('Á','A').replace('É','E').replace('Í','I')
+            .replace('Ó','O').replace('Ú','U');
+          handleLetter(norm);
+        }
+      };
+      document.addEventListener('keydown', onKeyDown);
+
+      /* ── Initial render ─────────────────────────────────────────────── */
+      renderAll();
+      if (state.status === 'won') {
+        showMsg('¡Ya ganaste hoy! Nueva palabra mañana.', 'success', 0);
+      } else if (state.status === 'lost') {
+        showMsg(`La palabra era: ${state.word}`, 'error', 0);
+      }
+    };
+
+    document.querySelectorAll('.mw').forEach(initWordle);
+  })();
+</script>
