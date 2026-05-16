@@ -1,0 +1,1306 @@
+---
+// MiniPips – daily domino-placement puzzle
+// No server-side props needed; all logic is client-side
+---
+
+<section class="mp" aria-label="Minijuego Pips">
+  <header class="mp__header">
+    <div class="mp__topline">
+      <h2 class="mp__title">Pips</h2>
+      <div class="mp__badge-row">
+        <button class="mp__badge mp__badge--btn" data-diff-btn="easy">fácil</button>
+        <button class="mp__badge mp__badge--btn" data-diff-btn="medium">medio</button>
+        <button class="mp__badge mp__badge--btn" data-diff-btn="hard">difícil</button>
+        <span class="mp__badge" data-day-badge></span>
+      </div>
+    </div>
+    <p class="mp__hint">Coloca todas las fichas satisfaciendo las regiones</p>
+  </header>
+
+  <!-- Board: cells rendered by JS -->
+  <div class="mp__board-wrap">
+    <div class="mp__board" data-board></div>
+  </div>
+
+  <!-- Feedback -->
+  <p class="mp__msg" data-msg aria-live="polite"></p>
+
+  <!-- Unplaced domino tray -->
+  <div class="mp__tray" data-tray></div>
+
+  <!-- Controls -->
+  <div class="mp__controls">
+    <button class="mp__btn" data-flip-btn type="button" disabled>↔ Girar</button>
+    <button class="mp__btn mp__btn--ghost" data-clear-btn type="button">↺ Reiniciar</button>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────── STYLES ───── -->
+<style is:global>
+  /* ── Container ──────────────────────────── */
+  .mp {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+
+  /* ── Header ─────────────────────────────── */
+  .mp__header { display: grid; gap: 4px; }
+
+  .mp__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mp__title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .mp__badge-row { display: flex; gap: 6px; }
+
+  .mp__badge {
+    padding: 4px 9px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-soft);
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .mp__badge:empty { display: none; }
+
+  .mp__badge--btn {
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .mp__badge--btn:hover { background: var(--bg); border-color: var(--muted); }
+  .mp__badge--btn.mp__badge--active {
+    background: color-mix(in srgb, var(--accent) 90%, #000 10%);
+    border-color: transparent;
+    color: #000;
+    font-weight: 700;
+  }
+
+  /* Loading / error state inside board area */
+  .mp__loading {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 100px;
+    font-size: 0.85rem; color: var(--muted);
+  }
+  .mp__loading--error { color: #fc8181; }
+
+  .mp__hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.4;
+  }
+
+  /* ── Region color palette (set per-cell via data-region) ── */
+  .mp__cell[data-region="0"] { --rcolor: #7cf2c9; }
+  .mp__cell[data-region="1"] { --rcolor: #6cb1ff; }
+  .mp__cell[data-region="2"] { --rcolor: #f0b429; }
+  .mp__cell[data-region="3"] { --rcolor: #fc8181; }
+  .mp__cell[data-region="4"] { --rcolor: #b794f4; }
+  .mp__cell[data-region="5"] { --rcolor: #68d391; }
+  .mp__cell[data-region="6"] { --rcolor: #f6ad55; }
+  .mp__cell[data-region="7"] { --rcolor: #76e4f7; }
+
+  /* ── Board ───────────────────────────────── */
+  .mp__board-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 4px);
+    overflow: visible;
+  }
+
+  .mp__board {
+    display: grid;
+    gap: 0;
+  }
+
+  /* ── Cell ────────────────────────────────── */
+  .mp__cell {
+    width: var(--mp-cell, 46px);
+    height: var(--mp-cell, 46px);
+    border-radius: 8px;
+    border: none;
+    background: color-mix(in srgb, var(--rcolor, #9ca3af) 30%, var(--card));
+    cursor: pointer;
+    position: relative;
+    display: grid;
+    place-items: center;
+    user-select: none;
+    box-sizing: border-box;
+  }
+
+  /* Inset dashed placeholder — always visible */
+  .mp__cell::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 2px dashed color-mix(in srgb, var(--rcolor, var(--border)) 75%, transparent);
+    border-radius: 5px;
+    pointer-events: none;
+  }
+  .mp__cell--ghost::before { display: none; }
+
+  .mp__cell--ghost {
+    /* placeholder cell for non-board positions */
+    visibility: hidden;
+    pointer-events: none;
+    cursor: default;
+  }
+
+  /* Same-region adjacent cells: merge shape + ::before outline */
+  .mp__cell--jt { border-top-left-radius: 0; border-top-right-radius: 0; }
+  .mp__cell--jb { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .mp__cell--jl { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .mp__cell--jr { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  /* extend ::before to cell edge and remove border on joined side */
+  .mp__cell--jt::before { top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+  .mp__cell--jb::before { bottom: 0; border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .mp__cell--jl::before { left: 0; border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .mp__cell--jr::before { right: 0; border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+  /* selected (first-click) */
+  .mp__cell--target::before {
+    border-style: solid;
+    border-color: var(--accent);
+  }
+  .mp__cell--target {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  /* placed domino — cursor change + outer border drawn on each half via ::after */
+  .mp__cell--placed { cursor: pointer; }
+  .mp__cell--dl::after, .mp__cell--dr::after,
+  .mp__cell--dt::after, .mp__cell--db::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid color-mix(in srgb, var(--text) 45%, var(--border));
+    pointer-events: none;
+    z-index: 2;
+  }
+  .mp__cell--dl::after { border-right: none; border-radius: 8px 0 0 8px; }
+  .mp__cell--dr::after { border-left:  none; border-radius: 0 8px 8px 0; }
+  .mp__cell--dt::after { border-bottom: none; border-radius: 8px 8px 0 0; }
+  .mp__cell--db::after { border-top:    none; border-radius: 0 0 8px 8px; }
+
+  /* ── Region constraint label — diamond badge protruding from cell corner ── */
+  .mp__label {
+    position: absolute;
+    top: 0; left: 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+    min-width: 20px; min-height: 20px;
+    background: color-mix(in srgb, var(--rcolor, var(--accent)) 80%, #000 20%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 2px 3px;
+    z-index: 10;
+    pointer-events: none;
+    border-radius: 3px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+  .mp__label-inner {
+    transform: rotate(-45deg);
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+    line-height: 1;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+  }
+
+  /* ── Pip dots (3×3 grid inside each cell) ── */
+  .mp__pips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 84%;
+    height: 84%;
+    gap: 2px;
+  }
+
+  .mp__dot {
+    width: var(--mp-dot, 9px);
+    height: var(--mp-dot, 9px);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--text) 90%, transparent);
+    margin: auto;
+    opacity: 0; /* keep in grid flow — display:none would break auto-placement */
+  }
+
+  .mp__dot--on { opacity: 1; }
+
+  /* ── Message ─────────────────────────────── */
+  .mp__msg {
+    margin: 0;
+    min-height: 1.3em;
+    text-align: center;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--muted);
+    transition: color 0.2s ease;
+  }
+
+  .mp__msg--win  { color: var(--accent); }
+  .mp__msg--error { color: #ff6b6b; }
+  .mp__msg--info  { color: var(--muted); }
+
+  /* ── Tray ────────────────────────────────── */
+  .mp__tray {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    min-height: 60px;
+    padding: 8px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 4px);
+  }
+
+  /* ── Domino in tray ──────────────────────── */
+
+  /* Fixed-size wrapper — rotating a domino never shifts other pieces */
+  .mp__slot {
+    width: 92px;
+    height: 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .mp__domino {
+    display: flex;
+    border-radius: 8px;
+    border: 2px solid color-mix(in srgb, var(--text) 45%, var(--border));
+    background: var(--card);
+    cursor: grab;
+    touch-action: none;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+    transform: rotate(var(--mp-rot, 0deg));
+    position: relative;
+  }
+
+  .mp__domino:hover { transform: rotate(var(--mp-rot, 0deg)) translateY(-2px); box-shadow: var(--shadow); }
+
+  .mp__domino--selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+    transform: rotate(var(--mp-rot, 0deg)) translateY(-2px);
+  }
+
+  .mp__domino--placed {
+    opacity: 0.2;
+    pointer-events: none;
+    transform: none;
+  }
+
+  .mp__domino--dragging { opacity: 0.3; }
+
+  .mp__half {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+  }
+
+  /* no center divider on tray dominos */
+
+  /* ── Controls ────────────────────────────── */
+  .mp__controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mp__btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 10%, var(--card));
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .mp__btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 18%, var(--card));
+    transform: translateY(-1px);
+  }
+
+  .mp__btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .mp__btn--ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+
+  .mp__btn--ghost:hover {
+    background: var(--bg-soft);
+    color: var(--text);
+    transform: none;
+  }
+
+  /* ── Win animation ───────────────────────── */
+  @keyframes mp-pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  @keyframes mp-bounce {
+    0%, 100% { transform: translateY(0); }
+    40%       { transform: translateY(-8px); }
+    70%       { transform: translateY(-3px); }
+  }
+
+  .mp__cell--pop    { animation: mp-pop    0.20s ease; }
+  .mp__cell--bounce { animation: mp-bounce 0.50s ease; }
+</style>
+
+<!-- ─────────────────────────────────────── SCRIPT ───── -->
+<script is:inline>
+(() => {
+  const root = document.querySelector('.mp');
+  if (!root || root.dataset.mpInit === '1') return;
+  root.dataset.mpInit = '1';
+
+  /* ────────────────────────────── PUZZLE DATA ──────── */
+  // 8 region-colors cycled by region index
+  const RCOLORS = [
+    '#7cf2c9', // teal
+    '#6cb1ff', // blue
+    '#f0b429', // yellow
+    '#fc8181', // coral
+    '#b794f4', // purple
+    '#68d391', // green
+    '#f6ad55', // orange
+    '#76e4f7', // cyan
+  ];
+
+  // Pip positions (0-8) in 3×3 grid for each pip value 0-6
+  const PIP_MAP = {
+    0: [],
+    1: [4],
+    2: [2, 6],
+    3: [2, 4, 6],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 3, 6, 2, 5, 8],
+  };
+
+  /* ── Original puzzles (hand-crafted) ────────────────────────
+     Easy:   cross board (8 cells, 4 dominoes)
+       cells: (0,1)(0,2)(1,0)(1,1)(1,2)(1,3)(2,1)(2,2)
+     Medium: T-shape board (10 cells, 5 dominoes)
+       cells: (0,0)(0,1)(0,2)(0,3)(1,1)(1,2)(2,1)(2,2)(3,1)(3,2)
+     Hard-1: 3×4 rectangle (12 cells, 6 dominoes)
+       cells: row 0-2, col 0-3
+     Hard-2: 4×3 rectangle (12 cells, 6 dominoes)
+       cells: row 0-3, col 0-2
+  ──────────────────────────────────────────────────────────── */
+  const PUZZLES = [
+    // ─── Easy 1 ─────────────────────────────────────────────────
+    {
+      id: 1, difficulty: 'fácil',
+      dominoes: [[1,5],[2,4],[0,3],[3,3]],
+      regions: [
+        { cells: [[0,2]],         type: 'greater', target: 4 },
+        { cells: [[1,0]],         type: 'less',    target: 2 },
+        { cells: [[1,3]],         type: 'greater', target: 3 },
+        { cells: [[2,1],[2,2]],   type: 'equals' },
+        { cells: [[0,1],[1,1],[1,2]], type: 'sum', target: 6 },
+      ]
+    },
+    // ─── Easy 2 ─────────────────────────────────────────────────
+    {
+      id: 2, difficulty: 'fácil',
+      dominoes: [[4,4],[1,2],[3,6],[0,5]],
+      regions: [
+        { cells: [[0,1],[0,2]],       type: 'equals' },
+        { cells: [[1,0]],             type: 'less',    target: 3 },
+        { cells: [[1,3]],             type: 'greater', target: 4 },
+        { cells: [[2,2]],             type: 'greater', target: 5 },
+        { cells: [[1,1],[1,2],[2,1]], type: 'unequal' },
+      ]
+    },
+    // ─── Easy 3 ─────────────────────────────────────────────────
+    {
+      id: 3, difficulty: 'fácil',
+      dominoes: [[2,6],[0,4],[1,5],[2,2]],
+      regions: [
+        { cells: [[0,1]],         type: 'less',    target: 3 },
+        { cells: [[0,2]],         type: 'greater', target: 5 },
+        { cells: [[1,0]],         type: 'less',    target: 2 },
+        { cells: [[1,3]],         type: 'greater', target: 4 },
+        { cells: [[2,1],[2,2]],   type: 'equals' },
+        { cells: [[1,1],[1,2]],   type: 'sum', target: 5 },
+      ]
+    },
+    // ─── Easy 4 ─────────────────────────────────────────────────
+    {
+      id: 4, difficulty: 'fácil',
+      dominoes: [[0,0],[5,6],[2,3],[1,4]],
+      regions: [
+        { cells: [[0,1],[0,2]],   type: 'sum',  target: 11 },
+        { cells: [[1,2]],         type: 'less', target: 2 },
+        { cells: [[2,1],[2,2]],   type: 'equals' },
+        { cells: [[1,0]],         type: 'less', target: 3 },
+        { cells: [[1,1],[1,3]],   type: 'sum',  target: 7 },
+      ]
+    },
+    // ─── Easy 5 ─────────────────────────────────────────────────
+    {
+      id: 5, difficulty: 'fácil',
+      dominoes: [[2,2],[1,6],[3,4],[0,5]],
+      regions: [
+        { cells: [[0,1],[0,2]],   type: 'sum',     target: 7 },
+        { cells: [[1,0]],         type: 'less',    target: 2 },
+        { cells: [[1,3]],         type: 'greater', target: 5 },
+        { cells: [[2,1],[2,2]],   type: 'equals' },
+        { cells: [[1,1],[1,2]],   type: 'sum',     target: 6 },
+      ]
+    },
+    // ─── Medium 1 (T-shape, all-horizontal tiling) ──────────────
+    {
+      id: 6, difficulty: 'medio',
+      dominoes: [[0,4],[2,6],[1,5],[3,3],[2,4]],
+      regions: [
+        { cells: [[0,0],[0,1]],   type: 'sum',    target: 4 },
+        { cells: [[0,2],[0,3]],   type: 'sum',    target: 8 },
+        { cells: [[1,1]],         type: 'sum',    target: 1 },
+        { cells: [[1,2]],         type: 'sum',    target: 5 },
+        { cells: [[2,1],[2,2]],   type: 'equals' },
+        { cells: [[3,1],[3,2]],   type: 'sum',    target: 6 },
+      ]
+    },
+    // ─── Medium 2 (T-shape, V-V-H stem tiling) ──────────────────
+    {
+      id: 7, difficulty: 'medio',
+      dominoes: [[0,6],[1,4],[2,5],[1,1],[3,5]],
+      regions: [
+        { cells: [[0,0],[0,1]],   type: 'sum', target: 5 },
+        { cells: [[0,2],[0,3]],   type: 'sum', target: 8 },
+        { cells: [[1,1],[2,1]],   type: 'sum', target: 6 },
+        { cells: [[1,2],[2,2]],   type: 'sum', target: 7 },
+        { cells: [[3,1],[3,2]],   type: 'equals' },
+      ]
+    },
+    // ─── Medium 3 (T-shape, H-V-V stem tiling) ──────────────────
+    {
+      id: 8, difficulty: 'medio',
+      dominoes: [[2,5],[0,4],[1,6],[3,4],[0,0]],
+      regions: [
+        { cells: [[0,0],[0,1]],   type: 'sum',    target: 4 },
+        { cells: [[0,2],[0,3]],   type: 'sum',    target: 7 },
+        { cells: [[1,1],[1,2]],   type: 'sum',    target: 7 },
+        { cells: [[2,2],[3,2]],   type: 'equals' },
+        { cells: [[2,1],[3,1]],   type: 'sum',    target: 7 },
+      ]
+    },
+    // ─── Hard 1 (3×4 rectangle, all-horizontal tiling) ──────────
+    {
+      id: 9, difficulty: 'difícil',
+      dominoes: [[3,3],[1,2],[0,5],[4,5],[1,6],[2,4]],
+      regions: [
+        { cells: [[0,0],[0,1]],   type: 'equals' },
+        { cells: [[0,2],[0,3]],   type: 'less',  target: 4 },
+        { cells: [[1,0]],         type: 'sum',   target: 0 },
+        { cells: [[1,3]],         type: 'sum',   target: 5 },
+        { cells: [[2,0],[2,1]],   type: 'sum',   target: 7 },
+        { cells: [[2,2],[2,3]],   type: 'sum',   target: 6 },
+        { cells: [[1,1],[1,2]],   type: 'sum',   target: 9 },
+      ]
+    },
+    // ─── Hard 2 (4×3 rectangle, mixed V/H tiling) ────────────────
+    {
+      id: 10, difficulty: 'difícil',
+      dominoes: [[2,5],[0,4],[1,6],[3,3],[2,4],[1,5]],
+      regions: [
+        { cells: [[0,0],[1,0]],   type: 'sum',     target: 7 },
+        { cells: [[0,1],[0,2]],   type: 'less',    target: 5 },
+        { cells: [[1,1],[2,1]],   type: 'sum',     target: 7 },
+        { cells: [[1,2],[2,2]],   type: 'equals' },
+        { cells: [[2,0],[3,0]],   type: 'sum',     target: 6 },
+        { cells: [[3,1],[3,2]],   type: 'sum',     target: 6 },
+      ]
+    },
+  ];
+
+  /* ────────────────────────────── HELPERS ──────── */
+  function getDayIndex() {
+    const epoch = new Date('2026-01-01').getTime();
+    return Math.floor((Date.now() - epoch) / 86400000);
+  }
+
+  /* ── NYT puzzle fetch ─────────────────────────────────────── */
+  const REGION_COLORS = [
+    '#7cf2c9','#6cb1ff','#f0b429','#fc8181','#b794f4',
+    '#68d391','#f6ad55','#76e4f7','#f687b3','#faf089',
+    '#90cdf4','#fbd38d','#9ae6b4','#feb2b2','#e9d8fd',
+  ];
+
+  const VPS_URL = 'https://puzzle.setupandhold.com';
+  const DIFF_LABELS = { easy: 'f\u00e1cil', medium: 'medio', hard: 'dif\u00edcil' };
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function parseNytDiff(nyt, diff) {
+    return {
+      id: `nyt-${diff}-${nyt.id || 0}`,
+      difficulty: DIFF_LABELS[diff] || diff,
+      dominoes: nyt.dominoes,
+      regions: nyt.regions.map(r => {
+        const obj = { cells: r.indices, type: r.type };
+        if (r.target !== undefined) obj.target = r.target;
+        return obj;
+      }),
+    };
+  }
+
+  async function fetchNytPuzzles(dateStr) {
+    // 1. Try build-time static file (same origin, no CORS, refreshed daily by CI)
+    try {
+      const base = document.querySelector('base')?.href || location.origin;
+      const staticUrl = new URL('puzzle-pips.json', base).href;
+      const s = await fetch(staticUrl);
+      if (s.ok) {
+        const data = await s.json();
+        if (!data.error && data.date === dateStr &&
+            (data.easy || data.medium || data.hard)) {
+          return {
+            easy:   data.easy   ? parseNytDiff(data.easy,   'easy')   : null,
+            medium: data.medium ? parseNytDiff(data.medium, 'medium') : null,
+            hard:   data.hard   ? parseNytDiff(data.hard,   'hard')   : null,
+          };
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fall back to VPS proxy
+    const url = `${VPS_URL}/api/pips?date=${dateStr}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    return {
+      easy:   data.easy   ? parseNytDiff(data.easy,   'easy')   : null,
+      medium: data.medium ? parseNytDiff(data.medium, 'medium') : null,
+      hard:   data.hard   ? parseNytDiff(data.hard,   'hard')   : null,
+    };
+  }
+
+  // All cells in a puzzle (derived from regions)
+  function getPuzzleCells(puzzle) {
+    const set = new Set();
+    puzzle.regions.forEach(r => r.cells.forEach(([row, col]) => set.add(`${row},${col}`)));
+    return set;
+  }
+
+  // Board bounding box
+  function getBBox(cellSet) {
+    let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+    cellSet.forEach(k => {
+      const [r, c] = k.split(',').map(Number);
+      if (r < minR) minR = r; if (r > maxR) maxR = r;
+      if (c < minC) minC = c; if (c > maxC) maxC = c;
+    });
+    return { minR, maxR, minC, maxC };
+  }
+
+  // Constraint label text (null = no label)
+  function labelText(region) {
+    switch (region.type) {
+      case 'sum':     return String(region.target);
+      case 'greater': return `>${region.target}`;
+      case 'less':    return `<${region.target}`;
+      case 'equals':  return '=';
+      case 'unequal': return '≠';
+      case 'empty':   return null;   // no constraint — no badge
+      default:        return null;
+    }
+  }
+
+  // Build pip display element (9 spans in a 3×3 grid)
+  function makePips(n) {
+    const positions = PIP_MAP[n] || [];
+    const wrap = document.createElement('div');
+    wrap.className = 'mp__pips';
+    for (let i = 0; i < 9; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'mp__dot' + (positions.includes(i) ? ' mp__dot--on' : '');
+      wrap.appendChild(dot);
+    }
+    return wrap;
+  }
+
+  // Constraint check (returns true/false/null if incomplete)
+  function checkRegion(region, cellMap) {
+    if (region.type === 'empty') return true;  // any value is valid
+    const vals = region.cells.map(([r, c]) => {
+      const v = cellMap[`${r},${c}`];
+      return v !== undefined ? v : null;
+    });
+    if (vals.some(v => v === null)) return null;
+    const sum = vals.reduce((a, b) => a + b, 0);
+    switch (region.type) {
+      case 'sum':     return sum === region.target;
+      case 'greater': return sum > region.target;
+      case 'less':    return sum < region.target;
+      case 'equals':  return vals.every(v => v === vals[0]);
+      case 'unequal': return new Set(vals).size === vals.length;
+    }
+    return false;
+  }
+
+  /* ────────────────────────────── STATE ──────── */
+  const STORAGE_KEY = 'mini-pips-state-v2';
+
+  let difficulty = 'easy';  // 'easy' | 'medium' | 'hard'
+  let nytPuzzles = null;    // { easy, medium, hard } — populated after fetch
+  let puzzle = null;        // active puzzle object
+  let placed = [];          // placed[i] = { r1,c1,r2,c2 } or null
+  let cellMap = {};       // "r,c" → pip value
+  let selectedDomino = -1;
+  let rotation = 0;       // 0=H, 1=V, 2=H-flipped, 3=V-flipped
+  let rotDeg = 0;         // cumulative degrees for smooth CSS rotation animation
+  let targetCell = null;  // "r,c" of first cell click
+  let solved = false;
+
+  let puzzleCellSet = new Set(); // cached for drag snap detection
+  const DRAG_THRESHOLD = 8;     // px of movement before drag activates
+  let dragDi = -1, dragMoved = false, activePointerId = -1;
+  let dragStartX = 0, dragStartY = 0;
+  let dragGhost = null, dragSnap = null;
+
+  function initState() {
+    placed = puzzle.dominoes.map(() => null);
+    cellMap = {};
+    selectedDomino = -1;
+    rotation = 0;
+    rotDeg = 0;
+    targetCell = null;
+    solved = false;
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        id: puzzle.id, diff: difficulty, placed, solved,
+      }));
+    } catch {}
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s.id !== puzzle.id) return; // different day/difficulty
+      s.placed.forEach((pl, i) => {
+        if (pl) {
+          placed[i] = pl;
+          const [lPip, rPip] = puzzle.dominoes[i];
+          cellMap[`${pl.r1},${pl.c1}`] = lPip;
+          cellMap[`${pl.r2},${pl.c2}`] = rPip;
+        }
+      });
+      solved = s.solved || false;
+    } catch {}
+  }
+
+  /* ────────────────────────────── RENDER ──────── */
+  const boardEl  = root.querySelector('[data-board]');
+  const trayEl   = root.querySelector('[data-tray]');
+  const msgEl    = root.querySelector('[data-msg]');
+  const flipBtn  = root.querySelector('[data-flip-btn]');
+  const clearBtn = root.querySelector('[data-clear-btn]');
+  const diffBtns = [...root.querySelectorAll('[data-diff-btn]')];
+  const dayBadge = root.querySelector('[data-day-badge]');
+
+  function renderBadges() {
+    // highlight active difficulty button
+    diffBtns.forEach(btn =>
+      btn.classList.toggle('mp__badge--active', btn.dataset.diffBtn === difficulty));
+    if (dayBadge) {
+      const d = new Date();
+      const day = getDayIndex() + 1;
+      dayBadge.textContent = `día ${day}`;
+    }
+  }
+
+  function buildRegionMeta(puzzle) {
+    // regionIdx[key] = index of region owning that cell
+    const regionIdx = {};
+    // firstCell[ri] = [r,c] of first cell in region (min row, min col)
+    const firstCell = {};
+    puzzle.regions.forEach((region, ri) => {
+      let fR = Infinity, fC = Infinity;
+      region.cells.forEach(([r, c]) => {
+        regionIdx[`${r},${c}`] = ri;
+        if (r < fR || (r === fR && c < fC)) { fR = r; fC = c; }
+      });
+      firstCell[ri] = [fR, fC];
+    });
+    return { regionIdx, firstCell };
+  }
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    puzzleCellSet = getPuzzleCells(puzzle);
+    const cellSet = puzzleCellSet;
+    const { minR, maxR, minC, maxC } = getBBox(cellSet);
+    const rows = maxR - minR + 1;
+    const cols = maxC - minC + 1;
+    const { regionIdx, firstCell } = buildRegionMeta(puzzle);
+
+    boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell, 46px))`;
+    boardEl.style.gridTemplateRows    = `repeat(${rows}, var(--mp-cell, 46px))`;
+
+    for (let r = minR; r <= maxR; r++) {
+      for (let c = minC; c <= maxC; c++) {
+        const key = `${r},${c}`;
+        const div = document.createElement('div');
+
+        if (!cellSet.has(key)) {
+          div.className = 'mp__cell mp__cell--ghost';
+          boardEl.appendChild(div);
+          continue;
+        }
+
+        div.className = 'mp__cell';
+        div.dataset.row = r;
+        div.dataset.col = c;
+
+        const ri = regionIdx[key];
+        div.dataset.region = ri;
+        div.style.setProperty('--rcolor', REGION_COLORS[ri % REGION_COLORS.length]);
+
+        // join: same-region adjacent cells visually merge
+        if (regionIdx[`${r-1},${c}`] === ri) div.classList.add('mp__cell--jt');
+        if (regionIdx[`${r+1},${c}`] === ri) div.classList.add('mp__cell--jb');
+        if (regionIdx[`${r},${c-1}`] === ri) div.classList.add('mp__cell--jl');
+        if (regionIdx[`${r},${c+1}`] === ri) div.classList.add('mp__cell--jr');
+
+        // region label on first cell of each region
+        const fc = firstCell[ri];
+        if (fc[0] === r && fc[1] === c) {
+          const txt = labelText(puzzle.regions[ri]);
+          if (txt !== null) {
+            const lbl = document.createElement('span');
+            lbl.className = 'mp__label';
+            const inner = document.createElement('span');
+            inner.className = 'mp__label-inner';
+            inner.textContent = txt;
+            lbl.appendChild(inner);
+            div.appendChild(lbl);
+          }
+        }
+
+        // pip display (empty initially)
+        div.appendChild(makePips(cellMap[key] !== undefined ? cellMap[key] : -1));
+
+        div.addEventListener('click', () => handleCellClick(r, c));
+        boardEl.appendChild(div);
+      }
+    }
+
+    // Apply placed domino visual edges
+    placed.forEach((pl, i) => {
+      if (!pl) return;
+      applyDominoEdges(pl, true);
+      updateCellPips(pl.r1, pl.c1, cellMap[`${pl.r1},${pl.c1}`]);
+      updateCellPips(pl.r2, pl.c2, cellMap[`${pl.r2},${pl.c2}`]);
+    });
+  }
+
+  function renderTray() {
+    trayEl.innerHTML = '';
+    puzzle.dominoes.forEach(([left, right], i) => {
+      const dom = document.createElement('div');
+      dom.className = 'mp__domino';
+      if (placed[i]) dom.classList.add('mp__domino--placed');
+      if (i === selectedDomino) dom.classList.add('mp__domino--selected');
+      dom.dataset.didx = i;
+      dom.dataset.rot = (i === selectedDomino) ? rotation : 0;
+      if (i === selectedDomino) dom.style.setProperty('--mp-rot', rotDeg + 'deg');
+
+      const h1 = document.createElement('div');
+      h1.className = 'mp__half';
+      h1.appendChild(makePips(left));
+      const h2 = document.createElement('div');
+      h2.className = 'mp__half';
+      h2.appendChild(makePips(right));
+
+      dom.appendChild(h1);
+      dom.appendChild(h2);
+      dom.addEventListener('pointerdown', e => startDrag(e, i));
+      const slot = document.createElement('div');
+      slot.className = 'mp__slot';
+      slot.appendChild(dom);
+      trayEl.appendChild(slot);
+    });
+  }
+
+  function getCellEl(r, c) {
+    return boardEl.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+  }
+
+  function updateCellPips(r, c, pipVal) {
+    const el = getCellEl(r, c);
+    if (!el) return;
+    const oldPips = el.querySelector('.mp__pips');
+    if (oldPips) oldPips.remove();
+    if (pipVal !== undefined && pipVal !== -1) {
+      el.appendChild(makePips(pipVal));
+    } else {
+      el.appendChild(makePips(-1)); // empty
+    }
+  }
+
+  // Remove pip display (replace with empty)
+  // pip=-1 means empty, so makePips(-1) returns a pips div with no dots shown
+  // Overwrite PIP_MAP for -1
+  PIP_MAP[-1] = [];
+
+  function applyDominoEdges(pl, add) {
+    const el1 = getCellEl(pl.r1, pl.c1);
+    const el2 = getCellEl(pl.r2, pl.c2);
+    if (!el1 || !el2) return;
+
+    if (add) {
+      el1.classList.add('mp__cell--placed');
+      el2.classList.add('mp__cell--placed');
+      // Determine orientation
+      if (pl.r1 === pl.r2) {
+        // horizontal
+        if (pl.c1 < pl.c2) {
+          el1.classList.add('mp__cell--dl');
+          el2.classList.add('mp__cell--dr');
+        } else {
+          el1.classList.add('mp__cell--dr');
+          el2.classList.add('mp__cell--dl');
+        }
+      } else {
+        // vertical
+        if (pl.r1 < pl.r2) {
+          el1.classList.add('mp__cell--dt');
+          el2.classList.add('mp__cell--db');
+        } else {
+          el1.classList.add('mp__cell--db');
+          el2.classList.add('mp__cell--dt');
+        }
+      }
+    } else {
+      el1.classList.remove('mp__cell--placed','mp__cell--dl','mp__cell--dr','mp__cell--dt','mp__cell--db');
+      el2.classList.remove('mp__cell--placed','mp__cell--dl','mp__cell--dr','mp__cell--dt','mp__cell--db');
+    }
+  }
+
+  function setMessage(text, type = 'info') {
+    msgEl.textContent = text;
+    msgEl.className = `mp__msg mp__msg--${type}`;
+  }
+
+  /* ────────────────────────────── INTERACTION ──── */
+  function selectDomino(i) {
+    // deselect old
+    if (selectedDomino !== -1) {
+      const prev = trayEl.querySelector(`[data-didx="${selectedDomino}"]`);
+      if (prev) prev.classList.remove('mp__domino--selected');
+    }
+    // deselect target cell
+    if (targetCell) {
+      const tEl = getCellEl(...targetCell.split(',').map(Number));
+      if (tEl) tEl.classList.remove('mp__cell--target');
+      targetCell = null;
+    }
+
+    if (i === selectedDomino) {
+      // toggle off
+      selectedDomino = -1;
+      rotation = 0;
+      flipBtn.disabled = true;
+      setMessage('');
+    } else {
+      selectedDomino = i;
+      rotation = 0;
+      rotDeg = 0;
+      const dom = trayEl.querySelector(`[data-didx="${i}"]`);
+      if (dom) dom.classList.add('mp__domino--selected');
+      flipBtn.disabled = false;
+    }
+  }
+
+  function handleDominoClick(i) {
+    if (solved) return;
+    if (placed[i]) return;
+    if (i === selectedDomino) {
+      // Already selected → rotate 90° in-place (no tray rebuild = no reflow)
+      rotation = (rotation + 1) % 4;
+      rotDeg += 90;
+      const domEl = trayEl.querySelector(`[data-didx="${i}"]`);
+      if (domEl) {
+        domEl.dataset.rot = rotation;
+        domEl.style.setProperty('--mp-rot', rotDeg + 'deg');
+      }
+    } else {
+      selectDomino(i);
+      renderTray();
+    }
+  }
+
+  function handleCellClick(r, c) {
+    if (solved) return;
+    const key = `${r},${c}`;
+
+    // Click on an occupied cell → lift domino back to tray
+    if (cellMap[key] !== undefined) {
+      liftDomino(r, c);
+      return;
+    }
+
+    if (selectedDomino === -1) return;
+
+    if (!targetCell) {
+      // First cell of placement
+      targetCell = key;
+      const el = getCellEl(r, c);
+      if (el) el.classList.add('mp__cell--target');
+    } else {
+      // Second cell — attempt placement
+      const [r1, c1] = targetCell.split(',').map(Number);
+      const dr = Math.abs(r - r1);
+      const dc = Math.abs(c - c1);
+
+      if (dr + dc !== 1) {
+        // Not adjacent — reassign first cell
+        const old = getCellEl(r1, c1);
+        if (old) old.classList.remove('mp__cell--target');
+        targetCell = key;
+        const el = getCellEl(r, c);
+        if (el) el.classList.add('mp__cell--target');
+        return;
+      }
+
+      // Adjacent → place domino
+      placeDomino(selectedDomino, r1, c1, r, c);
+    }
+  }
+
+  function placeDomino(di, r1, c1, r2, c2) {
+    const [lRaw, rRaw] = puzzle.dominoes[di];
+    const leftPip  = rotation >= 2 ? rRaw : lRaw;
+    const rightPip = rotation >= 2 ? lRaw : rRaw;
+
+    placed[di] = { r1, c1, r2, c2 };
+    cellMap[`${r1},${c1}`] = leftPip;
+    cellMap[`${r2},${c2}`] = rightPip;
+
+    // clear target highlight
+    const tEl = getCellEl(r1, c1);
+    if (tEl) tEl.classList.remove('mp__cell--target');
+    targetCell = null;
+
+    // update visuals
+    applyDominoEdges(placed[di], true);
+    updateCellPips(r1, c1, leftPip);
+    updateCellPips(r2, c2, rightPip);
+
+    // pop animation
+    [getCellEl(r1, c1), getCellEl(r2, c2)].forEach(el => {
+      if (!el) return;
+      el.classList.remove('mp__cell--pop');
+      void el.offsetWidth;
+      el.classList.add('mp__cell--pop');
+    });
+
+    // deselect domino
+    selectedDomino = -1;
+    rotation = 0;
+    rotDeg = 0;
+    flipBtn.disabled = true;
+    renderTray();
+
+    setMessage('');
+    saveState();
+    checkWin();
+  }
+
+  function liftDomino(r, c) {
+    const key = `${r},${c}`;
+    const di = placed.findIndex(pl => {
+      if (!pl) return false;
+      return (`${pl.r1},${pl.c1}` === key || `${pl.r2},${pl.c2}` === key);
+    });
+    if (di === -1) return;
+
+    const pl = placed[di];
+    applyDominoEdges(pl, false);
+    updateCellPips(pl.r1, pl.c1, -1);
+    updateCellPips(pl.r2, pl.c2, -1);
+
+    delete cellMap[`${pl.r1},${pl.c1}`];
+    delete cellMap[`${pl.r2},${pl.c2}`];
+    placed[di] = null;
+
+    // re-select lifted domino
+    selectDomino(di);
+    renderTray();
+    saveState();
+  }
+
+  function checkWin() {
+    const allCells = puzzle.regions.flatMap(r => r.cells);
+    const allCovered = allCells.every(([r, c]) => cellMap[`${r},${c}`] !== undefined);
+    if (!allCovered) return;
+
+    const allOk = puzzle.regions.every(region => checkRegion(region, cellMap) === true);
+    if (!allOk) {
+      // Highlight any violated region cells
+      puzzle.regions.forEach(region => {
+        const ok = checkRegion(region, cellMap);
+        if (ok === false) {
+          region.cells.forEach(([r, c]) => {
+            const el = getCellEl(r, c);
+            if (el) {
+              el.classList.remove('mp__cell--pop');
+              void el.offsetWidth;
+              // subtle shake via CSS: add temporary class
+              el.style.outline = '2px solid #ff6b6b';
+              setTimeout(() => { if (el) el.style.outline = ''; }, 1200);
+            }
+          });
+        }
+      });
+      setMessage('Algunas restricciones no se cumplen 🔴', 'error');
+      return;
+    }
+
+    solved = true;
+    saveState();
+    setMessage('¡Puzzle resuelto! 🎉', 'win');
+    msgEl.className = 'mp__msg mp__msg--win';
+
+    // bounce all cells
+    const allCells2 = puzzle.regions.flatMap(r => r.cells);
+    allCells2.forEach(([r, c], idx) => {
+      const el = getCellEl(r, c);
+      if (!el) return;
+      setTimeout(() => {
+        el.classList.remove('mp__cell--bounce');
+        void el.offsetWidth;
+        el.classList.add('mp__cell--bounce');
+      }, idx * 40);
+    });
+
+    flipBtn.disabled = true;
+    clearBtn.textContent = '↺ Nuevo intento';
+  }
+
+  /* ────────────────────────────── DRAG & DROP ── */
+  function startDrag(e, di) {
+    if (solved || placed[di]) return;
+    dragDi = di; dragMoved = false;
+    activePointerId = e.pointerId;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+  }
+
+  function onDragMove(e) {
+    if (dragDi === -1 || e.pointerId !== activePointerId) return;
+    if (!dragMoved && Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) > DRAG_THRESHOLD) {
+      dragMoved = true;
+      if (selectedDomino !== dragDi) { selectDomino(dragDi); renderTray(); }
+      createDragGhost(dragDi, e.clientX, e.clientY);
+      const orig = trayEl.querySelector(`[data-didx="${dragDi}"]`);
+      if (orig) orig.classList.add('mp__domino--dragging');
+      document.body.style.cursor = 'grabbing';
+    }
+    if (dragMoved && dragGhost) {
+      dragGhost.style.left = (e.clientX - dragGhost._ox) + 'px';
+      dragGhost.style.top  = (e.clientY - dragGhost._oy) + 'px';
+      updateSnapTarget(e.clientX, e.clientY);
+    }
+  }
+
+  function onDragEnd(e) {
+    if (dragDi === -1 || e.pointerId !== activePointerId) return;
+    const di = dragDi;
+    dragDi = -1; activePointerId = -1;
+    document.body.style.cursor = '';
+    if (!dragMoved) {
+      handleDominoClick(di);
+    } else {
+      const orig = trayEl.querySelector(`[data-didx="${di}"]`);
+      if (orig) orig.classList.remove('mp__domino--dragging');
+      if (dragSnap) {
+        placeDomino(di, dragSnap.r1, dragSnap.c1, dragSnap.r2, dragSnap.c2);
+      } else {
+        renderTray();
+      }
+      clearSnapHighlight();
+      dragSnap = null;
+    }
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    dragMoved = false;
+  }
+
+  function createDragGhost(di, cx, cy) {
+    const origEl = trayEl.querySelector(`[data-didx="${di}"]`);
+    if (!origEl) return;
+    const rect = origEl.getBoundingClientRect();
+    const g = origEl.cloneNode(true);
+    g.style.cssText = `position:fixed;pointer-events:none;z-index:9999;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;opacity:.9;box-shadow:0 8px 28px rgba(0,0,0,.35);transform:scale(1.1);transform-origin:center;transition:none;`;
+    g._ox = cx - rect.left;
+    g._oy = cy - rect.top;
+    document.body.appendChild(g);
+    dragGhost = g;
+  }
+
+  function updateSnapTarget(x, y) {
+    dragSnap = getSnapTarget(x, y);
+  }
+
+  function getSnapTarget(x, y) {
+    const cells = [...boardEl.querySelectorAll('.mp__cell:not(.mp__cell--ghost)')];
+    let best = null, bestD = Infinity;
+    for (const el of cells) {
+      const r = +el.dataset.row, c = +el.dataset.col;
+      if (cellMap[`${r},${c}`] !== undefined) continue;
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const d = Math.hypot(x - cx, y - cy);
+      if (d < bestD) { bestD = d; best = { r, c, cx, cy }; }
+    }
+    if (!best || bestD > 80) return null;
+    let bestPair = null, bestPD = Infinity;
+    const isVertical = rotation === 1 || rotation === 3;
+    for (const [dr, dc] of (isVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]])) {
+      const nr = best.r + dr, nc = best.c + dc;
+      if (!puzzleCellSet.has(`${nr},${nc}`) || cellMap[`${nr},${nc}`] !== undefined) continue;
+      const nEl = getCellEl(nr, nc);
+      if (!nEl) continue;
+      const nr2 = nEl.getBoundingClientRect();
+      const mx = (best.cx + nr2.left + nr2.width / 2) / 2;
+      const my = (best.cy + nr2.top  + nr2.height / 2) / 2;
+      const d = Math.hypot(x - mx, y - my);
+      if (d < bestPD) {
+        bestPD = d;
+        // ensure r1,c1 is always the "earlier" cell (left for H, top for V)
+        const isNeg = dr < 0 || dc < 0;
+        bestPair = isNeg
+          ? { r1: nr, c1: nc, r2: best.r, c2: best.c }
+          : { r1: best.r, c1: best.c, r2: nr, c2: nc };
+      }
+    }
+    return bestPair;
+  }
+
+  function clearSnapHighlight() {
+    boardEl.querySelectorAll('.mp__cell--snap').forEach(el => el.classList.remove('mp__cell--snap'));
+  }
+
+  document.addEventListener('pointermove', onDragMove, { passive: false });
+  document.addEventListener('pointerup',   onDragEnd);
+  document.addEventListener('pointercancel', onDragEnd);
+
+  /* ────────────────────────────── CONTROLS ──── */
+  flipBtn.addEventListener('click', () => {
+    if (selectedDomino === -1) return;
+    rotation = (rotation + 1) % 4;
+    rotDeg += 90;
+    const domEl = trayEl.querySelector(`[data-didx="${selectedDomino}"]`);
+    if (domEl) {
+      domEl.dataset.rot = rotation;
+      domEl.style.setProperty('--mp-rot', rotDeg + 'deg');
+    }
+    flipBtn.disabled = false;
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (!puzzle) return;
+    initState();
+    renderBoard();
+    renderTray();
+    setMessage('');
+    flipBtn.disabled = true;
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  });
+
+  /* ────────────────────────────── INIT ──────── */
+
+  // Difficulty button handlers
+  diffBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newDiff = btn.dataset.diffBtn;
+      if (!nytPuzzles || !nytPuzzles[newDiff] || newDiff === difficulty) return;
+      difficulty = newDiff;
+      puzzle = nytPuzzles[difficulty];
+      initState();
+      loadState();
+      renderBadges();
+      renderBoard();
+      renderTray();
+      setMessage('');
+      flipBtn.disabled = true;
+      if (solved) { setMessage('\u00a1Puzzle resuelto! \uD83C\uDF89', 'win'); }
+    });
+  });
+
+  // Async puzzle load from NYT
+  boardEl.innerHTML = '<div class="mp__loading">Cargando puzzle...</div>';
+  trayEl.innerHTML = '';
+  (async () => {
+    try {
+      nytPuzzles = await fetchNytPuzzles(todayStr());
+      // prefer medium as default, fall back to whatever exists
+      difficulty = ['medium', 'easy', 'hard'].find(d => nytPuzzles[d]) || 'easy';
+      puzzle = nytPuzzles[difficulty];
+      if (!puzzle) throw new Error('no puzzle data');
+      initState();
+      loadState();
+      renderBadges();
+      renderBoard();
+      renderTray();
+      if (solved) {
+        setMessage('\u00a1Puzzle resuelto! \uD83C\uDF89', 'win');
+        flipBtn.disabled = true;
+      }
+    } catch (e) {
+      boardEl.innerHTML = '<div class="mp__loading mp__loading--error">No se pudo cargar el puzzle. Int\u00e9ntalo m\u00e1s tarde.</div>';
+      console.error('[MiniPips] Failed to load puzzle:', e);
+    }
+  })();
+
+})();
+</script>
