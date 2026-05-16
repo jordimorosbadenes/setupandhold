@@ -23,12 +23,12 @@
   <header class="mp__header">
     <div class="mp__topline">
       <h2 class="mp__title">Pips</h2>
-      <div class="mp__badge-row">
-        <button class="mp__badge mp__badge--btn" data-diff-btn="easy">fácil</button>
-        <button class="mp__badge mp__badge--btn" data-diff-btn="medium">medio</button>
-        <button class="mp__badge mp__badge--btn" data-diff-btn="hard">difícil</button>
-        <span class="mp__badge" data-day-badge></span>
-      </div>
+      <span class="mp__badge" data-day-badge></span>
+    </div>
+    <div class="mp__diff-row">
+      <button class="mp__badge mp__badge--btn" data-diff-btn="easy">fácil</button>
+      <button class="mp__badge mp__badge--btn" data-diff-btn="medium">medio</button>
+      <button class="mp__badge mp__badge--btn" data-diff-btn="hard">difícil</button>
     </div>
     <p class="mp__hint">Coloca todas las fichas satisfaciendo las regiones</p>
   </header>
@@ -76,13 +76,10 @@
 
   .mp__title {
     margin: 0;
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--text);
+    letter-spacing: -0.02em;
   }
 
-  .mp__badge-row { display: flex; gap: 6px; }
+  .mp__diff-row { display: flex; gap: 6px; }
 
   .mp__badge {
     padding: 4px 9px;
