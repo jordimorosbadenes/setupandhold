@@ -7,7 +7,10 @@ const wordsUrl = (base.endsWith('/') ? base : base + '/') + 'js/es5-words.txt';
   <header class="mw__header">
     <div class="mw__topline">
       <h2 class="mw__title">Wordle</h2>
-      <div class="mw__badge" data-day-badge></div>
+      <div class="mw__day-box">
+        <span class="mw__day-label">Día</span>
+        <span class="mw__day-value" data-day-badge></span>
+      </div>
     </div>
     <p class="mw__hint">Adivina la palabra de hoy en 6 intentos</p>
   </header>
@@ -83,24 +86,33 @@ const wordsUrl = (base.endsWith('/') ? base : base + '/') + 'js/es5-words.txt';
     letter-spacing: -0.02em;
   }
 
-  .mw__badge {
-    padding: 6px 10px;
+  /* ── Day indicator — matches Mini-2048 score box ── */
+  .mw__day-box {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--bg-soft);
-    font-size: 0.82rem;
-    color: var(--muted);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    min-width: 48px;
+    text-align: right;
   }
-
-  .mw__badge:empty { display: none; }
+  .mw__day-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .mw__day-value {
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
 
   .mw__hint {
     margin: 0;
     color: var(--muted);
-    font-size: 0.9rem;
     line-height: 1.4;
   }
 
@@ -412,7 +424,7 @@ const wordsUrl = (base.endsWith('/') ? base : base + '/') + 'js/es5-words.txt';
       };
 
       /* ── Badge ──────────────────────────────────────────────────────── */
-      if (badgeEl) badgeEl.textContent = `#${getDayIndex() + 1}`;
+      if (badgeEl) badgeEl.textContent = getDayIndex() + 1;
 
       /* ── Evaluation ─────────────────────────────────────────────────── */
       const evaluate = (guess, word) => {

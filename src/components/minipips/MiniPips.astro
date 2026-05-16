@@ -23,7 +23,10 @@
   <header class="mp__header">
     <div class="mp__topline">
       <h2 class="mp__title">Pips</h2>
-      <span class="mp__badge" data-day-badge></span>
+      <div class="mp__day-box">
+        <span class="mp__day-label">Día</span>
+        <span class="mp__day-value" data-day-badge></span>
+      </div>
     </div>
     <div class="mp__diff-row">
       <button class="mp__badge mp__badge--btn" data-diff-btn="easy">fácil</button>
@@ -38,11 +41,11 @@
     <div class="mp__board" data-board></div>
   </div>
 
-  <!-- Feedback -->
-  <p class="mp__msg" data-msg aria-live="polite"></p>
-
   <!-- Unplaced domino tray -->
   <div class="mp__tray" data-tray></div>
+
+  <!-- Feedback -->
+  <p class="mp__msg" data-msg aria-live="polite"></p>
 
   <!-- Controls -->
   <div class="mp__controls">
@@ -81,6 +84,30 @@
 
   .mp__diff-row { display: flex; gap: 6px; }
 
+  /* ── Day indicator — matches Mini-2048 score box ── */
+  .mp__day-box {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-soft);
+    min-width: 48px;
+    text-align: right;
+  }
+  .mp__day-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .mp__day-value {
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
   .mp__badge {
     padding: 4px 9px;
     border: 1px solid var(--border);
@@ -92,7 +119,6 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
-  .mp__badge:empty { display: none; }
 
   .mp__badge--btn {
     cursor: pointer;
@@ -117,7 +143,6 @@
   .mp__hint {
     margin: 0;
     color: var(--muted);
-    font-size: 0.86rem;
     line-height: 1.4;
   }
 
@@ -264,13 +289,13 @@
   /* ── Message ─────────────────────────────── */
   .mp__msg {
     margin: 0;
-    min-height: 1.3em;
     text-align: center;
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--muted);
     transition: color 0.2s ease;
   }
+  .mp__msg:empty { display: none; }
 
   .mp__msg--win  { color: var(--accent); }
   .mp__msg--error { color: #ff6b6b; }
@@ -783,7 +808,7 @@
     if (dayBadge) {
       const d = new Date();
       const day = getDayIndex() + 1;
-      dayBadge.textContent = `día ${day}`;
+      dayBadge.textContent = day;
     }
   }
 
