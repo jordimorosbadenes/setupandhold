@@ -1599,7 +1599,6 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     '#90cdf4','#fbd38d','#9ae6b4','#feb2b2','#e9d8fd',
   ];
 
-  const VPS_URL = 'https://puzzle.setupandhold.com';
   const DIFF_LABELS = { easy: 'f\u00e1cil', medium: 'medio', hard: 'dif\u00edcil' };
 
   function todayStr() {
@@ -1620,30 +1619,14 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     };
   }
 
-  async function fetchNytPuzzles(dateStr) {
-    // 1. Try build-time static file (same origin, no CORS, refreshed daily by CI)
-    try {
-      const base = document.querySelector('base')?.href || location.origin;
-      const staticUrl = new URL('puzzle-pips.json', base).href;
-      const s = await fetch(staticUrl);
-      if (s.ok) {
-        const data = await s.json();
-        if (!data.error && data.date === dateStr &&
-            (data.easy || data.medium || data.hard)) {
-          return {
-            easy:   data.easy   ? parseNytDiff(data.easy,   'easy')   : null,
-            medium: data.medium ? parseNytDiff(data.medium, 'medium') : null,
-            hard:   data.hard   ? parseNytDiff(data.hard,   'hard')   : null,
-          };
-        }
-      }
-    } catch (_) {}
+  const VPS_URL = 'https://puzzle.setupandhold.com';
 
-    // 2. Fall back to VPS proxy
-    const url = `${VPS_URL}/api/pips?date=${dateStr}`;
-    const resp = await fetch(url);
+  async function fetchNytPuzzles(dateStr) {
+    // Pide el puzzle al VPS, que hace de proxy de la API del NYT (evita CORS)
+    const resp = await fetch(`${VPS_URL}/api/pips?date=${dateStr}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
+    if (data.error) throw new Error(data.error);
     return {
       easy:   data.easy   ? parseNytDiff(data.easy,   'easy')   : null,
       medium: data.medium ? parseNytDiff(data.medium, 'medium') : null,
