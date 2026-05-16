@@ -12,14 +12,7 @@ const {
 <div class="mg">
   <!-- ── Header ─────────────────────────────────────────────── -->
   <div class="mg__header">
-    <div class="mg__titlebar">
-      <h2 class="mg__section-title">Minijuegos</h2>
-      <div class="mg__nav" aria-label="Navegar entre minijuegos">
-        <button class="mg__nav-btn" data-mg-prev type="button" aria-label="Minijuego anterior">‹</button>
-        <span class="mg__nav-indicator" data-mg-indicator aria-live="polite">1 / 3</span>
-        <button class="mg__nav-btn" data-mg-next type="button" aria-label="Siguiente minijuego">›</button>
-      </div>
-    </div>
+    <h2 class="mg__section-title">Minijuegos</h2>
 
     <!-- Tab selector -->
     <div class="mg__tabs" role="tablist" aria-label="Selector de minijuego">
@@ -68,11 +61,6 @@ const {
   .mg {
     display: grid;
     gap: 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--card);
-    box-shadow: var(--shadow);
-    padding: 16px;
   }
 
   /* ── Header ─────────────────────────────── */
@@ -81,58 +69,9 @@ const {
     gap: 8px;
   }
 
-  .mg__titlebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
   .mg__section-title {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-size: 0.78rem;
-  }
-
-  /* ── Prev / Next nav ─────────────────────── */
-  .mg__nav {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .mg__nav-btn {
-    width: 28px;
-    height: 28px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 1.15rem;
-    line-height: 1;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-
-  .mg__nav-btn:hover {
-    background: var(--bg-soft);
-    color: var(--text);
-  }
-
-  .mg__nav-indicator {
-    font-size: 0.78rem;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    min-width: 3ch;
-    text-align: center;
-    padding: 0 2px;
+    letter-spacing: -0.02em;
   }
 
   /* ── Tabs ────────────────────────────────── */
@@ -175,16 +114,6 @@ const {
   .mg__panel--hidden {
     display: none;
   }
-
-  /* Strip individual card frame from inner games — the .mg wrapper is the card */
-  .mg :global(.mp),
-  .mg :global(.mw),
-  .mg :global(.m2048) {
-    border: none;
-    box-shadow: none;
-    background: transparent;
-    padding: 0;
-  }
 </style>
 
 <script is:inline>
@@ -196,9 +125,6 @@ const {
     const STORAGE_KEY = 'minigames-active-v1';
     const panels    = Array.from(root.querySelectorAll('[data-mg-panel]'));
     const tabs      = Array.from(root.querySelectorAll('[data-mg-tab]'));
-    const prevBtn   = root.querySelector('[data-mg-prev]');
-    const nextBtn   = root.querySelector('[data-mg-next]');
-    const indicator = root.querySelector('[data-mg-indicator]');
     const total     = panels.length;
 
     // Restore last active game
@@ -223,8 +149,6 @@ const {
         t.setAttribute('aria-selected', String(active));
       });
 
-      if (indicator) indicator.textContent = `${current + 1} / ${total}`;
-
       try { localStorage.setItem(STORAGE_KEY, String(current)); } catch {}
     };
 
@@ -234,9 +158,6 @@ const {
     // Tab clicks
     tabs.forEach((tab, i) => tab.addEventListener('click', () => goTo(i)));
 
-    // Prev / Next buttons
-    if (prevBtn) prevBtn.addEventListener('click', () => goTo(current - 1));
-    if (nextBtn) nextBtn.addEventListener('click', () => goTo(current + 1));
 
     // ── Swipe navigation ────────────────────────────────────────────────
     // Only fires when the touch does NOT start on the 2048 board or wordle keyboard
