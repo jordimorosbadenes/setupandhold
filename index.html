@@ -7,7 +7,7 @@
     </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
 <style>.card-reactions[data-astro-cid-iyiqi2so]{font-size:.8rem;opacity:.7;margin-top:.75rem}.card-reactions[data-astro-cid-iyiqi2so]:empty{margin-top:0}
 </style>
-<link rel="stylesheet" href="/_astro/index.Dw2-DU-z.css"><script type="module">const f="jordimorosbadenes/setupandhold",h="R_kgDOQxFETg",w="Announcements",E="DIC_kwDOQxFETs4C3D9B";function p(o,i,e){if(i===0&&e===0)return;const s=[];i>0&&s.push(`❤️ ${i}`),e>0&&s.push(`💬 ${e}`),o.textContent=s.join("  ")}function x(){document.querySelectorAll("[data-giscus-term]").forEach(o=>{const i=o.dataset.giscusTerm;if(i)try{const e=localStorage.getItem(`giscus-meta:${i}`);if(!e)return;const{reactions:s,comments:a}=JSON.parse(e);p(o,s,a)}catch{}})}function y(){const o=[];if(document.querySelectorAll("[data-giscus-term]").forEach(t=>{const r=t.dataset.giscusTerm;r&&o.push({el:t,term:r})}),o.length===0)return;const i=document.documentElement.dataset.theme==="dark"?"dark":"light",e=document.createElement("div");e.style.cssText="position:absolute;width:1px;height:1px;overflow:hidden;top:-9999px;left:-9999px;",document.body.appendChild(e);const s=new Map;let a=o.length;function u(){window.removeEventListener("message",d),e.remove()}function d(t){if(t.origin!=="https://giscus.app"||typeof t.data!="object"||!t.data.giscus||!t.source)return;const r=s.get(t.source);if(!r)return;const{discussion:c}=t.data.giscus;if(!c)return;s.delete(t.source);let n=c.reactionCount??0;!n&&c.reactions&&(n=Object.values(c.reactions).reduce((g,l)=>g+l,0));const m=c.totalCommentCount??0;localStorage.setItem(`giscus-meta:${r.term}`,JSON.stringify({reactions:n,comments:m})),p(r.el,n,m),--a<=0&&u()}window.addEventListener("message",d),o.forEach(({el:t,term:r})=>{const c=new URLSearchParams({origin:window.location.origin,repo:f,repoId:h,category:w,categoryId:E,mapping:"pathname",term:r,strict:"0",reactionsEnabled:"1",emitMetadata:"1",inputPosition:"top",theme:i,lang:"es",session:""}),n=document.createElement("iframe");n.src=`https://giscus.app/widget?${c}`,n.style.cssText="width:1px;height:1px;border:none;",e.appendChild(n),n.contentWindow&&s.set(n.contentWindow,{el:t,term:r})}),setTimeout(u,8e3)}x();y();
+<link rel="stylesheet" href="/_astro/index.JuBLa5h_.css"><script type="module">const f="jordimorosbadenes/setupandhold",h="R_kgDOQxFETg",w="Announcements",E="DIC_kwDOQxFETs4C3D9B";function p(o,i,e){if(i===0&&e===0)return;const s=[];i>0&&s.push(`❤️ ${i}`),e>0&&s.push(`💬 ${e}`),o.textContent=s.join("  ")}function x(){document.querySelectorAll("[data-giscus-term]").forEach(o=>{const i=o.dataset.giscusTerm;if(i)try{const e=localStorage.getItem(`giscus-meta:${i}`);if(!e)return;const{reactions:s,comments:a}=JSON.parse(e);p(o,s,a)}catch{}})}function y(){const o=[];if(document.querySelectorAll("[data-giscus-term]").forEach(t=>{const r=t.dataset.giscusTerm;r&&o.push({el:t,term:r})}),o.length===0)return;const i=document.documentElement.dataset.theme==="dark"?"dark":"light",e=document.createElement("div");e.style.cssText="position:absolute;width:1px;height:1px;overflow:hidden;top:-9999px;left:-9999px;",document.body.appendChild(e);const s=new Map;let a=o.length;function u(){window.removeEventListener("message",d),e.remove()}function d(t){if(t.origin!=="https://giscus.app"||typeof t.data!="object"||!t.data.giscus||!t.source)return;const r=s.get(t.source);if(!r)return;const{discussion:c}=t.data.giscus;if(!c)return;s.delete(t.source);let n=c.reactionCount??0;!n&&c.reactions&&(n=Object.values(c.reactions).reduce((g,l)=>g+l,0));const m=c.totalCommentCount??0;localStorage.setItem(`giscus-meta:${r.term}`,JSON.stringify({reactions:n,comments:m})),p(r.el,n,m),--a<=0&&u()}window.addEventListener("message",d),o.forEach(({el:t,term:r})=>{const c=new URLSearchParams({origin:window.location.origin,repo:f,repoId:h,category:w,categoryId:E,mapping:"pathname",term:r,strict:"0",reactionsEnabled:"1",emitMetadata:"1",inputPosition:"top",theme:i,lang:"es",session:""}),n=document.createElement("iframe");n.src=`https://giscus.app/widget?${c}`,n.style.cssText="width:1px;height:1px;border:none;",e.appendChild(n),n.contentWindow&&s.set(n.contentWindow,{el:t,term:r})}),setTimeout(u,8e3)}x();y();
 </script></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
 const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
 
@@ -1776,7 +1776,8 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
   }
 
   /* ────────────────────────────── RENDER ──────── */
-  const boardEl  = root.querySelector('[data-board]');
+  const boardEl   = root.querySelector('[data-board]');
+  const boardWrap  = boardEl.parentElement; // .mp__board-wrap
   const trayEl   = root.querySelector('[data-tray]');
   const msgEl    = root.querySelector('[data-msg]');
   const flipBtn  = root.querySelector('[data-flip-btn]');
@@ -1811,6 +1812,28 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     return { regionIdx, firstCell };
   }
 
+  /* ── Adaptive board cell size ────────────────────── */
+  const MAX_CELL_PX = 46;
+
+  function applyBoardSize(cols, rows) {
+    const available = boardWrap.clientWidth - 32; // 16px padding each side
+    const cellSize  = available > 0
+      ? Math.min(MAX_CELL_PX, Math.max(24, Math.floor(available / cols)))
+      : MAX_CELL_PX;
+    const dotSize = Math.max(4, Math.round(cellSize * 9 / 46));
+    root.style.setProperty('--mp-cell', cellSize + 'px');
+    boardEl.style.setProperty('--mp-dot', dotSize + 'px'); // scale board dots with cell
+    boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell))`;
+    boardEl.style.gridTemplateRows    = `repeat(${rows}, var(--mp-cell))`;
+  }
+
+  // Re-scale when the wrap changes size (tab becomes visible, sidebar resizes, etc.)
+  new ResizeObserver(() => {
+    if (!puzzleCellSet.size) return;
+    const { minR, maxR, minC, maxC } = getBBox(puzzleCellSet);
+    applyBoardSize(maxC - minC + 1, maxR - minR + 1);
+  }).observe(boardWrap);
+
   function renderBoard() {
     boardEl.innerHTML = '';
     puzzleCellSet = getPuzzleCells(puzzle);
@@ -1820,8 +1843,7 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     const cols = maxC - minC + 1;
     const { regionIdx, firstCell } = buildRegionMeta(puzzle);
 
-    boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell, 46px))`;
-    boardEl.style.gridTemplateRows    = `repeat(${rows}, var(--mp-cell, 46px))`;
+    applyBoardSize(cols, rows);
 
     for (let r = minR; r <= maxR; r++) {
       for (let c = minC; c <= maxC; c++) {
@@ -2058,6 +2080,11 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     }
   }
 
+  function clearViolations() {
+    boardEl.querySelectorAll('.mp__cell--violation').forEach(el =>
+      el.classList.remove('mp__cell--violation'));
+  }
+
   function placeDomino(di, r1, c1, r2, c2) {
     const [lRaw, rRaw] = puzzle.dominoes[di];
     const leftPip  = rotation >= 2 ? rRaw : lRaw;
@@ -2066,6 +2093,8 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     placed[di] = { r1, c1, r2, c2 };
     cellMap[`${r1},${c1}`] = leftPip;
     cellMap[`${r2},${c2}`] = rightPip;
+
+    clearViolations();
 
     // clear target highlight
     const tEl = getCellEl(r1, c1);
@@ -2114,6 +2143,8 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     delete cellMap[`${pl.r2},${pl.c2}`];
     placed[di] = null;
 
+    clearViolations();
+
     // re-select lifted domino
     selectDomino(di);
     renderTray();
@@ -2133,17 +2164,11 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
         if (ok === false) {
           region.cells.forEach(([r, c]) => {
             const el = getCellEl(r, c);
-            if (el) {
-              el.classList.remove('mp__cell--pop');
-              void el.offsetWidth;
-              // subtle shake via CSS: add temporary class
-              el.style.outline = '2px solid #ff6b6b';
-              setTimeout(() => { if (el) el.style.outline = ''; }, 1200);
-            }
+            if (el) el.classList.add('mp__cell--violation');
           });
         }
       });
-      setMessage('Algunas restricciones no se cumplen 🔴', 'error');
+      setMessage('Algunas restricciones no se cumplen 🙁', 'error');
       return;
     }
 
@@ -2219,10 +2244,18 @@ Bitácora ligera para documentar ideas, experimentos y proyectos.
     const origEl = trayEl.querySelector(`[data-didx="${di}"]`);
     if (!origEl) return;
     const rect = origEl.getBoundingClientRect();
+    // Use natural (pre-transform) dimensions so the clone layout is correct
+    const natW  = origEl.offsetWidth;
+    const natH  = origEl.offsetHeight;
+    // Visual center is the same as natural center (transform-origin: center)
+    const visCX = rect.left + rect.width  / 2;
+    const visCY = rect.top  + rect.height / 2;
+    const ghostL = visCX - natW / 2;
+    const ghostT = visCY - natH / 2;
     const g = origEl.cloneNode(true);
-    g.style.cssText = `position:fixed;pointer-events:none;z-index:9999;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;opacity:.9;box-shadow:0 8px 28px rgba(0,0,0,.35);transform:scale(1.1);transform-origin:center;transition:none;`;
-    g._ox = cx - rect.left;
-    g._oy = cy - rect.top;
+    g.style.cssText = `position:fixed;pointer-events:none;z-index:9999;left:${ghostL}px;top:${ghostT}px;width:${natW}px;height:${natH}px;opacity:.9;box-shadow:0 8px 28px rgba(0,0,0,.35);transform:rotate(${rotDeg}deg) scale(1.1);transform-origin:center;transition:none;`;
+    g._ox = cx - ghostL;
+    g._oy = cy - ghostT;
     document.body.appendChild(g);
     dragGhost = g;
   }
