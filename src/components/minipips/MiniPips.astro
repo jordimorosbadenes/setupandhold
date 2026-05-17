@@ -156,11 +156,11 @@
   .mp__cell[data-region="7"] { --rcolor: #76e4f7; }
 
   /* Unconstrained (empty-type) cells — completely blank, blends with board */
-  .mp__cell--unconstrained {
+  .mp__cell.mp__cell--unconstrained {
     background: var(--bg-soft);
     cursor: default;
   }
-  .mp__cell--unconstrained::before {
+  .mp__cell.mp__cell--unconstrained::before {
     display: none;
   }
 
@@ -440,6 +440,24 @@
 
   .mp__cell--pop    { animation: mp-pop    0.20s ease; }
   .mp__cell--bounce { animation: mp-bounce 0.50s ease; }
+
+  /* ── Constraint-violation pulse ─────────── */
+  @keyframes mp-err-bg {
+    0%, 100% { background: color-mix(in srgb, var(--rcolor, #9ca3af) 30%, var(--card)); }
+    50%       { background: color-mix(in srgb, #ef4444 38%, var(--card)); }
+  }
+  @keyframes mp-err-border {
+    0%, 100% { border-color: color-mix(in srgb, var(--rcolor, var(--border)) 75%, transparent); }
+    50%       { border-color: color-mix(in srgb, #ef4444 90%, transparent); }
+  }
+  @keyframes mp-err-badge {
+    0%, 100% { background: color-mix(in srgb, var(--rcolor, var(--accent)) 80%, #000 20%); }
+    50%       { background: color-mix(in srgb, #ef4444 80%, #000 20%); }
+  }
+
+  .mp__cell--violation          { animation: mp-err-bg     1s ease-in-out infinite; }
+  .mp__cell--violation::before  { animation: mp-err-border 1s ease-in-out infinite; }
+  .mp__cell--violation .mp__label { animation: mp-err-badge 1s ease-in-out infinite; }
 </style>
 
 <!-- ─────────────────────────────────────── SCRIPT ───── -->
@@ -801,7 +819,8 @@
   }
 
   /* ────────────────────────────── RENDER ──────── */
-  const boardEl  = root.querySelector('[data-board]');
+  const boardEl   = root.querySelector('[data-board]');
+  const boardWrap  = boardEl.parentElement; // .mp__board-wrap
   const trayEl   = root.querySelector('[data-tray]');
   const msgEl    = root.querySelector('[data-msg]');
   const flipBtn  = root.querySelector('[data-flip-btn]');
@@ -836,6 +855,28 @@
     return { regionIdx, firstCell };
   }
 
+  /* ── Adaptive board cell size ────────────────────── */
+  const MAX_CELL_PX = 46;
+
+  function applyBoardSize(cols, rows) {
+    const available = boardWrap.clientWidth - 32; // 16px padding each side
+    const cellSize  = available > 0
+      ? Math.min(MAX_CELL_PX, Math.max(24, Math.floor(available / cols)))
+      : MAX_CELL_PX;
+    const dotSize = Math.max(4, Math.round(cellSize * 9 / 46));
+    root.style.setProperty('--mp-cell', cellSize + 'px');
+    boardEl.style.setProperty('--mp-dot', dotSize + 'px'); // scale board dots with cell
+    boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell))`;
+    boardEl.style.gridTemplateRows    = `repeat(${rows}, var(--mp-cell))`;
+  }
+
+  // Re-scale when the wrap changes size (tab becomes visible, sidebar resizes, etc.)
+  new ResizeObserver(() => {
+    if (!puzzleCellSet.size) return;
+    const { minR, maxR, minC, maxC } = getBBox(puzzleCellSet);
+    applyBoardSize(maxC - minC + 1, maxR - minR + 1);
+  }).observe(boardWrap);
+
   function renderBoard() {
     boardEl.innerHTML = '';
     puzzleCellSet = getPuzzleCells(puzzle);
@@ -845,8 +886,7 @@
     const cols = maxC - minC + 1;
     const { regionIdx, firstCell } = buildRegionMeta(puzzle);
 
-    boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mp-cell, 46px))`;
-    boardEl.style.gridTemplateRows    = `repeat(${rows}, var(--mp-cell, 46px))`;
+    applyBoardSize(cols, rows);
 
     for (let r = minR; r <= maxR; r++) {
       for (let c = minC; c <= maxC; c++) {
@@ -1083,6 +1123,11 @@
     }
   }
 
+  function clearViolations() {
+    boardEl.querySelectorAll('.mp__cell--violation').forEach(el =>
+      el.classList.remove('mp__cell--violation'));
+  }
+
   function placeDomino(di, r1, c1, r2, c2) {
     const [lRaw, rRaw] = puzzle.dominoes[di];
     const leftPip  = rotation >= 2 ? rRaw : lRaw;
@@ -1091,6 +1136,8 @@
     placed[di] = { r1, c1, r2, c2 };
     cellMap[`${r1},${c1}`] = leftPip;
     cellMap[`${r2},${c2}`] = rightPip;
+
+    clearViolations();
 
     // clear target highlight
     const tEl = getCellEl(r1, c1);
@@ -1139,6 +1186,8 @@
     delete cellMap[`${pl.r2},${pl.c2}`];
     placed[di] = null;
 
+    clearViolations();
+
     // re-select lifted domino
     selectDomino(di);
     renderTray();
@@ -1158,17 +1207,11 @@
         if (ok === false) {
           region.cells.forEach(([r, c]) => {
             const el = getCellEl(r, c);
-            if (el) {
-              el.classList.remove('mp__cell--pop');
-              void el.offsetWidth;
-              // subtle shake via CSS: add temporary class
-              el.style.outline = '2px solid #ff6b6b';
-              setTimeout(() => { if (el) el.style.outline = ''; }, 1200);
-            }
+            if (el) el.classList.add('mp__cell--violation');
           });
         }
       });
-      setMessage('Algunas restricciones no se cumplen 🔴', 'error');
+      setMessage('Algunas restricciones no se cumplen 🙁', 'error');
       return;
     }
 
@@ -1244,10 +1287,18 @@
     const origEl = trayEl.querySelector(`[data-didx="${di}"]`);
     if (!origEl) return;
     const rect = origEl.getBoundingClientRect();
+    // Use natural (pre-transform) dimensions so the clone layout is correct
+    const natW  = origEl.offsetWidth;
+    const natH  = origEl.offsetHeight;
+    // Visual center is the same as natural center (transform-origin: center)
+    const visCX = rect.left + rect.width  / 2;
+    const visCY = rect.top  + rect.height / 2;
+    const ghostL = visCX - natW / 2;
+    const ghostT = visCY - natH / 2;
     const g = origEl.cloneNode(true);
-    g.style.cssText = `position:fixed;pointer-events:none;z-index:9999;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;opacity:.9;box-shadow:0 8px 28px rgba(0,0,0,.35);transform:scale(1.1);transform-origin:center;transition:none;`;
-    g._ox = cx - rect.left;
-    g._oy = cy - rect.top;
+    g.style.cssText = `position:fixed;pointer-events:none;z-index:9999;left:${ghostL}px;top:${ghostT}px;width:${natW}px;height:${natH}px;opacity:.9;box-shadow:0 8px 28px rgba(0,0,0,.35);transform:rotate(${rotDeg}deg) scale(1.1);transform-origin:center;transition:none;`;
+    g._ox = cx - ghostL;
+    g._oy = cy - ghostT;
     document.body.appendChild(g);
     dragGhost = g;
   }
