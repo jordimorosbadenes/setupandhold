@@ -148,8 +148,8 @@ const DEFAULTS = {
     stl_corner_style:           'round',    // sharp | round | chamfer
     stl_corner_radius:          1.0,
     stl_corner_inner:           false,        // also apply to concave corners
-    stl_color_pieces:           '#00998A',
-    stl_color_relief:           '#C1B399',
+    stl_color_pieces:           '#999999',
+    stl_color_relief:           '#2e2097',
     piece_chamfer_top_on:       false,
     piece_chamfer_top:          0.5,
     piece_chamfer_bottom_on:    false,
@@ -164,7 +164,7 @@ const DEFAULTS = {
     base_inner_same_as_piece:   true,         // mirror piece corner for interior
     stl_base_corner_radius:     2.5,
     stl_base_corner_radius_inner: 1.0,
-    stl_color_base:             '#808080',
+    stl_color_base:             '#4A4A4A',
     base_chamfer_top_outer_on:      false,
     base_chamfer_top_outer:         0.5,
     base_chamfer_top_inner_on:      false,
@@ -174,7 +174,7 @@ const DEFAULTS = {
 
     // ── Slider — piezas ────────────────────────────────────
     sliding_cell_size:          20,
-    sliding_clearance:          0.3,
+    sliding_clearance:          0.15,
     sliding_piece_height:       8.0,
     sliding_corner_style:       'round',    // sharp | round | chamfer
     sliding_corner_radius:      1.0,
@@ -226,7 +226,7 @@ const DEFAULTS = {
     stl_texture_type:           'solid',
     stl_texture_direction:      'outward',
     stl_texture_height:         0.6,
-    stl_texture_wall:           0.5,
+    stl_texture_wall:           0.2,
     stl_texture_no_border:      false,
     stl_texture_invert:         false,
     stl_texture_engrave_depth:  0.4,
@@ -239,7 +239,7 @@ const DEFAULTS = {
     // ── Acabados — imagen ──────────────────────────────────
     stl_image_direction:        'outward',
     stl_image_height:           0.6,
-    stl_image_wall:             0.5,
+    stl_image_wall:             0.2,
     stl_image_no_border:        false,
     stl_image_engrave_depth:    0.4,
     stl_texture_custom_zoom:    100,
@@ -247,10 +247,10 @@ const DEFAULTS = {
     stl_image_already_bw:       false,
     stl_texture_custom_blur:    true,
     stl_image_line_thickness:   0,
-    stl_image_multicolor:       false,
+    stl_image_multicolor:       true,
     stl_image_num_colors:       4,
     stl_image_color_tolerance: 50,
-    stl_image_relief_color:     '#C1B399',
+    stl_image_relief_color:     '#2e2097',
 
     // ── Visor ──────────────────────────────────────────────
     stl_assembled:              true,
@@ -1626,7 +1626,7 @@ function buildSTLPayload(modeOverride) {
     // Sliding puzzle parameters
     if (isSliding) {
         payload.sliding_cell_size = parseFloat((document.getElementById('sliding_cell_size') || {}).value) || 20;
-        payload.sliding_clearance = parseFloat((document.getElementById('sliding_clearance') || {}).value) || 0.3;
+        payload.sliding_clearance = parseFloat((document.getElementById('sliding_clearance') || {}).value) || 0.15;
         payload.sliding_frame_border = parseFloat((document.getElementById('sliding_frame_border') || {}).value) || 4;
         payload.sliding_floor_height = parseFloat((document.getElementById('sliding_floor_height') || {}).value) || 1.0;
         payload.sliding_stem_height = parseFloat((document.getElementById('sliding_stem_height') || {}).value) || 2.0;
@@ -1953,7 +1953,7 @@ async function export3MF() {
     const baseColorEl = colors.base;
     const reliefColorEl = colors.relief;
     payload.color_pieces = pieceColorEl ? pieceColorEl.value : '#6699CC';
-    payload.color_base = baseColorEl ? baseColorEl.value : '#808080';
+    payload.color_base = baseColorEl ? baseColorEl.value : '#4A4A4A';
 
     // For image mode: use the image relief color from section 2 (or palette for multicolor)
     const acabadosMode = document.querySelector('input[name="acabados_mode"]:checked');
@@ -1962,10 +1962,10 @@ async function export3MF() {
 
     if (isImageMode && !isMulticolor) {
         const imgReliefEl = document.getElementById('stl_image_relief_color');
-        payload.color_relief = imgReliefEl ? imgReliefEl.value : '#C1B399';
+        payload.color_relief = imgReliefEl ? imgReliefEl.value : '#2e2097';
     } else if (isMulticolor && payload.texture_color_palette) {
         // Multicolor: send palette as color_relief_palette, primary relief = first color
-        payload.color_relief = payload.texture_color_palette[0] || '#C1B399';
+        payload.color_relief = payload.texture_color_palette[0] || '#2e2097';
         payload.color_relief_palette = payload.texture_color_palette;
     } else {
         payload.color_relief = reliefColorEl ? reliefColorEl.value : '#FF6633';
@@ -2041,7 +2041,7 @@ async function viewSTL() {
         const baseColorEl = colors.base;
         const reliefColorEl = colors.relief;
         const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
-        const baseColor = baseColorEl ? baseColorEl.value : '#808080';
+        const baseColor = baseColorEl ? baseColorEl.value : '#4A4A4A';
         const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
 
         // Build palette color map for multicolor parts
@@ -3310,7 +3310,7 @@ function updateThreeColors() {
     const pieceColorEl = colors.pieces;
     const baseColorEl = colors.base;
     const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
-    const baseColor = baseColorEl ? baseColorEl.value : '#808080';
+    const baseColor = baseColorEl ? baseColorEl.value : '#4A4A4A';
 
     threeGroup.children.forEach(child => {
         if (!child.userData || !child.userData.colorRole) return;
@@ -5716,13 +5716,13 @@ function openTextureEditor() {
         defaultsBtn.onclick = () => {
             const defaults = {
                 'stl_texture_custom_blur': true,
-                'stl_image_blur_radius': 2,
+                'stl_image_blur_radius': 1,
                 'stl_image_line_thickness': 0,
                 'stl_image_already_bw': false,
                 'stl_texture_custom_threshold': 128,
                 'stl_image_num_colors': 4,
                 'stl_image_color_tolerance': 50,
-                'stl_image_relief_color': '#C1B399'
+                'stl_image_relief_color': '#2e2097'
             };
             for (const id in defaults) {
                 const el = document.getElementById(id);
@@ -5816,6 +5816,18 @@ function closeTextureEditor() {
 
 // Initialize custom texture handlers
 initCustomTextureHandlers();
+
+// Load default image for Imagen mode
+(function loadDefaultTextureImage() {
+    const img = new Image();
+    img.onload = function() {
+        customTextureOriginal = img;
+        processCustomTexture();
+        const fileBtn = document.getElementById('texture-custom-file-btn');
+        if (fileBtn) fileBtn.textContent = 'Reemplazar imagen';
+    };
+    img.src = '../img/puzzle/your_design_here.png';
+})();
 
 // Generic slider ↔ number sync for all slider-number-group pairs
 // Skip sliders inside the texture editor modal — those are handled by the editor itself
@@ -6070,7 +6082,7 @@ async function updateInline3D() {
         const baseColorEl = colors.base;
         const reliefColorEl = colors.relief;
         const pieceColor = pieceColorEl ? pieceColorEl.value : '#6699CC';
-        const baseColor = baseColorEl ? baseColorEl.value : '#808080';
+        const baseColor = baseColorEl ? baseColorEl.value : '#4A4A4A';
         const reliefColor = reliefColorEl ? reliefColorEl.value : '#FF6633';
 
         const allMeshes = [];
@@ -6717,7 +6729,7 @@ if (galleryToggle) {
         if (stockState && stockState.puzzle_type === 'sliding') {
             payload.puzzle_type = 'sliding';
             payload.sliding_cell_size = parseFloat((document.getElementById('sliding_cell_size') || {}).value) || 20;
-            payload.sliding_clearance = parseFloat((document.getElementById('sliding_clearance') || {}).value) || 0.3;
+            payload.sliding_clearance = parseFloat((document.getElementById('sliding_clearance') || {}).value) || 0.15;
             payload.sliding_frame_border = parseFloat((document.getElementById('sliding_frame_border') || {}).value) || 4;
             payload.sliding_floor_height = parseFloat((document.getElementById('sliding_floor_height') || {}).value) || 1.0;
             payload.sliding_stem_height = parseFloat((document.getElementById('sliding_stem_height') || {}).value) || 2.0;
@@ -6811,9 +6823,9 @@ if (galleryToggle) {
 
             const loader = new THREE.STLLoader();
             const colors = getColorElements();
-            const pieceColor = (colors.pieces || {}).value || '#00998A';
-            const baseColor = (colors.base || {}).value || '#808080';
-            const reliefColor = (colors.relief || {}).value || '#C1B399';
+            const pieceColor = (colors.pieces || {}).value || '#999999';
+            const baseColor = (colors.base || {}).value || '#4A4A4A';
+            const reliefColor = (colors.relief || {}).value || '#2e2097';
 
             function loadBase64(b64, color, role) {
                 const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));

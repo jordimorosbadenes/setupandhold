@@ -82,8 +82,8 @@
             <!-- Puzzle Type Toggle – centered at top -->
             <div class="puzzle-type-selector">
                 <button class="puzzle-type-btn active" id="btn-type-normal" onclick="switchPuzzleType('normal')">
-                    <img src="../img/puzzle/normal.png" alt="Normal" class="puzzle-icon-img">
-                    <span class="puzzle-label">Normal</span>
+                    <img src="../img/puzzle/normal.png" alt="Tetris" class="puzzle-icon-img">
+                    <span class="puzzle-label">Tetris</span>
                 </button>
                 <button class="puzzle-type-btn" id="btn-type-fractal" onclick="switchPuzzleType('fractal')">
                     <img src="../img/puzzle/fractal.png" alt="Fractal" class="puzzle-icon-img">
@@ -307,16 +307,16 @@
             <div class="acabados-row1">
                 <!-- Left: Mode switch (vertical) -->
                 <div class="acabados-mode-switch">
-                    <label class="acabados-mode-label active" id="acabados-mode-label-infill">
-                        <input type="radio" name="acabados_mode" id="acabados_mode_infill" value="infill" checked>
+                    <label class="acabados-mode-label" id="acabados-mode-label-infill">
+                        <input type="radio" name="acabados_mode" id="acabados_mode_infill" value="infill">
                         <span>🔲 Relleno</span>
                     </label>
                     <label class="acabados-mode-label" id="acabados-mode-label-texture">
                         <input type="radio" name="acabados_mode" id="acabados_mode_texture" value="texture">
                         <span>🏔️ Textura</span>
                     </label>
-                    <label class="acabados-mode-label" id="acabados-mode-label-image">
-                        <input type="radio" name="acabados_mode" id="acabados_mode_image" value="image">
+                    <label class="acabados-mode-label active" id="acabados-mode-label-image">
+                        <input type="radio" name="acabados_mode" id="acabados_mode_image" value="image" checked>
                         <span>🖼️ Imagen</span>
                     </label>
                 </div>
@@ -737,7 +737,7 @@
                             <div class="image-color-mode-toggle">
                                 <span class="image-mode-text" id="image-mode-bw-label">B&amp;N</span>
                                 <label class="switch-label switch-small">
-                                    <input type="checkbox" id="stl_image_multicolor">
+                                    <input type="checkbox" id="stl_image_multicolor" checked>
                                     <span class="switch-slider"></span>
                                 </label>
                                 <span class="image-mode-text" id="image-mode-multi-label">Multicolor</span>
@@ -795,8 +795,8 @@
                             <div class="form-group" data-premium="advanced">
                                 <label>Margen hasta el borde (mm):</label>
                                 <div class="slider-number-group">
-                                    <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.5" data-link="stl_texture_wall">
-                                    <input type="number" id="stl_texture_wall" value="0.5" step="0.1" min="0" max="10" class="slider-num-input">
+                                    <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.2" data-link="stl_texture_wall">
+                                    <input type="number" id="stl_texture_wall" value="0.2" step="0.1" min="0" max="10" class="slider-num-input">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -828,8 +828,8 @@
                         <div class="form-group" data-premium="advanced">
                             <label>Margen hasta el borde (mm):</label>
                             <div class="slider-number-group">
-                                <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.5" data-link="stl_image_wall">
-                                <input type="number" id="stl_image_wall" value="0.5" step="0.1" min="0" max="10" class="slider-num-input">
+                                <input type="range" class="range-input" min="0" max="10" step="0.1" value="0.2" data-link="stl_image_wall">
+                                <input type="number" id="stl_image_wall" value="0.2" step="0.1" min="0" max="10" class="slider-num-input">
                             </div>
                         </div>
                         <div class="form-group">
@@ -900,8 +900,8 @@
                             <div class="form-group" id="image-blur-radius-group">
                                 <label>Radio de suavizado:</label>
                                 <div class="slider-number-group">
-                                    <input type="range" class="range-input" min="1" max="8" step="1" value="2" data-link="stl_image_blur_radius">
-                                    <input type="number" id="stl_image_blur_radius" min="1" max="8" step="1" value="2" class="slider-num-input">
+                                    <input type="range" class="range-input" min="1" max="8" step="1" value="1" data-link="stl_image_blur_radius">
+                                    <input type="number" id="stl_image_blur_radius" min="1" max="8" step="1" value="1" class="slider-num-input">
                                 </div>
                             </div>
                             <!-- B&W options -->
@@ -909,8 +909,8 @@
                                 <div class="form-group" id="image-bw-color-group">
                                     <label>🎨 Color relieve:</label>
                                     <div class="color-picker-row">
-                                        <input type="color" id="stl_image_relief_color" value="#C1B399">
-                                        <span class="color-hex" id="stl_image_relief_color_hex">#C1B399</span>
+                                        <input type="color" id="stl_image_relief_color" value="#2e2097">
+                                        <span class="color-hex" id="stl_image_relief_color_hex">#2e2097</span>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -991,15 +991,15 @@
                                         <div class="form-group">
                                             <label>🎨 Color piezas:</label>
                                             <div class="color-picker-row">
-                                                <input type="color" id="stl_color_pieces" value="#00998A">
-                                                <span class="color-hex" id="stl_color_pieces_hex">#00998A</span>
+                                                <input type="color" id="stl_color_pieces" value="#A3A3A3">
+                                                <span class="color-hex" id="stl_color_pieces_hex">#A3A3A3</span>
                                             </div>
                                         </div>
                                         <div class="form-group" id="relief-color-group">
                                             <label>🎨 Color relieve:</label>
                                             <div class="color-picker-row">
-                                                <input type="color" id="stl_color_relief" value="#C1B399">
-                                                <span class="color-hex" id="stl_color_relief_hex">#C1B399</span>
+                                                <input type="color" id="stl_color_relief" value="#2e2097">
+                                                <span class="color-hex" id="stl_color_relief_hex">#2e2097</span>
                                             </div>
                                             <div class="relief-color-locked-hint" id="relief-color-locked-hint" style="display:none;">Controlado desde Diseño 3D en modo imagen</div>
                                         </div>
@@ -1087,8 +1087,8 @@
                                         <div class="form-group">
                                             <label>🎨 Color base:</label>
                                             <div class="color-picker-row">
-                                                <input type="color" id="stl_color_base" value="#808080">
-                                                <span class="color-hex" id="stl_color_base_hex">#808080</span>
+                                                <input type="color" id="stl_color_base" value="#4A4A4A">
+                                                <span class="color-hex" id="stl_color_base_hex">#4A4A4A</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1202,15 +1202,15 @@
                                         <div class="form-group">
                                             <label>🎨 Color piezas:</label>
                                             <div class="color-picker-row">
-                                                <input type="color" id="sliding_color_pieces" value="#00998A">
-                                                <span class="color-hex" id="sliding_color_pieces_hex">#00998A</span>
+                                                <input type="color" id="sliding_color_pieces" value="#A3A3A3">
+                                                <span class="color-hex" id="sliding_color_pieces_hex">#A3A3A3</span>
                                             </div>
                                         </div>
                                         <div class="form-group" id="sliding-relief-color-group">
                                             <label>🎨 Color relieve:</label>
                                             <div class="color-picker-row">
-                                                <input type="color" id="sliding_color_relief" value="#C1B399">
-                                                <span class="color-hex" id="sliding_color_relief_hex">#C1B399</span>
+                                                <input type="color" id="sliding_color_relief" value="#2e2097">
+                                                <span class="color-hex" id="sliding_color_relief_hex">#2e2097</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1222,7 +1222,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label>Holgura XY (mm):</label>
-                                        <input type="number" id="sliding_clearance" value="0.3" step="0.05" min="0.1" max="1">
+                                        <input type="number" id="sliding_clearance" value="0.15" step="0.05" min="0.1" max="1">
                                     </div>
                                     <div class="form-group">
                                         <label>Altura pieza (mm):</label>
@@ -1312,8 +1312,8 @@
                                         <div class="form-group">
                                             <label>🎨 Color base:</label>
                                             <div class="color-picker-row">
-                                                <input type="color" id="sliding_color_base" value="#808080">
-                                                <span class="color-hex" id="sliding_color_base_hex">#808080</span>
+                                                <input type="color" id="sliding_color_base" value="#4A4A4A">
+                                                <span class="color-hex" id="sliding_color_base_hex">#4A4A4A</span>
                                             </div>
                                         </div>
                                     </div>
