@@ -39,10 +39,6 @@ npm run dev
 
 El servidor quedará en `http://localhost:4321`.
 
-## Si estás ejecutando el worker de PuzzleSudio3D en local, puedes acceder a él añadiendo `?worker=local` a la URL
-
-http://localhost:4321/puzzle/studio.html?worker=local
-
 ## Scripts principales
 
 - `npm run dev`: modo desarrollo con recarga en caliente.
@@ -91,12 +87,7 @@ Contenido en Markdown...
 - `src/components/PostCard.astro`: tarjetas de resumen para listados.
 - `src/content/blog`: posts en Markdown.
 - `src/styles/global.css`: estilos base (colores, tipografía, layout).
-- `src/pages/puzzle.astro`: página de presentación del Puzzle Generator. El puzzle funciona como app estática local en `public/puzzle/index.html`.
-
-## Integración Puzzle Generator
-
-- La página `/puzzle` enlaza directamente a la app estática del puzzle en `public/puzzle/index.html`.
-- No requiere backend externo: todo el motor de generación, resolución y exportación funciona en el navegador.
+- `src/pages/puzzle.astro`: página del Puzzle Studio (próximamente).
 
 ## Personalización
 

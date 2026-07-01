@@ -1,13 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/withBase';
-
-const puzzlePage = withBase('/puzzle/studio.html');
 ---
 
 <BaseLayout
-  title="Puzzle Generator"
+  title="Puzzle Studio"
   description="Genera puzzles 3D, visualiza soluciones y descarga STL listo para imprimir."
+  bgMode="pieces"
 >
   <section class="hero">
     <div class="hero-copy prose">
@@ -16,44 +15,58 @@ const puzzlePage = withBase('/puzzle/studio.html');
         Genera y personaliza puzzles 3D: elige el tipo de puzzle, personaliza en el editor de texturas, y exporta de manera flexible a STL/3MF listo para impresión.
       </p>
       <div class="hero-actions">
-        <a class="button" href={puzzlePage}>Abrir Puzzle Studio</a>
+        <button class="button button--soon" disabled data-tooltip="La página estará lista pronto" id="btn-studio">Abrir Puzzle Studio</button>
         <a class="button" href={withBase('/')}>Ir al inicio</a>
       </div>
     </div>
   </section>
-
-  <section class="construction-warning">
-    <div class="construction-content">
-      <h2>🚧 Página en Construcción</h2>
-      <p>Esta página aún no está terminada y algunas funcionalidades pueden no funcionar correctamente o estar incompletas.</p>
-    </div>
-  </section>
-
 </BaseLayout>
 
 <style is:global>
-  /* --- Construction warning --- */
-  .construction-warning {
-    margin: 20px auto;
-    max-width: 1100px;
-    padding: 20px;
-    background: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.3);
-    border-radius: var(--radius);
-    text-align: center;
+  .button--soon {
+    position: relative;
+    cursor: default;
+    opacity: 0.5;
+    font: inherit;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    background: linear-gradient(120deg, rgba(124, 242, 201, 0.16), rgba(108, 177, 255, 0.08));
+    width: auto;
+  }
+  .tt-studio {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: var(--card);
     color: var(--text);
-  }
-  .construction-warning h2 {
-    margin: 0 0 10px;
-    color: var(--text);
-    font-size: 1.8rem;
-  }
-  .construction-warning p {
-    margin: 0;
-    color: var(--muted);
-  }
-
-  @media (max-width: 900px) {
-    .premium-section { margin: 20px 12px; padding: 14px; }
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
   }
 </style>
+<script is:inline>
+  (() => {
+    const btn = document.getElementById('btn-studio');
+    if (!btn) return;
+    let tt = null;
+    btn.addEventListener('mouseenter', () => {
+      tt = document.createElement('div');
+      tt.className = 'tt-studio';
+      tt.textContent = btn.getAttribute('data-tooltip');
+      document.body.appendChild(tt);
+    });
+    btn.addEventListener('mousemove', (e) => {
+      if (!tt) return;
+      const x = e.clientX + 12;
+      const y = e.clientY + 12;
+      tt.style.left = x + 'px';
+      tt.style.top = y + 'px';
+    });
+    btn.addEventListener('mouseleave', () => {
+      if (tt) { tt.remove(); tt = null; }
+    });
+  })();
+</script>
