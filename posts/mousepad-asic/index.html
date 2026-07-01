@@ -7,11 +7,14 @@
     </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
 <style>.comments-section[data-astro-cid-gysqo7gh]{margin-top:24px}.comments-title[data-astro-cid-gysqo7gh]{margin:0 0 16px;font-size:1rem;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.08em}
 </style></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
-const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+const bgFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+const bgMode = "icons";
 
     (() => {
+      const base = (baseUrl || '/').replace(/\/$/, '');
+      const isPieces = bgMode === 'pieces';
       const CFG = {
-        COUNT: 100,
+        COUNT: isPieces ? 150 : 100,
         SIZE_MIN: 50,
         SIZE_MAX: 100,
         DUR_MIN: 50,
@@ -35,12 +38,11 @@ const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-
         HOVER_SHAKE: true,
         HOVER_SHAKE_PX: 3.0,
         HOVER_SHAKE_SPEED: 250,
-        BLUR: 0,        // Iconos nítidos (sin blur)
-        HOVER_BLUR: 0,  // Sin blur extra al hover
+        BLUR: 0,
+        HOVER_BLUR: 0,
       };
-      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
-      const base  = (baseUrl || '/').replace(/\/$/, '');
-      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      const prefix = isPieces ? 'background-svg-pieces' : 'background-svg';
+      const ICONS = bgFiles.map(f => `${base}/img/${prefix}/${encodeURIComponent(f)}`);
       initBgEngine('site-bg', CFG, ICONS);
     })();
     })();</script> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <article class="hero prose" data-astro-cid-gysqo7gh> <div class="card-meta" data-astro-cid-gysqo7gh> <span class="pill" data-astro-cid-gysqo7gh>Publicado 11 de enero de 2026</span>  </div> <h1 data-astro-cid-gysqo7gh>Alfombrilla ASIC</h1> <p data-astro-cid-gysqo7gh>¿Te gustan los microchips? Te enseño la alfombrilla de escritorio que he creado con un diseño chulo relacionada con el diseño de microchips.</p> <div class="tag-row" data-astro-cid-gysqo7gh> <a class="tag" href="/tags/asic" data-astro-cid-gysqo7gh>asic</a><a class="tag" href="/tags/verilog" data-astro-cid-gysqo7gh>verilog</a><a class="tag" href="/tags/proyectos" data-astro-cid-gysqo7gh>proyectos</a> </div>  <img src="/img/asic-mousepad.png" alt="Alfombrilla ASIC" style="max-width:100%;height:auto;">

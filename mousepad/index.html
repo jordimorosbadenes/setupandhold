@@ -7,11 +7,14 @@
     </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
 <style>.mousepad-modal[data-astro-cid-hcf2rulc]{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;display:flex;align-items:center;justify-content:center}.mousepad-modal__overlay[data-astro-cid-hcf2rulc]{position:absolute;top:0;left:0;width:100%;height:100%;background:#000c}.mousepad-modal__content[data-astro-cid-hcf2rulc]{position:relative;max-width:90vw;max-height:90vh;display:flex;align-items:center;justify-content:center}.mousepad-modal__image[data-astro-cid-hcf2rulc]{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}.mousepad-modal__close[data-astro-cid-hcf2rulc]{position:absolute;top:-40px;right:0;background:#000000b3;color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}.mousepad-modal__close[data-astro-cid-hcf2rulc]:hover{background:#000000e6}@media (max-width: 768px){.mousepad-modal__close[data-astro-cid-hcf2rulc]{top:10px;right:10px}.magnifier-stage[data-astro-cid-hcf2rulc]{cursor:pointer}}
 </style></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
-const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+const bgFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+const bgMode = "icons";
 
     (() => {
+      const base = (baseUrl || '/').replace(/\/$/, '');
+      const isPieces = bgMode === 'pieces';
       const CFG = {
-        COUNT: 100,
+        COUNT: isPieces ? 150 : 100,
         SIZE_MIN: 50,
         SIZE_MAX: 100,
         DUR_MIN: 50,
@@ -35,12 +38,11 @@ const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-
         HOVER_SHAKE: true,
         HOVER_SHAKE_PX: 3.0,
         HOVER_SHAKE_SPEED: 250,
-        BLUR: 0,        // Iconos nítidos (sin blur)
-        HOVER_BLUR: 0,  // Sin blur extra al hover
+        BLUR: 0,
+        HOVER_BLUR: 0,
       };
-      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
-      const base  = (baseUrl || '/').replace(/\/$/, '');
-      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      const prefix = isPieces ? 'background-svg-pieces' : 'background-svg';
+      const ICONS = bgFiles.map(f => `${base}/img/${prefix}/${encodeURIComponent(f)}`);
       initBgEngine('site-bg', CFG, ICONS);
     })();
     })();</script> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <section class="hero" data-astro-cid-hcf2rulc> <div class="hero-copy prose" data-astro-cid-hcf2rulc> <h1 data-astro-cid-hcf2rulc>Alfombrilla ASIC</h1> <p data-astro-cid-hcf2rulc>

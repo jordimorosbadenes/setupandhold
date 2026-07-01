@@ -1,17 +1,20 @@
-<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Puzzle Generator</title><meta name="description" content="Genera puzzles 3D, visualiza soluciones y descarga STL listo para imprimir."><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
+<!DOCTYPE html><html lang="es"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Puzzle Studio</title><meta name="description" content="Genera puzzles 3D, visualiza soluciones y descarga STL listo para imprimir."><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><script>
       const storageKey = 'theme';
       const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
       const saved = localStorage.getItem(storageKey);
       const theme = saved || (prefersLight ? 'light' : 'dark');
       document.documentElement.dataset.theme = theme;
     </script><link rel="stylesheet" href="/_astro/about.BPIG8_L2.css">
-<style>.construction-warning{margin:20px auto;max-width:1100px;padding:20px;background:#ffc1071a;border:1px solid rgba(255,193,7,.3);border-radius:var(--radius);text-align:center;color:var(--text)}.construction-warning h2{margin:0 0 10px;color:var(--text);font-size:1.8rem}.construction-warning p{margin:0;color:var(--muted)}@media (max-width: 900px){.premium-section{margin:20px 12px;padding:14px}}
+<style>.button--soon{position:relative;cursor:default;opacity:.5;font:inherit;padding:10px 16px;border:1px solid var(--border);background:linear-gradient(120deg,#7cf2c929,#6cb1ff14);width:auto}.tt-studio{position:fixed;z-index:9999;pointer-events:none;background:var(--card);color:var(--text);padding:6px 12px;border-radius:8px;font-size:.85rem;white-space:nowrap;border:1px solid var(--border);box-shadow:var(--shadow)}
 </style></head> <body> <!-- Animated icon background --> <div class="site-bg" id="site-bg" aria-hidden="true"></div> <script src="/js/bg-engine.js"></script> <script>(function(){const baseUrl = "/";
-const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-nand-svgrepo-com.svg","logic-gate-nor-svgrepo-com.svg","logic-gate-not-svgrepo-com.svg","logic-gate-nxor-svgrepo-com.svg","logic-gate-or-svgrepo-com.svg","logic-gate-xor-svgrepo-com.svg"];
+const bgFiles = ["puzzle-pieces-set-cropped-cropped (1).svg","puzzle-pieces-set-cropped-cropped (10).svg","puzzle-pieces-set-cropped-cropped (11).svg","puzzle-pieces-set-cropped-cropped (12).svg","puzzle-pieces-set-cropped-cropped (13).svg","puzzle-pieces-set-cropped-cropped (14).svg","puzzle-pieces-set-cropped-cropped (2).svg","puzzle-pieces-set-cropped-cropped (3).svg","puzzle-pieces-set-cropped-cropped (4).svg","puzzle-pieces-set-cropped-cropped (5).svg","puzzle-pieces-set-cropped-cropped (6).svg","puzzle-pieces-set-cropped-cropped (7).svg","puzzle-pieces-set-cropped-cropped (9).svg","puzzle-pieces-set-cropped-cropped.svg"];
+const bgMode = "pieces";
 
     (() => {
+      const base = (baseUrl || '/').replace(/\/$/, '');
+      const isPieces = bgMode === 'pieces';
       const CFG = {
-        COUNT: 100,
+        COUNT: isPieces ? 150 : 100,
         SIZE_MIN: 50,
         SIZE_MAX: 100,
         DUR_MIN: 50,
@@ -35,17 +38,16 @@ const iconFiles = ["flip-flop.svg","logic-gate-and-svgrepo-com.svg","logic-gate-
         HOVER_SHAKE: true,
         HOVER_SHAKE_PX: 3.0,
         HOVER_SHAKE_SPEED: 250,
-        BLUR: 0,        // Iconos nítidos (sin blur)
-        HOVER_BLUR: 0,  // Sin blur extra al hover
+        BLUR: 0,
+        HOVER_BLUR: 0,
       };
-      // Para añadir iconos: basta con meter un .svg en public/img/background-svg/
-      const base  = (baseUrl || '/').replace(/\/$/, '');
-      const ICONS = iconFiles.map(f => `${base}/img/background-svg/${encodeURIComponent(f)}`);
+      const prefix = isPieces ? 'background-svg-pieces' : 'background-svg';
+      const ICONS = bgFiles.map(f => `${base}/img/${prefix}/${encodeURIComponent(f)}`);
       initBgEngine('site-bg', CFG, ICONS);
     })();
     })();</script> <div class="page-shell"> <header class="site-header"> <a class="brand" href="/"> <img class="brand-logo" src="/favicon.svg" alt="setupandhold" width="24" height="24"> <span>setupandhold</span> </a> <nav class="nav-links"> <a href="/">Inicio</a> <a href="/posts">Blog</a> <a href="/puzzle" rel="prefetch">Puzzle</a> <a href="/mousepad">Alfombrilla</a> <a href="/about">Sobre mi</a> </nav> </header> <main class="page">  <section class="hero"> <div class="hero-copy prose"> <h1>PuzzleStudio3D</h1> <p>
 Genera y personaliza puzzles 3D: elige el tipo de puzzle, personaliza en el editor de texturas, y exporta de manera flexible a STL/3MF listo para impresión.
-</p> <div class="hero-actions"> <a class="button" href="/puzzle/studio.html">Abrir Puzzle Studio</a> <a class="button" href="/">Ir al inicio</a> </div> </div> </section> <section class="construction-warning"> <div class="construction-content"> <h2>🚧 Página en Construcción</h2> <p>Esta página aún no está terminada y algunas funcionalidades pueden no funcionar correctamente o estar incompletas.</p> </div> </section>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
+</p> <div class="hero-actions"> <button class="button button--soon" disabled data-tooltip="La página estará lista pronto" id="btn-studio">Abrir Puzzle Studio</button> <a class="button" href="/">Ir al inicio</a> </div> </div> </section>  </main> <footer class="site-footer"> <span>© 2026 setupandhold</span> <span class="dot">·</span> <a href="/about">Contacto</a> <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar tema"> <span class="toggle-slider"> <i class="slider-icon slider-icon--light fi fi-sc-brightness" aria-hidden="true"></i> <i class="slider-icon slider-icon--dark fi fi-sr-moon-stars" aria-hidden="true"></i> </span> </button> </footer> </div> <script>
     (() => {
       const key = 'theme';
       const apply = (value) => {
@@ -70,4 +72,26 @@ Genera y personaliza puzzles 3D: elige el tipo de puzzle, personaliza en el edit
         init();
       }
     })();
-  </script> </body></html> 
+  </script> </body></html>  <script>
+  (() => {
+    const btn = document.getElementById('btn-studio');
+    if (!btn) return;
+    let tt = null;
+    btn.addEventListener('mouseenter', () => {
+      tt = document.createElement('div');
+      tt.className = 'tt-studio';
+      tt.textContent = btn.getAttribute('data-tooltip');
+      document.body.appendChild(tt);
+    });
+    btn.addEventListener('mousemove', (e) => {
+      if (!tt) return;
+      const x = e.clientX + 12;
+      const y = e.clientY + 12;
+      tt.style.left = x + 'px';
+      tt.style.top = y + 'px';
+    });
+    btn.addEventListener('mouseleave', () => {
+      if (tt) { tt.remove(); tt = null; }
+    });
+  })();
+</script>
